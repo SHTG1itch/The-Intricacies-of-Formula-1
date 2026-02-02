@@ -1,0 +1,3 @@
+This will contain data that is small enough for consumption and ready to be plotted. If the raw data from the data sources is dirty or too big for quick and repeated consumption, you need to reduce, normalize and organize the data first. Store the raw data in the discovery_raw_data folder. After you've cleaned and organized it, save the processed data into this folder. However, if the raw data is clean and small enough, and it does not need any preprocesssing, you can store the raw data here.  
+
+Provide instructions for how to setup and run your code locally. Ideally, only some parts of your project would require custom setup while the rest will run without changes.
