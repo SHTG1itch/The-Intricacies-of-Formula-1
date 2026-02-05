@@ -1,4 +1,4 @@
-# IDP Final Project
+# IDP Final Project Srivats-I/Aakash-B
 
 > Add instructions here to explain the all the folders & files in this project.
 > 
