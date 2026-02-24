@@ -116,7 +116,8 @@ Here is an example of one specific lap that was completed by Lewis Hamilton:
 ### Dataset 3: Event Schedule Data
 
 **Description:**   
-This data set contains general metadata about races in the season   
+This data set contains general metadata about races in the season.   
+The dataset contains between \~23-25 rows per season.  
 We can use this dataset to order our races chronologically, to put a name to upcoming predictions, and separate training seasons/sessions from racing sessions.  
 
 | Column Name | Description |
@@ -132,11 +133,13 @@ We can use this dataset to order our races chronologically, to put a name to upc
 
 **Description:**   
 Weather Conditions during sessions.   
+This dataset contains between \~90-120 rows per session, with 5 sessions per race weekend, which leads to \> 10,000 rows per season at 24 races.   
 Relevance: 
 
 * Impact race results  
 * Predict car/driver performance based on future weather conditions  
 * Help explain outlier performances
+
 
 | Column Name | Description |
 | :---- | :---- |
