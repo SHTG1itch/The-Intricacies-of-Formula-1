@@ -1,0 +1,28 @@
+,,,,,,,,
+Task,Owner,Type,Status,Initial Estimate,"Multiplier 
+(Expected Time)",Week #,Actual Time,Notes / Details / Description
+Design Doc - Phase 1,Srivats Iyer ,Milestone,Completed,,,6,,Milestones are parents of your tasks (they are a summary of all of the weeks planned tasks)
+Create milestones,Srivats Iyer,Discovery,Completed,0.50,0.75,6,2.00,Harder than I thought.. why?
+Initial dataset exploration,Srivats Iyer,Discovery,Completed,1.50,2.25,6,2.00,
+Make schedule,Aakash Bothra,Discovery,Completed,0.50,0.75,6,1.00,
+Begin Motivation part of Discovery DOC,Aakash Bothra,Discovery,Completed,0.50,0.75,6,,
+Gather F1 Race Data (Results,,Milestone,Not started,,,9,0.00,
+,Srivats Iyer,Core,,,,9,,
+,,Core,,,,9,,
+,,Prototype,,,,9,,
+,,Core,,,,9,,
+Investigate/Acquire Driver Background & Income Data,,Milestone,Not started,2.00,3.00,10,,
+,,Core,,,0.00,,,
+,,Core,,,0.00,,,
+,,Core,,,0.00,,,
+Clean and Preprocess Datasets,,Milestone,,,0.00,11,,
+,,,,,0.00,,,
+,,,,,0.00,,,
+,,,,,0.00,,,
+,,,,,0.00,,,
+Perform Exploratory Data Analysis (EDA),,Milestone,,,0.00,12,,
+Feature Engineering for Car/Driver Skill Metrics,,Milestone,,,0.00,13,,
+Develop Predictive Model for Race Win,,Milestone,,,0.00,14,,
+Develop Predictive Model for WDC Winner,,Milestone,,,0.00,15,,
+Model Evaluation and Interpretation,,Milestone,,,0.00,16,,
+Final Report Generation and Conclusions,,Milestone,,,0.00,17,,
