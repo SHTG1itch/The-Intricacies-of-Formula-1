@@ -330,3 +330,16 @@ ASALocalRun/
 .mfractor/
 
 *.DS_Store
+
+# ── Project-specific ──────────────────────────────────────────────────────────
+# FastF1 raw data cache (large binary files, not for version control)
+discovery_raw_data/
+
+# Generated plots
+team_performance_plots/
+
+# Log and temp files
+fastf1_cache.log
+plot_output.txt
+git_diag.txt
+*.log
