@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''final_report/feature_engineering.py''\\).read\\(\\)\\); print\\(''feature_engineering.py: OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''final_report/mach_learning.py''\\).read\\(\\)\\); print\\(''mach_learning.py: OK''\\)\")",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
+    ]
+  }
+}
