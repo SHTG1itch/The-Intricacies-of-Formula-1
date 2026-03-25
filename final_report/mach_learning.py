@@ -8,7 +8,7 @@ Trains and evaluates two complementary models to predict Formula 1 race outcomes
 
 APPROACH:
   - Training data: 2022–2024 races with pre-race features
-    (FP pace, qualifying position, rolling form, circuit history)
+    (FP pace, qualifying position, rolling form, circuit history, FP2 sector pace, FP2 long-run pace, qualifying weather)
   - Validation: Leave-one-season-out cross-validation
     (train on 2022+2023, test on 2024)
   - Final model: trained on all 2022–2024 data
@@ -21,6 +21,7 @@ KEY DESIGN DECISION — position-based framing:
   The ensemble combines both by ranking XGBoost positions and weighting
   RF probabilities.
 
+
 HOW TO RUN (from project root):
     # Step 1: generate features
     python final_report/feature_engineering.py
@@ -31,11 +32,14 @@ HOW TO RUN (from project root):
 OUTPUT:
     data_organized/model_evaluation.txt    — accuracy metrics + validation summary
     data_organized/feature_importances.csv — ranked feature importances
+    data_organized/best_hyperparams.txt    — best hyperparameters from tuning
     data_organized/2025_predictions.csv    — predicted race results for 2025
 
 REFERENCES:
     Random Forest: Breiman (2001), scikit-learn RandomForestClassifier/Regressor
     XGBoost:       Chen & Guestrin (2016), https://xgboost.readthedocs.io/
+    RandomizedSearchCV: https://scikit-learn.org/stable/modules/generated/
+                        sklearn.model_selection.RandomizedSearchCV.html
     F1 ML example: https://f1-predictor.readthedocs.io/
     FastF1 docs:   https://docs.fastf1.dev/
 """
@@ -46,13 +50,12 @@ import numpy as np
 import pandas as pd
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import (
-    accuracy_score, mean_absolute_error, classification_report
-)
+from sklearn.metrics import mean_absolute_error
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import RandomizedSearchCV
 
 import xgboost as xgb
+from scipy.stats import randint, uniform
 
 warnings.filterwarnings("ignore")
 
@@ -67,7 +70,9 @@ OUT_DIR    = DATA_DIR
 
 # Features used by the models (all numeric)
 # These must match columns produced by feature_engineering.py
-FEATURE_COLS = [
+
+Q1_FEATURES = [
+    "IsSprintWeekend",
     "grid_position",
     "fp1_pace_delta",
     "fp2_pace_delta",
@@ -80,8 +85,30 @@ FEATURE_COLS = [
     "team_rolling_avg_5",
     "circuit_driver_avg_finish",
     "circuit_team_avg_finish",
-    "IsSprintWeekend",
 ]
+
+
+# The reference model (mar-antaya/2025_f1_predictions) uses qualifying time
+# + sector times + weather + team score, trained per-circuit on ~20 rows.
+# We use all of those plus long-run race pace, consistency, pace progression,
+# teammate gap, and season-to-date performance — trained on all circuits
+# simultaneously with proper cross-validation.
+Q2_FEATURES = [
+    "fp2_s1_delta",          # FP2 best sector-1 time vs session best
+    "fp2_s2_delta",          # FP2 best sector-2 time vs session best
+    "fp2_s3_delta",          # FP2 best sector-3 time vs session best
+    "fp2_long_run_delta",    # long-run race-pace vs session median in FP2
+    "fp2_consistency",       # std dev of FP2 quicklaps (lower = steadier)
+    "fp_pace_progression",   # FP1→FP2 improvement vs field (positive = better)
+    "quali_gap_to_pole",     # seconds behind pole in qualifying (finer than rank)
+    "quali_teammate_gap",    # driver vs fastest teammate in quali (car-normalised)
+    "quali_track_temp",      # track surface temp during qualifying (°C)
+    "quali_wet",             # 1 if qualifying had rainfall
+    "season_pts_pct",        # season points / (races × 25) before this race
+    "season_avg_finish",     # season avg finishing position before this race
+]
+
+FEATURE_COLS = Q1_FEATURES + Q2_FEATURES  # 25 total
 
 # Random seed for reproducibility
 SEED = 42
@@ -212,6 +239,40 @@ def top10_set_accuracy(df_meta, y_pred_pos, y_true_pos, k=10):
     return np.mean(jaccard_scores) if jaccard_scores else 0.0
 
 
+def podium_accuracy(df_meta, y_pred_pos, y_true_pos):
+    """
+    Fraction of races where the predicted top-3 set matches the actual podium set.
+
+    Exact match: all three predicted podium drivers are among the actual top-3.
+    Also returns partial credit: average overlap count per race.
+
+    Ref: Inspired by Kaggle "Predict the podium" evaluation metric.
+    """
+    df = df_meta[["Year", "Round", "Driver"]].copy()
+    df["pred_pos"] = y_pred_pos
+    df["true_pos"] = y_true_pos.values
+
+    exact_matches = 0
+    overlap_counts = []
+    total = 0
+
+    for (year, rnd), group in df.groupby(["Year", "Round"]):
+        if group["true_pos"].isna().any():
+            continue
+        pred_top3 = set(group.nsmallest(3, "pred_pos")["Driver"].tolist())
+        true_top3 = set(group[group["true_pos"] <= 3]["Driver"].tolist())
+        if not true_top3:
+            continue
+        overlap = len(pred_top3 & true_top3)
+        overlap_counts.append(overlap)
+        exact_matches += int(pred_top3 == true_top3)
+        total += 1
+
+    exact_rate = exact_matches / total if total > 0 else 0.0
+    avg_overlap = np.mean(overlap_counts) if overlap_counts else 0.0
+    return exact_rate, avg_overlap, total
+
+
 def average_position_mae(df_meta, y_pred_pos, y_true_pos):
     """
     Mean Absolute Error of the predicted rank vs actual finishing position.
@@ -229,73 +290,168 @@ def average_position_mae(df_meta, y_pred_pos, y_true_pos):
 # MODEL TRAINING
 # ─────────────────────────────────────────────────────────────────
 
-def train_xgboost_regressor(X_train, y_train):
+def tune_xgboost(X_train, y_train, n_iter=50):
     """
-    Train an XGBoost regressor to predict numeric finishing position.
+    RandomizedSearchCV over XGBoost hyperparameter space.
 
-    Hyperparameters chosen as a baseline from F1 prediction literature:
-    - n_estimators=300: enough trees for stable predictions
-    - max_depth=5: moderate depth to capture interactions without overfitting
-    - learning_rate=0.05: slow learning for better generalization
-    - subsample=0.8: row subsampling (reduces overfitting)
-    - colsample_bytree=0.8: feature subsampling
+    WHY RANDOMIZED SEARCH?
+    Grid search over all combinations is O(n^k) — infeasible for XGBoost's
+    large parameter space. RandomizedSearchCV samples n_iter points from the
+    joint distribution, covering the space efficiently.
+    With n_iter=50 and 3-fold CV we run 150 fits — fast enough on a laptop.
 
-    Ref: https://xgboost.readthedocs.io/en/stable/parameter.html
+    Parameter ranges informed by:
+    - XGBoost docs: https://xgboost.readthedocs.io/en/stable/parameter.html
+    - Kaggle F1 prediction community notebooks
+    - "XGBoost: A Scalable Tree Boosting System" (Chen & Guestrin 2016)
     """
-    model = xgb.XGBRegressor(
-        n_estimators=300,
-        max_depth=5,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=3,
-        reg_alpha=0.1,       # L1 regularization
-        reg_lambda=1.0,      # L2 regularization
+    param_dist = {
+        "n_estimators":     randint(200, 800),
+        "max_depth":        randint(3, 8),
+        "learning_rate":    uniform(0.01, 0.15),   # 0.01–0.16
+        "subsample":        uniform(0.6, 0.4),      # 0.6–1.0
+        "colsample_bytree": uniform(0.5, 0.5),      # 0.5–1.0
+        "min_child_weight": randint(1, 8),
+        "reg_alpha":        uniform(0.0, 0.5),
+        "reg_lambda":       uniform(0.5, 2.0),
+        "gamma":            uniform(0.0, 0.3),
+    }
+    base = xgb.XGBRegressor(
         random_state=SEED,
         verbosity=0,
         n_jobs=-1,
+    )
+    search = RandomizedSearchCV(
+        base,
+        param_distributions=param_dist,
+        n_iter=n_iter,
+        cv=3,
+        scoring="neg_mean_absolute_error",
+        random_state=SEED,
+        n_jobs=-1,
+        verbose=0,
+    )
+    search.fit(X_train, y_train)
+    print(f"    Best XGBoost MAE (CV): {-search.best_score_:.3f}")
+    print(f"    Best params: {search.best_params_}")
+    return search.best_estimator_, search.best_params_
+
+
+def tune_random_forest_winner(X_train, y_win_train, n_iter=40):
+    """
+    RandomizedSearchCV for the winner Random Forest classifier.
+
+    class_weight='balanced_subsample' rebalances at each tree, better than
+    'balanced' (which rebalances once globally) for deep forests.
+    Ref: https://scikit-learn.org/stable/modules/generated/
+         sklearn.ensemble.RandomForestClassifier.html
+    """
+    param_dist = {
+        "n_estimators":   randint(200, 700),
+        "max_depth":      [4, 5, 6, 7, 8, 10, None],
+        "min_samples_leaf": randint(2, 10),
+        "max_features":   ["sqrt", "log2", 0.4, 0.6],
+        "criterion":      ["gini", "entropy"],
+    }
+    base = RandomForestClassifier(
+        class_weight="balanced_subsample",
+        random_state=SEED,
+        n_jobs=-1,
+    )
+    valid = y_win_train.dropna()
+    search = RandomizedSearchCV(
+        base,
+        param_distributions=param_dist,
+        n_iter=n_iter,
+        cv=3,
+        scoring="f1",
+        random_state=SEED,
+        n_jobs=-1,
+        verbose=0,
+    )
+    search.fit(X_train.loc[valid.index], valid.astype(int))
+    print(f"    Best RF winner F1 (CV): {search.best_score_:.3f}")
+    print(f"    Best params: {search.best_params_}")
+    return search.best_estimator_, search.best_params_
+
+
+def tune_random_forest_top10(X_train, y_top10_train, n_iter=40):
+    """
+    RandomizedSearchCV for the top-10 Random Forest classifier.
+    Less imbalanced than winner (~50% positive), so standard F1 scoring works.
+    """
+    param_dist = {
+        "n_estimators":     randint(200, 700),
+        "max_depth":        [4, 5, 6, 7, 8, 10, None],
+        "min_samples_leaf": randint(1, 8),
+        "max_features":     ["sqrt", "log2", 0.4, 0.6],
+        "criterion":        ["gini", "entropy"],
+    }
+    base = RandomForestClassifier(
+        class_weight="balanced_subsample",
+        random_state=SEED,
+        n_jobs=-1,
+    )
+    valid = y_top10_train.dropna()
+    search = RandomizedSearchCV(
+        base,
+        param_distributions=param_dist,
+        n_iter=n_iter,
+        cv=3,
+        scoring="f1",
+        random_state=SEED,
+        n_jobs=-1,
+        verbose=0,
+    )
+    search.fit(X_train.loc[valid.index], valid.astype(int))
+    print(f"    Best RF top-10 F1 (CV): {search.best_score_:.3f}")
+    print(f"    Best params: {search.best_params_}")
+    return search.best_estimator_, search.best_params_
+
+
+# ── Fallback trainers (used inside LOSO loop where tuning would be too slow) ──
+
+def train_xgboost_regressor(X_train, y_train, params=None):
+    """Train XGBoost with given params (or sensible defaults if None)."""
+    if params is None:
+        params = {
+            "n_estimators": 300, "max_depth": 5, "learning_rate": 0.05,
+            "subsample": 0.8, "colsample_bytree": 0.8, "min_child_weight": 3,
+            "reg_alpha": 0.1, "reg_lambda": 1.0, "gamma": 0.0,
+        }
+    model = xgb.XGBRegressor(
+        **params, random_state=SEED, verbosity=0, n_jobs=-1,
     )
     model.fit(X_train, y_train)
     return model
 
 
-def train_random_forest_winner(X_train, y_win_train):
-    """
-    Train a Random Forest binary classifier to predict race winner.
-
-    class_weight='balanced' is critical: only 1 in ~20 drivers wins,
-    so the class is heavily imbalanced. Balanced weighting forces the model
-    to attend to positive examples.
-
-    Ref: https://scikit-learn.org/stable/modules/generated/
-         sklearn.ensemble.RandomForestClassifier.html
-    """
+def train_random_forest_winner(X_train, y_win_train, params=None):
+    """Train RF winner classifier with given params or defaults."""
+    if params is None:
+        params = {
+            "n_estimators": 500, "max_depth": 8, "min_samples_leaf": 5,
+            "max_features": "sqrt", "criterion": "gini",
+        }
     model = RandomForestClassifier(
-        n_estimators=500,
-        max_depth=8,
-        min_samples_leaf=5,
-        class_weight="balanced",
-        random_state=SEED,
-        n_jobs=-1,
+        **params, class_weight="balanced_subsample",
+        random_state=SEED, n_jobs=-1,
     )
-    # Drop NaN targets
     valid = y_win_train.dropna()
     model.fit(X_train.loc[valid.index], valid.astype(int))
     return model
 
 
-def train_random_forest_top10(X_train, y_top10_train):
-    """
-    Train a Random Forest binary classifier to predict top-10 finish.
-    Less imbalanced than winner prediction (~50% positive rate).
-    """
+def train_random_forest_top10(X_train, y_top10_train, params=None):
+    """Train RF top-10 classifier with given params or defaults."""
+    if params is None:
+        params = {
+            "n_estimators": 500, "max_depth": 8, "min_samples_leaf": 3,
+            "max_features": "sqrt", "criterion": "gini",
+        }
     model = RandomForestClassifier(
-        n_estimators=500,
-        max_depth=8,
-        min_samples_leaf=3,
-        class_weight="balanced",
-        random_state=SEED,
-        n_jobs=-1,
+        **params, class_weight="balanced_subsample",
+        random_state=SEED, n_jobs=-1,
     )
     valid = y_top10_train.dropna()
     model.fit(X_train.loc[valid.index], valid.astype(int))
@@ -369,15 +525,15 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         X_tr = X_train_all[train_mask]
         X_te = X_train_all[test_mask]
 
-        # Fit imputer on train split only
+        # Fit imputer on train split only; reset index so X and y align
         imp = SimpleImputer(strategy="median")
         X_tr = pd.DataFrame(imp.fit_transform(X_tr), columns=FEATURE_COLS)
-        X_te = pd.DataFrame(imp.transform(X_te), columns=FEATURE_COLS)
+        X_te = pd.DataFrame(imp.transform(X_te),     columns=FEATURE_COLS)
 
-        y_pos_tr  = y_pos[train_mask]
-        y_pos_te  = y_pos[test_mask]
-        y_win_tr  = y_win[train_mask]
-        y_top10_tr = y_top10[train_mask]
+        y_pos_tr   = y_pos[train_mask].reset_index(drop=True)
+        y_pos_te   = y_pos[test_mask].reset_index(drop=True)
+        y_win_tr   = y_win[train_mask].reset_index(drop=True)
+        y_top10_tr = y_top10[train_mask].reset_index(drop=True)
 
         meta_te = df_train[test_mask][
             ["Year", "Round", "EventName", "Driver", "Team"]
@@ -410,23 +566,33 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
             y_pos_te.reset_index(drop=True)
         )
 
+        pod_exact, pod_overlap, _ = podium_accuracy(
+            meta_te.reset_index(drop=True),
+            xgb_preds,
+            y_pos_te.reset_index(drop=True)
+        )
+
         results.append({
-            "holdout_year": holdout_year,
+            "holdout_year":   holdout_year,
             "winner_accuracy": w_acc,
             "winners_correct": w_correct,
             "total_races":     w_total,
+            "podium_exact":    pod_exact,
+            "podium_overlap":  pod_overlap,
             "top10_jaccard":   jaccard,
             "position_mae":    mae,
         })
 
         print(f"\n  Holdout {holdout_year}:")
         print(f"    Winner accuracy : {w_acc:.1%}  ({w_correct}/{w_total} races)")
+        print(f"    Podium exact    : {pod_exact:.1%}  (avg overlap: {pod_overlap:.2f}/3)")
         print(f"    Top-10 Jaccard  : {jaccard:.3f}")
         print(f"    Position MAE    : {mae:.2f} places")
 
     val_df = pd.DataFrame(results)
     print(f"\n  ── Averages ──")
     print(f"    Winner accuracy : {val_df['winner_accuracy'].mean():.1%}")
+    print(f"    Podium exact    : {val_df['podium_exact'].mean():.1%}")
     print(f"    Top-10 Jaccard  : {val_df['top10_jaccard'].mean():.3f}")
     print(f"    Position MAE    : {val_df['position_mae'].mean():.2f} places")
 
@@ -512,22 +678,45 @@ def main():
         df_train, X_all, y_pos, y_win, y_top10
     )
 
-    # ── 3. Train final models on ALL training data ─────────────────
+    # ── 3. Hyperparameter tuning on ALL training data ──────────────
     print("\n" + "─" * 55)
-    print("  Training Final Models on All 2022–2024 Data")
+    print("  Hyperparameter Tuning (RandomizedSearchCV, 50/40 iters)")
     print("─" * 55)
 
+    # Fit one global imputer on all training data
+    global_imputer = SimpleImputer(strategy="median")
     X_final = pd.DataFrame(
-        SimpleImputer(strategy="median").fit_transform(X_all),
+        global_imputer.fit_transform(X_all),
         columns=FEATURE_COLS
     )
 
-    xgb_final  = train_xgboost_regressor(X_final, y_pos.fillna(20))
-    rf_win_final   = train_random_forest_winner(X_final, y_win)
-    rf_top10_final = train_random_forest_top10(X_final, y_top10)
-    print("  ✓ XGBoost regressor trained")
-    print("  ✓ Random Forest winner classifier trained")
-    print("  ✓ Random Forest top-10 classifier trained")
+    print("\n  Tuning XGBoost regressor...")
+    xgb_final, xgb_best_params = tune_xgboost(X_final, y_pos.fillna(20), n_iter=50)
+    print("  ✓ XGBoost tuned")
+
+    print("\n  Tuning Random Forest (winner)...")
+    rf_win_final, rf_win_best_params = tune_random_forest_winner(X_final, y_win, n_iter=40)
+    print("  ✓ Random Forest winner tuned")
+
+    print("\n  Tuning Random Forest (top-10)...")
+    rf_top10_final, rf_top10_best_params = tune_random_forest_top10(X_final, y_top10, n_iter=40)
+    print("  ✓ Random Forest top-10 tuned")
+
+    # Save best hyperparameters
+    params_path = os.path.join(OUT_DIR, "best_hyperparams.txt")
+    with open(params_path, "w") as f:
+        f.write("Best Hyperparameters (RandomizedSearchCV)\n")
+        f.write("=" * 55 + "\n\n")
+        f.write("XGBoost Regressor:\n")
+        for k, v in sorted(xgb_best_params.items()):
+            f.write(f"  {k}: {v}\n")
+        f.write("\nRandom Forest (winner):\n")
+        for k, v in sorted(rf_win_best_params.items()):
+            f.write(f"  {k}: {v}\n")
+        f.write("\nRandom Forest (top-10):\n")
+        for k, v in sorted(rf_top10_best_params.items()):
+            f.write(f"  {k}: {v}\n")
+    print(f"\n  → Best hyperparameters saved to {params_path}")
 
     # ── 4. Feature importances ─────────────────────────────────────
     print("\n" + "─" * 55)
@@ -539,23 +728,15 @@ def main():
     xgb_train_preds = xgb_final.predict(X_final)
     rf_win_train_proba = rf_win_final.predict_proba(X_final)[:, 1]
 
-    w_acc, w_correct, w_total = winner_accuracy(
-        df_train[["Year", "Round", "EventName", "Driver", "Team"]].reset_index(drop=True),
-        xgb_train_preds,
-        y_pos
-    )
-    jaccard = top10_set_accuracy(
-        df_train[["Year", "Round", "EventName", "Driver", "Team"]].reset_index(drop=True),
-        xgb_train_preds,
-        y_pos
-    )
-    mae = average_position_mae(
-        df_train[["Year", "Round", "EventName", "Driver", "Team"]].reset_index(drop=True),
-        xgb_train_preds,
-        y_pos
-    )
+    meta_tr = df_train[["Year", "Round", "EventName", "Driver", "Team"]].reset_index(drop=True)
+    w_acc, w_correct, w_total = winner_accuracy(meta_tr, xgb_train_preds, y_pos)
+    pod_exact, pod_overlap, _ = podium_accuracy(meta_tr, xgb_train_preds, y_pos)
+    jaccard = top10_set_accuracy(meta_tr, xgb_train_preds, y_pos)
+    mae     = average_position_mae(meta_tr, xgb_train_preds, y_pos)
+
     print(f"\n  In-sample training metrics:")
     print(f"    Winner accuracy : {w_acc:.1%}  ({w_correct}/{w_total} races)")
+    print(f"    Podium exact    : {pod_exact:.1%}  (avg overlap: {pod_overlap:.2f}/3)")
     print(f"    Top-10 Jaccard  : {jaccard:.3f}")
     print(f"    Position MAE    : {mae:.2f} places")
 
@@ -611,8 +792,14 @@ def main():
         f.write("Leave-One-Season-Out Cross-Validation:\n")
         f.write(val_results.to_string(index=False))
         f.write(f"\n\nMean Winner Accuracy : {val_results['winner_accuracy'].mean():.1%}\n")
+        f.write(f"Mean Podium Exact    : {val_results['podium_exact'].mean():.1%}\n")
         f.write(f"Mean Top-10 Jaccard  : {val_results['top10_jaccard'].mean():.3f}\n")
         f.write(f"Mean Position MAE    : {val_results['position_mae'].mean():.2f} places\n")
+        f.write(f"\nIn-sample (training set):\n")
+        f.write(f"  Winner accuracy : {w_acc:.1%}  ({w_correct}/{w_total} races)\n")
+        f.write(f"  Podium exact    : {pod_exact:.1%}\n")
+        f.write(f"  Top-10 Jaccard  : {jaccard:.3f}\n")
+        f.write(f"  Position MAE    : {mae:.2f} places\n")
     print(f"\n  → Evaluation summary saved to {eval_path}")
 
     print("\n" + "=" * 55)
@@ -620,6 +807,7 @@ def main():
     print("=" * 55)
     print(f"\nKey outputs:")
     print(f"  {os.path.join(OUT_DIR, 'feature_importances.csv')}")
+    print(f"  {os.path.join(OUT_DIR, 'best_hyperparams.txt')}")
     print(f"  {os.path.join(OUT_DIR, 'model_evaluation.txt')}")
     print(f"  {os.path.join(OUT_DIR, '2025_predictions.csv')}")
 
