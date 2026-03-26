@@ -566,7 +566,13 @@ def build_features(years, include_race_target=True):
     circuit_hist = CircuitHistory()
     all_rows     = []
 
-    warmup_years = [2019, 2020, 2021]
+    # Warm up rolling/circuit-history state using all seasons before the
+    # earliest year in `years`.  This is critical when years=[2025] because
+    # the 2022-2024 race results must be processed first so the rolling and
+    # season-stats features are populated correctly.
+    min_year     = min(years)
+    warmup_start = 2019          # reliable FastF1 coverage from 2018; 2019+ for stability
+    warmup_years = list(range(warmup_start, min_year))   # e.g. 2019-2024 when years=[2025]
     all_years    = sorted(set(warmup_years + list(years)))
     prev_year    = None
 

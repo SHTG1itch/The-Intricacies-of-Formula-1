@@ -48,6 +48,7 @@ import os
 import warnings
 import numpy as np
 import pandas as pd
+import joblib
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
@@ -67,6 +68,7 @@ DATA_DIR   = "data_organized"
 TRAIN_FILE = os.path.join(DATA_DIR, "ml_training_features.csv")
 PRED_FILE  = os.path.join(DATA_DIR, "ml_2025_features.csv")
 OUT_DIR    = DATA_DIR
+MODEL_DIR  = os.path.join(DATA_DIR, "models")
 
 # Features used by the models (all numeric)
 # These must match columns produced by feature_engineering.py
@@ -718,7 +720,17 @@ def main():
             f.write(f"  {k}: {v}\n")
     print(f"\n  → Best hyperparameters saved to {params_path}")
 
-    # ── 4. Feature importances ─────────────────────────────────────
+    # ── 4. Persist trained models to disk ──────────────────────────
+    # predict_2025.py loads these so it doesn't need to retrain.
+    # Uses joblib (sklearn's recommended serialiser for sklearn/xgboost models).
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(xgb_final,       os.path.join(MODEL_DIR, "xgb_model.joblib"))
+    joblib.dump(rf_win_final,    os.path.join(MODEL_DIR, "rf_win_model.joblib"))
+    joblib.dump(rf_top10_final,  os.path.join(MODEL_DIR, "rf_top10_model.joblib"))
+    joblib.dump(global_imputer,  os.path.join(MODEL_DIR, "feature_imputer.joblib"))
+    print(f"\n  → Models saved to {MODEL_DIR}/")
+
+    # ── 5. Feature importances ─────────────────────────────────────
     print("\n" + "─" * 55)
     print("  Feature Importances")
     print("─" * 55)
