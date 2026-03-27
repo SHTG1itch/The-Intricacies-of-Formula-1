@@ -96,11 +96,13 @@ fastf1.Cache.offline_mode(enabled=True)
 
 def load_models():
     """
-    Load the three serialised models and fitted imputer from MODEL_DIR.
+    Load the four serialised models and fitted imputer from MODEL_DIR.
+    v3: adds xgb_ranker (XGBRanker with rank:ndcg) to the ensemble.
     Raises a clear error if mach_learning.py hasn't been run yet.
     """
     required = {
         "xgb":      os.path.join(MODEL_DIR, "xgb_model.joblib"),
+        "ranker":   os.path.join(MODEL_DIR, "xgb_ranker.joblib"),
         "rf_win":   os.path.join(MODEL_DIR, "rf_win_model.joblib"),
         "rf_top10": os.path.join(MODEL_DIR, "rf_top10_model.joblib"),
         "imputer":  os.path.join(MODEL_DIR, "feature_imputer.joblib"),
@@ -112,11 +114,12 @@ def load_models():
                 f"    Run  python final_report/mach_learning.py  first."
             )
     xgb_model  = joblib.load(required["xgb"])
+    xgb_ranker = joblib.load(required["ranker"])
     rf_win     = joblib.load(required["rf_win"])
     rf_top10   = joblib.load(required["rf_top10"])
     imputer    = joblib.load(required["imputer"])
     print(f"  ✓ Models loaded from {MODEL_DIR}/")
-    return xgb_model, rf_win, rf_top10, imputer
+    return xgb_model, xgb_ranker, rf_win, rf_top10, imputer
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -379,31 +382,47 @@ def plot_feature_importances(feat_imp_path, out_dir):
 
     # Friendly display names
     rename = {
+        # Grid / quali
+        "IsSprintWeekend":           "Sprint weekend flag",
         "grid_position":             "Grid position",
-        "quali_gap_to_pole":         "Quali gap to pole",
-        "quali_teammate_gap":        "Quali teammate gap",
-        "rolling_avg_finish_5":      "Rolling avg finish (5)",
-        "rolling_points_5":          "Rolling points (5)",
-        "rolling_dnf_rate_5":        "Rolling DNF rate (5)",
-        "team_rolling_avg_5":        "Team rolling avg (5)",
-        "circuit_driver_avg_finish": "Circuit driver history",
-        "circuit_team_avg_finish":   "Circuit team history",
-        "fp2_pace_delta":            "FP2 best-lap delta",
+        "sprint_quali_pos":          "Sprint quali position",
+        "sprint_pos":                "Sprint race position",
+        # FP best-lap deltas
         "fp1_pace_delta":            "FP1 best-lap delta",
+        "fp2_pace_delta":            "FP2 best-lap delta",
         "fp3_pace_delta":            "FP3 best-lap delta",
-        "fp2_long_run_delta":        "FP2 long-run pace",
+        # FP2 session features
         "fp2_s1_delta":              "FP2 sector-1 delta",
         "fp2_s2_delta":              "FP2 sector-2 delta",
         "fp2_s3_delta":              "FP2 sector-3 delta",
+        "fp2_long_run_delta":        "FP2 long-run pace",
         "fp2_consistency":           "FP2 lap consistency",
         "fp_pace_progression":       "FP1→FP2 progression",
+        # FP3 long-run (v3)
+        "fp3_long_run_delta":        "FP3 long-run pace",
+        # Qualifying gaps
+        "quali_gap_to_pole":         "Quali gap to pole",
+        "quali_teammate_gap":        "Quali teammate gap",
+        # Weather (v3 additions marked)
+        "fp1_track_temp":            "FP1 track temp",
+        "fp1_wet":                   "FP1 wet flag",
+        "fp2_track_temp":            "FP2 track temp",
+        "fp2_wet":                   "FP2 wet flag",
+        "quali_track_temp":          "Qualifying track temp",
+        "quali_air_temp":            "Qualifying air temp",
+        "quali_wet":                 "Qualifying wet flag",
+        # Rolling / season
+        "rolling_avg_finish_3":      "Rolling avg finish (3)",
+        "rolling_avg_finish_5":      "Rolling avg finish (5)",
+        "rolling_dnf_rate_5":        "Rolling DNF rate (5)",
+        "rolling_points_5":          "Rolling points (5)",
+        "team_rolling_avg_5":        "Team rolling avg (5)",
         "season_pts_pct":            "Season points %",
         "season_avg_finish":         "Season avg finish",
-        "quali_track_temp":          "Qualifying track temp",
-        "quali_wet":                 "Qualifying wet flag",
-        "sprint_quali_pos":          "Sprint quali position",
-        "sprint_pos":                "Sprint race position",
-        "IsSprintWeekend":           "Sprint weekend flag",
+        # Circuit history (v3 adds experience)
+        "circuit_experience":        "Circuit experience",
+        "circuit_driver_avg_finish": "Circuit driver history",
+        "circuit_team_avg_finish":   "Circuit team history",
     }
     df.index = [rename.get(i, i) for i in df.index]
     df = df.sort_values("avg_importance", ascending=True)
@@ -630,21 +649,28 @@ def main():
 
     # ── 1. Load models ─────────────────────────────────────────────
     print("\n[1/6] Loading trained models...")
-    xgb_model, rf_win, rf_top10, imputer = load_models()
+    xgb_model, xgb_ranker, rf_win, rf_top10, imputer = load_models()
 
     # ── 2. Load 2025 pre-race features ────────────────────────────
     print("\n[2/6] Loading 2025 pre-race features...")
     X_2025, df_2025 = load_2025_features(imputer)
 
     # ── 3. Generate predictions ───────────────────────────────────
-    print("\n[3/6] Generating predictions...")
-    xgb_preds     = xgb_model.predict(X_2025)
-    rf_win_proba  = rf_win.predict_proba(X_2025)[:, 1]
-    rf_top10_pred = rf_top10.predict(X_2025)
+    print("\n[3/6] Generating predictions (3-model ensemble)...")
+    # Sort by (Year, Round) for rank-normalisation consistency across models.
+    sort_order = df_2025.sort_values(["Year", "Round"]).index
+    X_2025_s   = X_2025.loc[sort_order].reset_index(drop=True)
+    df_2025_s  = df_2025.loc[sort_order].reset_index(drop=True)
+
+    xgb_preds      = xgb_model.predict(X_2025_s)
+    ranker_scores  = xgb_ranker.predict(X_2025_s)
+    rf_win_proba   = rf_win.predict_proba(X_2025_s)[:, 1]
+    rf_top10_pred  = rf_top10.predict(X_2025_s)
 
     pred_df = ensemble_predict(
         xgb_preds, rf_win_proba,
-        df_2025[["Year", "Round", "EventName", "Driver", "Team"]],
+        df_2025_s[["Year", "Round", "EventName", "Driver", "Team"]],
+        ranker_raw_scores=ranker_scores,
     )
     pred_df["rf_win_proba"]   = rf_win_proba
     pred_df["rf_top10_pred"]  = rf_top10_pred

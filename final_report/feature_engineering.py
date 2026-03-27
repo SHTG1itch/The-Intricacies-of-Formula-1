@@ -26,43 +26,62 @@ HOW WE BEAT THE REFERENCE MODEL (mar-antaya/2025_f1_predictions):
     5. Validate with leave-one-season-out CV and report real out-of-sample
        metrics (winner accuracy, podium accuracy, position MAE).
 
-FEATURES (25 total after Q1 + Q2):
+ITERATION HISTORY:
+  v1 — 13 baseline features: grid position, FP best-lap deltas, sprint
+       positions, 5-race rolling form, circuit history.  Proved the
+       multi-circuit training approach soundly beats the reference model.
+  v2 — +12 features (25 total): FP2 sector splits, FP2 long-run race pace,
+       lap consistency, FP1→FP2 pace progression, qualifying time gap to
+       pole and to teammate, qualifying weather.  Meaningfully improved
+       top-10 Jaccard and podium accuracy.
+  v3 — +8 features (33 total, current): FP1/FP2 weather (track temp + wet
+       flag), FP3 Saturday long-run pace, qualifying air temperature,
+       circuit experience count, 3-race short rolling average.  Combined
+       with a 3-model ensemble (XGBoost regressor + XGBRanker + RF) that
+       rank-normalises all model outputs before blending.
 
-  ── Q1 BASELINE (13 features) ──────────────────────────────────────────
+FEATURES (33 total):
   fp1_pace_delta          best-lap delta vs session best in FP1 (s)
+  fp1_track_temp          FP1 track surface temperature (°C)
+  fp1_wet                 1 if FP1 session had rainfall
   fp2_pace_delta          best-lap delta vs session best in FP2 (s)
+  fp2_s1_delta            best Sector 1 time vs session best in FP2 (s)
+  fp2_s2_delta            best Sector 2 time vs session best in FP2 (s)
+  fp2_s3_delta            best Sector 3 time vs session best in FP2 (s)
+  fp2_long_run_delta      median long-run (≥5 lap) pace vs session median
+                          in FP2; best in-session proxy for race pace
+  fp2_consistency         std dev of FP2 quicklaps (lower = more consistent)
+  fp2_track_temp          FP2 track surface temp (°C) — Friday afternoon
+                          conditions closely match Sunday race-time temps
+  fp2_wet                 1 if FP2 session had rainfall (wet race-sim setup)
   fp3_pace_delta          best-lap delta vs session best in FP3 (s)
+  fp3_long_run_delta      median long-run (≥4 lap) pace vs session median
+                          in FP3; Saturday signal, fresher than FP2
+  fp_pace_progression     fp1_delta − fp2_delta: positive = driver improved
+                          vs the field from FP1 to FP2
   sprint_quali_pos        sprint qualifying finishing position (NaN if none)
   sprint_pos              sprint race finishing position (NaN if none)
   grid_position           official qualifying grid position
+  quali_gap_to_pole       seconds behind pole in qualifying (finer than rank)
+  quali_teammate_gap      driver vs fastest teammate in quali (car-normalised)
+  quali_track_temp        track surface temperature during qualifying (°C)
+  quali_air_temp          air temperature during qualifying (°C); proxy for
+                          tyre cooling rate and thermal degradation
+  quali_wet               1 if qualifying session had rainfall
+  rolling_avg_finish_3    driver's avg finishing pos, last 3 races
+                          (short window captures recent momentum)
   rolling_avg_finish_5    driver's avg finishing pos, last 5 races
   rolling_dnf_rate_5      fraction of last 5 races that were DNFs
   rolling_points_5        total points scored in last 5 races
   team_rolling_avg_5      team's avg finishing pos, last 5 races
   circuit_driver_avg_finish  driver's career avg finish at this circuit
   circuit_team_avg_finish    team's career avg finish at this circuit
+  circuit_experience      number of prior races by driver at this circuit
+                          (0 = first time; first-timers statistically
+                          underperform their qualifying position)
   IsSprintWeekend         1 if sprint format weekend, else 0
-
-  ── Q2 ENHANCEMENTS (12 new features, 25 total) ────────────────────────
-  fp2_s1_delta            best Sector 1 time vs session best in FP2 (s)
-  fp2_s2_delta            best Sector 2 time vs session best in FP2 (s)
-  fp2_s3_delta            best Sector 3 time vs session best in FP2 (s)
-  fp2_long_run_delta      median long-run (≥5 lap stint) pace vs session
-                          median in FP2; best in-session proxy for race pace
-  fp2_consistency         std dev of FP2 quicklaps (lower = more consistent)
-  fp_pace_progression     fp1_pace_delta − fp2_pace_delta; positive means
-                          the driver closed the gap to the field best from
-                          FP1 to FP2 (session-to-session improvement signal)
-  quali_gap_to_pole       absolute seconds behind pole in qualifying;
-                          finer signal than integer grid position
-  quali_teammate_gap      driver's quali time minus their fastest teammate's
-                          quali time (positive = slower than teammate)
-  quali_track_temp        track surface temperature during qualifying (°C)
-  quali_wet               1 if qualifying session had rainfall, else 0
-  season_pts_pct          driver's accumulated season points divided by
-                          (round_number × 25); 1.0 = winning every race
-  season_avg_finish       driver's average finishing pos so far this season
-                          (before current race)
+  season_pts_pct          season points / (races × 25) before this race
+  season_avg_finish       driver's avg finishing pos so far this season
 
 TARGET:
   finish_position   actual race finishing position (1 = winner)
@@ -329,6 +348,57 @@ def long_run_pace_delta(session, min_stint_laps=5):
         return {}
 
 
+def long_run_pace_delta_fp3(session, min_stint_laps=4):
+    """
+    Per-driver long-run pace from FP3 relative to session median.
+
+    v3 addition: FP3 is Saturday morning — closer to race time than FP2
+    Friday afternoon.  Teams often run short race-sim stints in FP3 after
+    setting up for qualifying, so the minimum stint threshold is 4 laps
+    (vs 5 for FP2) to capture more data on shorter sessions.
+
+    Returns dict: {driver_abbr: delta_seconds}
+      Negative = faster than session long-run average.
+      NaN = driver ran no qualifying-length stint (common on sprint weekends
+            where FP3 does not exist; session=None returns {} safely).
+
+    Implementation is identical to long_run_pace_delta but with a lower
+    min_stint_laps to reflect FP3's shorter duration.
+    """
+    if session is None:
+        return {}
+    try:
+        laps = session.laps.copy()
+        if laps.empty:
+            return {}
+        laps["LapTime_s"] = pd.to_timedelta(laps["LapTime"]).dt.total_seconds()
+        laps = laps.dropna(subset=["LapTime_s", "Stint"])
+        laps = laps[laps["PitInTime"].isna() & laps["PitOutTime"].isna()]
+        if laps.empty:
+            return {}
+        med = laps["LapTime_s"].median()
+        if pd.isna(med):
+            return {}
+        laps = laps[laps["LapTime_s"] < med * 1.12]
+
+        long_run_frames = []
+        for (driver, stint), group in laps.groupby(["Driver", "Stint"]):
+            if len(group) >= min_stint_laps:
+                long_run_frames.append(group)
+
+        if not long_run_frames:
+            return {}
+
+        lr = pd.concat(long_run_frames)
+        session_lr_median = lr["LapTime_s"].median()
+        driver_lr_median  = lr.groupby("Driver")["LapTime_s"].median()
+        return {d: round(m - session_lr_median, 3)
+                for d, m in driver_lr_median.items()}
+    except Exception as e:
+        print(f"    [warn] long_run_pace_delta_fp3: {e}")
+        return {}
+
+
 def lap_consistency(session):
     """
     Per-driver standard deviation of lap times across quicklaps in a session.
@@ -397,24 +467,35 @@ def quali_gap_to_pole_and_teammate(quali_session):
         return {}
 
 
-def get_quali_weather(quali_session):
+def get_session_weather(session):
     """
-    Return (track_temp_C, is_wet) from qualifying weather data.
+    Return (track_temp_C, air_temp_C, is_wet) from any FastF1 session's
+    weather_data attribute.  Works for FP1, FP2, FP3, qualifying, or sprint.
+
+    Previously named get_quali_weather() and only called for qualifying.
+    Renamed to generic form in v3 so FP1 and FP2 weather can also be
+    extracted — FP2 Friday afternoon temperature is a strong proxy for
+    Sunday race-time conditions, and FP1/FP2 wet flags reveal whether
+    teams had wet-weather running before the race.
+
+    Returns (np.nan, np.nan, 0) on any failure — the imputer fills
+    temperature NaNs with the training median (circuit-typical value).
 
     Ref: https://docs.fastf1.dev/core.html#fastf1.core.Session.weather_data
          Columns: TrackTemp, AirTemp, Rainfall (bool)
     """
-    if quali_session is None:
-        return np.nan, 0
+    if session is None:
+        return np.nan, np.nan, 0
     try:
-        wd = quali_session.weather_data
+        wd = session.weather_data
         if wd is None or wd.empty:
-            return np.nan, 0
+            return np.nan, np.nan, 0
         track_temp = float(wd["TrackTemp"].median()) if "TrackTemp" in wd.columns else np.nan
-        is_wet     = int(wd["Rainfall"].any()) if "Rainfall" in wd.columns else 0
-        return track_temp, is_wet
+        air_temp   = float(wd["AirTemp"].median())   if "AirTemp"   in wd.columns else np.nan
+        is_wet     = int(wd["Rainfall"].any())        if "Rainfall"  in wd.columns else 0
+        return track_temp, air_temp, is_wet
     except Exception:
-        return np.nan, 0
+        return np.nan, np.nan, 0
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -438,17 +519,26 @@ class RollingStats:
         self._season_finsh = defaultdict(list)
 
     def get_driver_rolling(self, driver):
-        hist = self._driver[driver][-self.window:]
-        if not hist:
+        # v3: added rolling_avg_finish_3 (3-race window) alongside the
+        # existing 5-race window.  Short window captures recent momentum
+        # better — a driver on a 3-race hot streak may be on a different
+        # trajectory than their 5-race average suggests.  Both windows
+        # complement each other: 3-race = signal, 5-race = stability.
+        hist5 = self._driver[driver][-self.window:]   # 5-race
+        hist3 = self._driver[driver][-3:]             # 3-race
+        if not hist5:
             return {
+                "rolling_avg_finish_3": np.nan,
                 "rolling_avg_finish_5": np.nan,
                 "rolling_dnf_rate_5":   np.nan,
                 "rolling_points_5":     np.nan,
             }
-        positions = [h[0] for h in hist if pd.notna(h[0])]
-        dnfs      = [h[2] for h in hist]
-        points    = [h[1] for h in hist if pd.notna(h[1])]
+        pos3      = [h[0] for h in hist3 if pd.notna(h[0])]
+        positions = [h[0] for h in hist5 if pd.notna(h[0])]
+        dnfs      = [h[2] for h in hist5]
+        points    = [h[1] for h in hist5 if pd.notna(h[1])]
         return {
+            "rolling_avg_finish_3": np.mean(pos3)      if pos3      else np.nan,
             "rolling_avg_finish_5": np.mean(positions) if positions else np.nan,
             "rolling_dnf_rate_5":   np.mean(dnfs)      if dnfs      else np.nan,
             "rolling_points_5":     np.sum(points)     if points    else np.nan,
@@ -507,7 +597,7 @@ class RollingStats:
 # ─────────────────────────────────────────────────────────────────
 
 class CircuitHistory:
-    """Historical avg finish at each circuit per driver and team."""
+    """Historical avg finish and experience count at each circuit per driver/team."""
 
     def __init__(self):
         self._driver = defaultdict(list)
@@ -520,6 +610,20 @@ class CircuitHistory:
     def get_team_avg(self, team, circuit):
         h = self._team[(team, circuit)]
         return np.mean(h) if h else np.nan
+
+    def get_driver_count(self, driver, circuit):
+        """
+        Number of prior races this driver has completed at this circuit.
+        Returns 0 for first-timers.
+
+        v3 addition: first-time drivers at a circuit statistically underperform
+        their qualifying position — they are unfamiliar with race-specific
+        braking points, kerbs, and safety-car restart zones.  The warm-up
+        years (2019-2021) correctly populate this count before the 2022
+        training window, so a driver who raced at Monza in 2021 and 2022
+        correctly shows experience=1 going into their 2022 Monza row.
+        """
+        return len(self._driver[(driver, circuit)])
 
     def update(self, race_results, circuit):
         for abbr, info in race_results.items():
@@ -599,9 +703,12 @@ def build_features(years, include_race_target=True):
             print(f"\n  R{round_num:02d} {event_name}"
                   f"{'  [SPRINT]' if is_sprint_wknd else ''}")
 
-            # ── Load FP sessions ───────────────────────────────────────────
-            fp1 = load_session(year, round_num, "FP1")
-            fp2 = load_session(year, round_num, "FP2")
+            # ── Load FP sessions (with weather for FP1/FP2 — v3) ──────────
+            # weather=True is required to populate session.weather_data for
+            # the new fp1_track_temp, fp1_wet, fp2_track_temp, fp2_wet features.
+            # FP3 does not need weather (fp3_long_run_delta is the only FP3 feature).
+            fp1 = load_session(year, round_num, "FP1", weather=True)
+            fp2 = load_session(year, round_num, "FP2", weather=True)
             fp3 = load_session(year, round_num, "FP3")
 
             sprint_quali = None
@@ -631,9 +738,16 @@ def build_features(years, include_race_target=True):
             fp2_lr       = long_run_pace_delta(fp2, min_stint_laps=5)
             fp2_consist  = lap_consistency(fp2)
 
+            # ── v3: FP1/FP2 session weather ────────────────────────────────
+            fp1_track_temp, _, fp1_wet        = get_session_weather(fp1)
+            fp2_track_temp, _, fp2_wet        = get_session_weather(fp2)
+
+            # ── v3: FP3 long-run (Saturday signal, fresher than FP2) ───────
+            fp3_lr = long_run_pace_delta_fp3(fp3, min_stint_laps=4)
+
             # ── Q2: qualifying gaps (pole, teammate) and weather ───────────
-            quali_gaps                = quali_gap_to_pole_and_teammate(quali)
-            quali_track_temp, q_wet   = get_quali_weather(quali)
+            quali_gaps                              = quali_gap_to_pole_and_teammate(quali)
+            quali_track_temp, quali_air_temp, q_wet = get_session_weather(quali)
 
             # ── Race results (target) ──────────────────────────────────────
             race_results = {}
@@ -675,70 +789,82 @@ def build_features(years, include_race_target=True):
                 abbr = str(drow["Abbreviation"])
                 team = str(drow.get("TeamName", ""))
 
-                # Q1 rolling features (state before this race)
+                # Rolling stats state before this race (no leakage)
                 drv_roll  = rolling.get_driver_rolling(abbr)
                 team_roll = rolling.get_team_rolling(team)
-                circ_drv  = circuit_hist.get_driver_avg(abbr, circuit)
-                circ_team = circuit_hist.get_team_avg(team, circuit)
-
-                # Q2 season features (state before this race)
                 season    = rolling.get_season_stats(abbr)
 
-                # Q2 session features
+                # Circuit history state before this race (no leakage)
+                circ_drv  = circuit_hist.get_driver_avg(abbr, circuit)
+                circ_team = circuit_hist.get_team_avg(team, circuit)
+                circ_exp  = circuit_hist.get_driver_count(abbr, circuit)
+
+                # Session features
                 fp2_sects = fp2_sectors.get(abbr, {})
                 fp2_lr_d  = fp2_lr.get(abbr, np.nan)
                 fp2_cons  = fp2_consist.get(abbr, np.nan)
                 fp1_d     = fp1_deltas.get(abbr, np.nan)
                 fp2_d     = fp2_deltas.get(abbr, np.nan)
-                # Pace progression: positive means driver closed the gap to
-                # field best from FP1 → FP2 (improvement signal)
+                # Positive progression = driver improved vs field from FP1 → FP2
                 progression = (fp1_d - fp2_d) if (pd.notna(fp1_d)
                                                    and pd.notna(fp2_d)) else np.nan
-
                 q_gaps    = quali_gaps.get(abbr, {})
 
                 row = {
                     # ── Identifiers (not model features) ──────────────────
-                    "Year":            year,
-                    "Round":           round_num,
-                    "EventName":       event_name,
-                    "Circuit":         circuit,
-                    "Driver":          abbr,
-                    "Team":            team,
+                    "Year":      year,
+                    "Round":     round_num,
+                    "EventName": event_name,
+                    "Circuit":   circuit,
+                    "Driver":    abbr,
+                    "Team":      team,
 
-                    # ── Q1 features ────────────────────────────────────────
-                    "IsSprintWeekend":          int(is_sprint_wknd),
-                    "fp1_pace_delta":           fp1_d,
-                    "fp2_pace_delta":           fp2_d,
-                    "fp3_pace_delta":           fp3_deltas.get(abbr, np.nan),
-                    "sprint_quali_pos":         sprint_quali_pos.get(abbr, np.nan),
-                    "sprint_pos":               sprint_pos_dict.get(abbr, np.nan),
-                    "grid_position":            grid_pos_dict.get(abbr, np.nan),
-                    **drv_roll,
-                    **team_roll,
+                    # ── Grid / qualifying position ─────────────────────────
+                    "IsSprintWeekend": int(is_sprint_wknd),
+                    "grid_position":   grid_pos_dict.get(abbr, np.nan),
+                    "sprint_quali_pos": sprint_quali_pos.get(abbr, np.nan),
+                    "sprint_pos":       sprint_pos_dict.get(abbr, np.nan),
+
+                    # ── FP best-lap pace deltas ────────────────────────────
+                    "fp1_pace_delta": fp1_d,
+                    "fp2_pace_delta": fp2_d,
+                    "fp3_pace_delta": fp3_deltas.get(abbr, np.nan),
+
+                    # ── FP2 session-derived features ───────────────────────
+                    "fp2_s1_delta":       fp2_sects.get("s1", np.nan),
+                    "fp2_s2_delta":       fp2_sects.get("s2", np.nan),
+                    "fp2_s3_delta":       fp2_sects.get("s3", np.nan),
+                    "fp2_long_run_delta": fp2_lr_d,
+                    "fp2_consistency":    fp2_cons,
+                    "fp_pace_progression": progression,
+
+                    # ── FP3 long-run (v3: Saturday signal, fresher) ────────
+                    "fp3_long_run_delta": fp3_lr.get(abbr, np.nan),
+
+                    # ── Qualifying gap features ────────────────────────────
+                    "quali_gap_to_pole":  q_gaps.get("gap_to_pole",  np.nan),
+                    "quali_teammate_gap": q_gaps.get("teammate_gap", np.nan),
+
+                    # ── Weather features (pre-race only, no leakage) ───────
+                    # v1/v2: only quali_track_temp and quali_wet
+                    # v3: added FP1/FP2 session weather and qualifying air temp
+                    "fp1_track_temp": fp1_track_temp,
+                    "fp1_wet":        fp1_wet,
+                    "fp2_track_temp": fp2_track_temp,
+                    "fp2_wet":        fp2_wet,
+                    "quali_track_temp": quali_track_temp,
+                    "quali_air_temp":   quali_air_temp,
+                    "quali_wet":        q_wet,
+
+                    # ── Rolling / season form ──────────────────────────────
+                    **drv_roll,   # rolling_avg_finish_3, _5, dnf_rate_5, points_5
+                    **team_roll,  # team_rolling_avg_5
+                    **season,     # season_pts_pct, season_avg_finish
+
+                    # ── Circuit history ────────────────────────────────────
                     "circuit_driver_avg_finish": circ_drv,
                     "circuit_team_avg_finish":   circ_team,
-
-                    # ── Q2 features ────────────────────────────────────────
-                    # FP2 sector-level pace (reveals track-specific strengths)
-                    "fp2_s1_delta":      fp2_sects.get("s1", np.nan),
-                    "fp2_s2_delta":      fp2_sects.get("s2", np.nan),
-                    "fp2_s3_delta":      fp2_sects.get("s3", np.nan),
-                    # FP2 long-run race-pace proxy
-                    "fp2_long_run_delta":  fp2_lr_d,
-                    # FP2 lap-time consistency (std dev of quicklaps)
-                    "fp2_consistency":     fp2_cons,
-                    # Session-to-session pace improvement
-                    "fp_pace_progression": progression,
-                    # Qualifying gap to pole (seconds, finer than rank)
-                    "quali_gap_to_pole":   q_gaps.get("gap_to_pole",  np.nan),
-                    # Qualifying gap vs fastest teammate (driver vs car)
-                    "quali_teammate_gap":  q_gaps.get("teammate_gap", np.nan),
-                    # Qualifying surface conditions
-                    "quali_track_temp":    quali_track_temp,
-                    "quali_wet":           q_wet,
-                    # Season-to-date performance (normalised)
-                    **season,
+                    "circuit_experience":        circ_exp,
                 }
 
                 if include_race_target and race_results:

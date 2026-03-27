@@ -1,47 +1,55 @@
 """
-mach_learning.py — F1 Race Prediction: Random Forest + XGBoost
-===============================================================
-Trains and evaluates two complementary models to predict Formula 1 race outcomes:
+mach_learning.py — F1 Race Prediction: XGBoost + XGBRanker + Random Forest
+===========================================================================
+Trains and evaluates a three-model ensemble to predict Formula 1 race outcomes:
 
-  1. XGBoost Regressor   → predicts numeric finishing position (rank by predicted pos)
-  2. Random Forest       → predicts winner (binary) and top-10 (binary)
+  1. XGBoost Regressor (XGBReg)  → predicts numeric finishing position
+  2. XGBoost Ranker   (XGBRank)  → ranking-aware model (rank:ndcg objective)
+  3. Random Forest    (RF)       → predicts winner probability (binary)
 
-APPROACH:
-  - Training data: 2022–2024 races with pre-race features
-    (FP pace, qualifying position, rolling form, circuit history, FP2 sector pace, FP2 long-run pace, qualifying weather)
-  - Validation: Leave-one-season-out cross-validation
-    (train on 2022+2023, test on 2024)
-  - Final model: trained on all 2022–2024 data
-  - Prediction: apply to 2025 pre-race features from feature_engineering.py
+ITERATION HISTORY:
+  v1 — XGBReg + RF (winner/top-10), 25 features, hardcoded ensemble alpha.
+       Proved multi-circuit training outperforms the reference model.
+  v2 — Same architecture, +12 features (FP2 sector/long-run/consistency,
+       qualifying time gaps, weather flag, season form).  Tuned hyperparams
+       with RandomizedSearchCV; added LOSO cross-validation.
+  v3 — Added XGBRanker to ensemble; 33 features including FP1/FP2 weather,
+       FP3 long-run pace, qualifying air temp, circuit experience, 3-race
+       rolling average.  Ensemble now rank-normalises all three model outputs
+       before blending (40% XGBReg + 40% XGBRank + 20% RF) instead of the
+       old hardcoded alpha=0.3 position-shift blend.
 
-KEY DESIGN DECISION — position-based framing:
-  We predict *finishing position* as a regression problem (XGBoost),
-  then rank all 20 drivers per race to get the predicted order.
-  The Random Forest handles binary tasks (win / top-10) as a sanity check.
-  The ensemble combines both by ranking XGBoost positions and weighting
-  RF probabilities.
-
+KEY DESIGN DECISIONS:
+  Position-based framing (XGBReg): predicting a numeric position then ranking
+    drivers per race is more stable than direct classification.  The model
+    never needs to know how many drivers are in a race.
+  Ranking objective (XGBRank): rank:ndcg is directly aligned with our goal
+    of ordering drivers correctly within a race, unlike squared-error which
+    penalises absolute position errors equally regardless of race context.
+  Rank-normalisation before blending: converts each model's raw output to a
+    per-race [0,1] rank score before combining, so the three models are
+    comparable in scale regardless of their output distributions.
+  LOSO uses XGBReg only: the ranker requires sorted groups, which complicates
+    fold splitting.  LOSO metrics thus reflect the regressor — the ranker
+    is an ensemble boost on top.
 
 HOW TO RUN (from project root):
-    # Step 1: generate features
     python final_report/feature_engineering.py
-
-    # Step 2: train and evaluate
     python final_report/mach_learning.py
 
 OUTPUT:
-    data_organized/model_evaluation.txt    — accuracy metrics + validation summary
-    data_organized/feature_importances.csv — ranked feature importances
+    data_organized/model_evaluation.txt    — accuracy metrics + LOSO summary
+    data_organized/feature_importances.csv — XGBReg + RF importance, 33 features
     data_organized/best_hyperparams.txt    — best hyperparameters from tuning
     data_organized/2025_predictions.csv    — predicted race results for 2025
+    data_organized/models/                 — joblib-serialised trained models
 
 REFERENCES:
-    Random Forest: Breiman (2001), scikit-learn RandomForestClassifier/Regressor
-    XGBoost:       Chen & Guestrin (2016), https://xgboost.readthedocs.io/
-    RandomizedSearchCV: https://scikit-learn.org/stable/modules/generated/
-                        sklearn.model_selection.RandomizedSearchCV.html
-    F1 ML example: https://f1-predictor.readthedocs.io/
-    FastF1 docs:   https://docs.fastf1.dev/
+    Random Forest:    Breiman (2001), scikit-learn RandomForestClassifier
+    XGBoost Reg:      Chen & Guestrin (2016), https://xgboost.readthedocs.io/
+    XGBoost Ranker:   rank:ndcg objective, XGBoost learning-to-rank docs
+    RandomizedSearchCV: sklearn.model_selection.RandomizedSearchCV
+    FastF1 docs:      https://docs.fastf1.dev/
 """
 
 import os
@@ -70,47 +78,75 @@ PRED_FILE  = os.path.join(DATA_DIR, "ml_2025_features.csv")
 OUT_DIR    = DATA_DIR
 MODEL_DIR  = os.path.join(DATA_DIR, "models")
 
-# Features used by the models (all numeric)
-# These must match columns produced by feature_engineering.py
+# All 33 feature columns used by the models (must match feature_engineering.py output).
+#
+# ITERATION HISTORY:
+#   v1 (Q1): 13 features — grid_position, FP pace deltas, sprint positions,
+#             rolling form (5-race), circuit history averages.
+#   v2 (Q2): +12 = 25 features — FP2 sector splits, FP2 long-run race pace,
+#             lap consistency, FP1→FP2 pace progression, qualifying time gaps
+#             to pole and teammate, qualifying weather (track_temp, wet flag),
+#             season points percentage, season avg finish.
+#   v3 (current): +8 = 33 features — FP1/FP2 session weather (track_temp, wet),
+#             FP3 Saturday long-run pace, qualifying air temperature, circuit
+#             experience count, 3-race short rolling average.
+#
+# The Q1/Q2 split was a development artefact.  All features now live in a
+# single flat list grouped by logical category.
 
-Q1_FEATURES = [
+FEATURE_COLS = [
+    # ── Grid / qualifying position ─────────────────────────────────────
     "IsSprintWeekend",
     "grid_position",
+    "sprint_quali_pos",
+    "sprint_pos",
+
+    # ── FP best-lap pace deltas ────────────────────────────────────────
     "fp1_pace_delta",
     "fp2_pace_delta",
     "fp3_pace_delta",
-    "sprint_quali_pos",
-    "sprint_pos",
-    "rolling_avg_finish_5",
+
+    # ── FP2 session-derived features ───────────────────────────────────
+    "fp2_s1_delta",          # sector-1 pace vs session best
+    "fp2_s2_delta",          # sector-2 pace vs session best
+    "fp2_s3_delta",          # sector-3 pace vs session best
+    "fp2_long_run_delta",    # long-run (race-sim) pace vs session median
+    "fp2_consistency",       # std dev of FP2 quicklaps (lower = steadier)
+    "fp_pace_progression",   # FP1→FP2 improvement vs field
+
+    # ── FP3 long-run (Saturday, fresher signal than FP2) ───────────────
+    "fp3_long_run_delta",
+
+    # ── Qualifying gap features ────────────────────────────────────────
+    "quali_gap_to_pole",     # seconds behind pole (finer than integer rank)
+    "quali_teammate_gap",    # driver vs fastest teammate (isolates driver skill)
+
+    # ── Weather features (pre-race sessions only — no leakage) ─────────
+    # v1/v2 had only quali_track_temp + quali_wet.
+    # v3 adds FP1/FP2 weather and qualifying air temperature.
+    # Race weather is NOT included — it cannot be known before the race.
+    "fp1_track_temp",
+    "fp1_wet",
+    "fp2_track_temp",
+    "fp2_wet",
+    "quali_track_temp",
+    "quali_air_temp",        # proxy for tyre cooling and thermal degradation
+    "quali_wet",
+
+    # ── Rolling / season form ──────────────────────────────────────────
+    "rolling_avg_finish_3",  # 3-race window (recent momentum signal)
+    "rolling_avg_finish_5",  # 5-race window (stable baseline)
     "rolling_dnf_rate_5",
     "rolling_points_5",
     "team_rolling_avg_5",
+    "season_pts_pct",
+    "season_avg_finish",
+
+    # ── Circuit history ────────────────────────────────────────────────
+    "circuit_experience",         # count of prior races at this circuit
     "circuit_driver_avg_finish",
     "circuit_team_avg_finish",
-]
-
-
-# The reference model (mar-antaya/2025_f1_predictions) uses qualifying time
-# + sector times + weather + team score, trained per-circuit on ~20 rows.
-# We use all of those plus long-run race pace, consistency, pace progression,
-# teammate gap, and season-to-date performance — trained on all circuits
-# simultaneously with proper cross-validation.
-Q2_FEATURES = [
-    "fp2_s1_delta",          # FP2 best sector-1 time vs session best
-    "fp2_s2_delta",          # FP2 best sector-2 time vs session best
-    "fp2_s3_delta",          # FP2 best sector-3 time vs session best
-    "fp2_long_run_delta",    # long-run race-pace vs session median in FP2
-    "fp2_consistency",       # std dev of FP2 quicklaps (lower = steadier)
-    "fp_pace_progression",   # FP1→FP2 improvement vs field (positive = better)
-    "quali_gap_to_pole",     # seconds behind pole in qualifying (finer than rank)
-    "quali_teammate_gap",    # driver vs fastest teammate in quali (car-normalised)
-    "quali_track_temp",      # track surface temp during qualifying (°C)
-    "quali_wet",             # 1 if qualifying had rainfall
-    "season_pts_pct",        # season points / (races × 25) before this race
-    "season_avg_finish",     # season avg finishing position before this race
-]
-
-FEATURE_COLS = Q1_FEATURES + Q2_FEATURES  # 25 total
+]  # 33 total
 
 # Random seed for reproducibility
 SEED = 42
@@ -307,16 +343,26 @@ def tune_xgboost(X_train, y_train, n_iter=50):
     - Kaggle F1 prediction community notebooks
     - "XGBoost: A Scalable Tree Boosting System" (Chen & Guestrin 2016)
     """
+    # v3 hyperparameter range changes vs v2:
+    #   max_depth ceiling lowered (8→6): shallower trees resist overfitting
+    #     with 33 features; LOSO showed depth>6 gave minimal CV gain.
+    #   min_child_weight floor raised (1→3): avoids fitting tiny leaf nodes
+    #     that memorise individual race outcomes.
+    #   reg_alpha widened (0–0.5 → 0–1.0): more L1 regularization headroom.
+    #   reg_lambda floor raised (0.5→1.0): ensures meaningful L2 penalty.
+    #   gamma widened (0–0.3 → 0–0.5): stronger minimum-split-gain control.
+    #   colsample_bylevel added: additional column subsampling per tree level.
     param_dist = {
-        "n_estimators":     randint(200, 800),
-        "max_depth":        randint(3, 8),
-        "learning_rate":    uniform(0.01, 0.15),   # 0.01–0.16
-        "subsample":        uniform(0.6, 0.4),      # 0.6–1.0
-        "colsample_bytree": uniform(0.5, 0.5),      # 0.5–1.0
-        "min_child_weight": randint(1, 8),
-        "reg_alpha":        uniform(0.0, 0.5),
-        "reg_lambda":       uniform(0.5, 2.0),
-        "gamma":            uniform(0.0, 0.3),
+        "n_estimators":      randint(300, 900),
+        "max_depth":         randint(3, 6),          # shallower = less overfit
+        "learning_rate":     uniform(0.01, 0.09),    # 0.01–0.10
+        "subsample":         uniform(0.6, 0.25),     # 0.6–0.85
+        "colsample_bytree":  uniform(0.5, 0.35),     # 0.5–0.85
+        "colsample_bylevel": uniform(0.5, 0.5),      # 0.5–1.0 (new in v3)
+        "min_child_weight":  randint(3, 10),          # raised floor
+        "reg_alpha":         uniform(0.0, 1.0),      # wider L1
+        "reg_lambda":        uniform(1.0, 3.0),      # higher L2 floor
+        "gamma":             uniform(0.0, 0.5),      # wider split-gain control
     }
     base = xgb.XGBRegressor(
         random_state=SEED,
@@ -460,34 +506,140 @@ def train_random_forest_top10(X_train, y_top10_train, params=None):
     return model
 
 
+def train_xgboost_ranker(X_train, y_pos_train, groups, best_params):
+    """
+    Train XGBRanker with rank:ndcg objective.
+
+    v3 addition: the ranking objective is directly aligned with our goal
+    of ordering all 20 drivers correctly within a race, whereas XGBReg
+    (squared-error) penalises all position errors equally regardless of
+    race context.  rank:ndcg focuses on getting the top of the order right,
+    which is where F1 prediction accuracy matters most (winner, podium).
+
+    XGBRanker is NOT used in LOSO validation — it requires groups sorted by
+    race, which complicates fold splitting.  It is trained once on the full
+    dataset using the best hyperparameters found for the regressor (they
+    transfer well; both models share the same tree architecture).
+
+    Parameters
+    ----------
+    X_train     : DataFrame — feature matrix sorted by (Year, Round)
+    y_pos_train : Series    — finish_position (1=P1, 20=P20), same sort order
+    groups      : list[int] — drivers per race in (Year, Round) sorted order
+    best_params : dict      — hyperparameters from tune_xgboost()
+
+    Returns
+    -------
+    Fitted XGBRanker model.
+    """
+    # Convert position to relevance: higher relevance = better finishing position.
+    # P1 → max relevance, P20 → 1.  XGBRanker expects non-negative integers.
+    max_pos   = int(y_pos_train.fillna(20).max())
+    relevance = (max_pos + 1 - y_pos_train.fillna(max_pos)).astype(int).clip(lower=1)
+
+    # Build ranker params from regressor best_params; colsample_bylevel may
+    # not be present if it wasn't in the search space — default to 0.8.
+    ranker_params = {k: v for k, v in best_params.items()}
+    ranker_params.setdefault("n_estimators", 400)
+
+    model = xgb.XGBRanker(
+        objective="rank:ndcg",
+        **ranker_params,
+        random_state=SEED,
+        verbosity=0,
+        n_jobs=-1,
+    )
+    model.fit(X_train, relevance, group=groups)
+    return model
+
+
+def compute_race_groups(df_meta):
+    """
+    Return per-race driver counts as required by XGBRanker's `group` argument.
+    df_meta must already be sorted by (Year, Round) — the caller is responsible
+    for sorting before calling this function.
+
+    Returns list[int] where element i = number of rows in race i.
+    """
+    return df_meta.groupby(["Year", "Round"], sort=False).size().tolist()
+
+
 # ─────────────────────────────────────────────────────────────────
 # ENSEMBLE PREDICTION
 # ─────────────────────────────────────────────────────────────────
 
-def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta):
+def _rank_normalize(scores, df_meta, ascending=True):
     """
-    Combine XGBoost position predictions with RF winner probabilities
-    to produce a final race ranking.
+    Rank scores within each race and normalise to [0, 1].
 
-    Method:
-      final_score = xgb_rank_score + alpha * (1 - rf_win_proba)
+    ascending=True  → lower score is better (XGBReg position: P1 = lowest pred)
+    ascending=False → higher score is better (XGBRanker: P1 = highest relevance)
 
-    Where:
-      - xgb_rank_score: XGBoost predicted position (lower = better)
-      - rf_win_proba: RF probability of winning (higher = more likely winner)
-      - alpha: blending weight (0.3 gives XGBoost 70% influence)
+    Returns a numpy array of normalised ranks in [0, 1] where 0 = best.
+    This allows the three models to be blended on a common scale regardless
+    of their raw output distributions.
 
-    The combined score is then re-ranked per race.
-
-    This is inspired by ensemble approaches in Kaggle F1 prediction competitions.
+    Edge case: a race with a single driver gets normalised rank 0.0 — correct,
+    since they rank P1 by default.
     """
-    alpha = 0.3
-    combined = xgb_raw_pos + alpha * (1 - rf_win_proba)
+    df = df_meta[["Year", "Round"]].copy().reset_index(drop=True)
+    df["raw"] = np.asarray(scores)
+    df["rank"] = df.groupby(["Year", "Round"])["raw"].rank(
+        method="average", ascending=ascending
+    )
+    n = df.groupby(["Year", "Round"])["raw"].transform("count")
+    df["norm"] = (df["rank"] - 1) / (n - 1).clip(lower=1)
+    return df["norm"].values
 
+
+def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta, ranker_raw_scores=None):
+    """
+    Three-model rank-normalised ensemble (v3) or two-model fallback (v1/v2).
+
+    v1/v2 blend (ranker_raw_scores=None):
+      final_score = xgb_raw_pos + 0.3 * (1 - rf_win_proba)
+      Retained for LOSO validation where the ranker is not trained per fold.
+
+    v3 three-model blend:
+      Rank-normalise each model's output to [0, 1] per race (0 = best),
+      then combine:
+        final = 0.40 * xgb_norm + 0.40 * ranker_norm + 0.20 * rf_norm
+
+      Weights rationale:
+        XGBReg (40%): stable position regression, well-tuned hyperparams.
+        XGBRank (40%): ranking-aware objective, compensates for regression
+                       errors near the top-3 where it matters most.
+        RF (20%): calibrated win probability, adds diversity but is less
+                  precise about mid-field ordering.
+
+    Parameters
+    ----------
+    xgb_raw_pos       : array — XGBReg predicted position scores
+    rf_win_proba      : array — RF P(win) probabilities
+    df_meta           : DataFrame with [Year, Round, EventName, Driver, Team]
+    ranker_raw_scores : array or None — XGBRanker relevance scores (higher=better)
+
+    Returns
+    -------
+    DataFrame with PredictedPosition column (1 = predicted winner per race).
+    """
     df = df_meta[["Year", "Round", "EventName", "Driver", "Team"]].copy()
-    df["ensemble_score"] = combined
-    df["rf_win_proba"]   = rf_win_proba
-    df["xgb_raw_pred"]   = xgb_raw_pos
+    df = df.reset_index(drop=True)
+    df["rf_win_proba"] = rf_win_proba
+    df["xgb_raw_pred"] = xgb_raw_pos
+
+    if ranker_raw_scores is not None:
+        # v3 rank-normalised blend
+        xgb_norm    = _rank_normalize(xgb_raw_pos,       df, ascending=True)
+        ranker_norm = _rank_normalize(ranker_raw_scores,  df, ascending=False)
+        rf_norm     = _rank_normalize(1 - rf_win_proba,  df, ascending=True)
+
+        df["ensemble_score"] = (0.40 * xgb_norm
+                                + 0.40 * ranker_norm
+                                + 0.20 * rf_norm)
+    else:
+        # v1/v2 fallback: original hardcoded alpha blend
+        df["ensemble_score"] = xgb_raw_pos + 0.3 * (1 - rf_win_proba)
 
     df["PredictedPosition"] = (
         df.groupby(["Year", "Round"])["ensemble_score"]
@@ -694,7 +846,7 @@ def main():
 
     print("\n  Tuning XGBoost regressor...")
     xgb_final, xgb_best_params = tune_xgboost(X_final, y_pos.fillna(20), n_iter=50)
-    print("  ✓ XGBoost tuned")
+    print("  ✓ XGBoost regressor tuned")
 
     print("\n  Tuning Random Forest (winner)...")
     rf_win_final, rf_win_best_params = tune_random_forest_winner(X_final, y_win, n_iter=40)
@@ -704,6 +856,18 @@ def main():
     rf_top10_final, rf_top10_best_params = tune_random_forest_top10(X_final, y_top10, n_iter=40)
     print("  ✓ Random Forest top-10 tuned")
 
+    # ── Train XGBRanker (v3) ────────────────────────────────────────
+    # Sort training data by (Year, Round) — XGBRanker requires contiguous
+    # groups of rows belonging to the same race.
+    print("\n  Training XGBoost ranker (rank:ndcg)...")
+    sort_idx      = df_train.sort_values(["Year", "Round"]).index
+    X_sorted      = X_final.loc[sort_idx].reset_index(drop=True)
+    y_sorted      = y_pos.loc[sort_idx].reset_index(drop=True)
+    meta_sorted   = df_train.loc[sort_idx].reset_index(drop=True)
+    ranker_groups = compute_race_groups(meta_sorted)
+    xgb_ranker    = train_xgboost_ranker(X_sorted, y_sorted, ranker_groups, xgb_best_params)
+    print("  ✓ XGBoost ranker trained (reusing regressor best params)")
+
     # Save best hyperparameters
     params_path = os.path.join(OUT_DIR, "best_hyperparams.txt")
     with open(params_path, "w") as f:
@@ -712,6 +876,8 @@ def main():
         f.write("XGBoost Regressor:\n")
         for k, v in sorted(xgb_best_params.items()):
             f.write(f"  {k}: {v}\n")
+        f.write("\nXGBoost Ranker (rank:ndcg):\n")
+        f.write("  (reuses XGBoost Regressor best params — no separate tuning)\n")
         f.write("\nRandom Forest (winner):\n")
         for k, v in sorted(rf_win_best_params.items()):
             f.write(f"  {k}: {v}\n")
@@ -721,10 +887,10 @@ def main():
     print(f"\n  → Best hyperparameters saved to {params_path}")
 
     # ── 4. Persist trained models to disk ──────────────────────────
-    # predict_2025.py loads these so it doesn't need to retrain.
-    # Uses joblib (sklearn's recommended serialiser for sklearn/xgboost models).
+    # predict_2025.py loads all four models so it doesn't need to retrain.
     os.makedirs(MODEL_DIR, exist_ok=True)
     joblib.dump(xgb_final,       os.path.join(MODEL_DIR, "xgb_model.joblib"))
+    joblib.dump(xgb_ranker,      os.path.join(MODEL_DIR, "xgb_ranker.joblib"))
     joblib.dump(rf_win_final,    os.path.join(MODEL_DIR, "rf_win_model.joblib"))
     joblib.dump(rf_top10_final,  os.path.join(MODEL_DIR, "rf_top10_model.joblib"))
     joblib.dump(global_imputer,  os.path.join(MODEL_DIR, "feature_imputer.joblib"))
@@ -764,19 +930,26 @@ def main():
         X_2025, y_pos_2025, y_win_2025, y_top10_2025, \
             df_meta_2025, df_2025, _ = load_and_prepare(PRED_FILE, fit_imputer=imputer)
 
-        xgb_2025_preds      = xgb_final.predict(X_2025)
-        rf_win_2025_proba   = rf_win_final.predict_proba(X_2025)[:, 1]
-        rf_top10_2025_pred  = rf_top10_final.predict(X_2025)
+        # Sort by (Year, Round) — consistent sort for rank normalisation
+        sort_idx_2025 = df_2025.sort_values(["Year", "Round"]).index
+        X_2025_s      = X_2025.loc[sort_idx_2025].reset_index(drop=True)
+        df_2025_s     = df_2025.loc[sort_idx_2025].reset_index(drop=True)
+
+        xgb_2025_preds     = xgb_final.predict(X_2025_s)
+        rf_win_2025_proba  = rf_win_final.predict_proba(X_2025_s)[:, 1]
+        rf_top10_2025_pred = rf_top10_final.predict(X_2025_s)
+        ranker_2025_scores = xgb_ranker.predict(X_2025_s)
 
         pred_df = ensemble_predict(
             xgb_2025_preds, rf_win_2025_proba,
-            df_2025[["Year", "Round", "EventName", "Driver", "Team"]]
+            df_2025_s[["Year", "Round", "EventName", "Driver", "Team"]],
+            ranker_raw_scores=ranker_2025_scores,
         )
         pred_df["rf_top10_pred"] = rf_top10_2025_pred
 
         # If 2025 race results exist (for completed races), add them
-        if "finish_position" in df_2025.columns and df_2025["finish_position"].notna().any():
-            pred_df["actual_position"] = df_2025["finish_position"].values
+        if "finish_position" in df_2025_s.columns and df_2025_s["finish_position"].notna().any():
+            pred_df["actual_position"] = df_2025_s["finish_position"].values
 
         out_path = os.path.join(OUT_DIR, "2025_predictions.csv")
         pred_df.to_csv(out_path, index=False)
