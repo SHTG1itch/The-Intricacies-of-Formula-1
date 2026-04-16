@@ -11,8 +11,7 @@ this file is meant to answer (or support) one of our four research questions:
     RQ4  — Can we predict the WDC winner? Is it skill, the car, or something else?
 
 The numbering jumps from RQ2.1 to RQ4 intentionally — RQ2.1 is a sub-question of RQ2,
-not a stand-alone third question. The presentation order follows the narrative arc of
-the research paper.
+not a stand-alone third question. 
 
 Run from the repo root:
     python final_report/generate_all_plots.py
