@@ -1,0 +1,36 @@
+Best Hyperparameters (RandomizedSearchCV)
+=======================================================
+
+XGBoost Regressor:
+  colsample_bylevel: 0.5907787080486061
+  colsample_bynode: 0.808057196545925
+  colsample_bytree: 0.48514724449706276
+  gamma: 0.11105981875361631
+  learning_rate: 0.005257535444361319
+  max_depth: 3
+  min_child_weight: 10
+  n_estimators: 849
+  reg_alpha: 0.6177613712209028
+  reg_lambda: 2.395473066171981
+  subsample: 0.8753352004867391
+
+Random Forest (winner):
+  criterion: entropy
+  max_depth: 10
+  max_features: 0.4
+  max_samples: 0.8032403175027591
+  min_samples_leaf: 10
+  n_estimators: 398
+
+Random Forest (top-10):
+  criterion: gini
+  max_depth: None
+  max_features: log2
+  max_samples: 0.6545980821176709
+  min_samples_leaf: 8
+  n_estimators: 572
+
+Bayesian Model Averaging Weights (from LOSO):
+  w_xgb: 0.2121
+  w_ranker: 0.3939
+  w_rf: 0.3939

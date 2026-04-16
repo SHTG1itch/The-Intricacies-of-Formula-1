@@ -58,7 +58,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # so we can impo
 # import from mach_learning - everything lives there so we don't duplicate code across files
 # having it centralised also means if we tweak ensemble_predict it affects both predict scripts
 from mach_learning import (
-    FEATURE_COLS,              # the 34-column list - must match what feature_engineering.py wrote
+    FEATURE_COLS,              # the 44-column list - must match what feature_engineering.py wrote
     ensemble_predict,          # the three-model blend: xgb regressor + ranker + RF
     winner_accuracy,           # did we call P1 right?
     podium_accuracy,           # how much of the top-3 did we get right?

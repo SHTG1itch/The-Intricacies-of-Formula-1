@@ -59,7 +59,7 @@ MODEL_DIR  = os.path.join(DATA_DIR, "models")
 SEED = 42  # same seed everywhere, makes results reproducible across runs
 # Basically I'm trying to make it so that XGBoost, RandomForest and randomizeed search use the same random sequence
 # This lets me tune hyperparameters
-# 33 features - must exactly match what feature_engineering.py writes out
+# 44 features - must exactly match what feature_engineering.py writes out
 # grouped by category for readability, not for any ML reason
 # if you change these you also have to change feature_engineering.py or models won't load
 FEATURE_COLS = [
@@ -68,6 +68,8 @@ FEATURE_COLS = [
     "grid_position",         # official qualifying position(not sprint quali); single most predictive feature
     "sprint_quali_pos",      # sprint qualifying position (NaN if not a sprint weekend)
     "sprint_pos",            # sprint race position (NaN if not a sprint weekend)
+    "is_front_row",          # 1 if starting P1 or P2; front row starters win ~70% of races historically
+    "grid_position_pct",     # grid_pos / field_size normalised to [0,1]; handles variable field sizes cleanly
 
     # ── free practice best-lap deltas (seconds behind session best) ────────
     # these answer: how quick was the car vs the field in each session? and how well did the teams set up the car?
@@ -98,6 +100,7 @@ FEATURE_COLS = [
     "quali_gap_to_pole",     # driver's best quali lap minus pole lap in seconds
     "quali_teammate_gap",    # driver vs fastest teammate in qualifying (seconds)
     "q3_appearance",         # 1 if driver made it to Q3, 0 if knocked out in Q1/Q2
+    "quali_gap_pct",         # gap_to_pole / pole_time: scale-invariant across circuits and regulation changes
 
     # ── session weather features (pre-race only; race weather = data leakage) ──
     # FP2 Friday afternoon track temp is a reasonable comparison and prediction for Sunday conditions
@@ -114,22 +117,32 @@ FEATURE_COLS = [
     # ── rolling form features (driver momentum) ────────────────────────────
     # 3-race window: captures very recent form, noisier but more current
     # 5-race window: smoother baseline, better for mid-season trends(driver performance fluctuates A LOT)
+    # 10-race window: longer trend that smooths anomalies; good for reliability patterns over a half-season
     # dnf_rate_5 is the reliability/bad luck signal - teams with mechanical issues score 0
+    # win_rate and podium_rate capture dominant-car phases better than avg finish alone
+    # (VER 2023: avg finish ~1.3 but win_rate_5 often 1.0 - a much cleaner dominance signal)
     "rolling_avg_finish_3",  # mean finish position over last 3 races
     "rolling_avg_finish_5",  # mean finish position over last 5 races
     "rolling_dnf_rate_5",    # fraction of last 5 races ending in DNF/retirement
     "rolling_points_5",      # total championship points scored in last 5 races
+    "rolling_win_rate_5",    # fraction of last 5 races won; strong signal in dominant-car seasons
+    "driver_podium_rate_5",  # fraction of last 5 races finishing P1/P2/P3
+    "rolling_avg_finish_10", # mean finish over last 10 races; longer horizon than 5-race window
+    "rolling_points_10",     # total points over last 10 races; captures sustained scoring pace
+    "driver_vs_team_avg_delta", # driver rolling_avg_finish_5 minus team_rolling_avg_5; negative = outperforming car
     "team_rolling_avg_5",    # team's average finish over last 5 (car competitiveness signal)
     "season_pts_pct",        # driver's season pts divided by (races_so_far * 25)
     "season_avg_finish",     # driver's mean finish position so far this season
+    "season_wins_pct",       # wins / races_so_far this season; identifies when a driver is in a dominant run
 
     # ── circuit history features ───────────────────────────────────────────
     # first-time drivers at a circuit consistently underperform vs their qualifying position(obviously)
     # circuit_team_avg captures track-specific setup knowledge accumulated over years
-    "circuit_experience",         # how many times has this driver raced at this circuit
-    "circuit_driver_avg_finish",  # driver's historical mean finish at this circuit
-    "circuit_team_avg_finish",    # team's historical mean finish at this circuit
-]  # 34 total (added q3_appearance in v4)
+    "circuit_experience",              # how many times has this driver raced at this circuit
+    "circuit_driver_avg_finish",       # driver's historical mean finish at this circuit
+    "circuit_team_avg_finish",         # team's historical mean finish at this circuit
+    "driver_circuit_positions_gained", # avg (grid_pos - finish_pos) at this circuit; positive = gains places in races here
+]  # 44 total - started with 34, added 10 more after noticing the model kept missing dominant-car seasons like VER 2023
 
 # F1 points — used for championship projection in predict_2025 and predict_2026
 # Maps race standings to points granted
@@ -157,7 +170,7 @@ def load_and_prepare(filepath, fit_imputer=None):
     # (ex. a driver who missed FP2 entirely gets a very large delta)
     # ref: https://scikit-learn.org/stable/modules/impute.html#univariate-imputation
     if fit_imputer is None:
-        imputer = SimpleImputer(strategy="median")  # fit on this data
+        imputer = SimpleImputer(strategy="median", keep_empty_features=True)  # fit on this data; keep_empty_features=True preserves all-NaN columns (e.g. sprint cols on non-sprint data) so shape always matches FEATURE_COLS
         X = pd.DataFrame(imputer.fit_transform(X_raw), columns=FEATURE_COLS)
     else:
         imputer = fit_imputer  # reuse training-set fitted imputer
@@ -431,7 +444,7 @@ def average_position_mae(df_meta, y_pred_pos, y_true_pos):
 # Our model training
 # ──────────────────────────────────
 
-def tune_xgboost(X_train, y_train, n_iter=50):
+def tune_xgboost(X_train, y_train, n_iter=80):
     # RandomizedSearchCV over XGBoost hyperparameter space
     # why randomized and not grid search? grid is O(n^k) - too slow with this many params
     # ref: Bergstra & Bengio 2012 "Random Search for Hyper-Parameter Optimization"
@@ -484,7 +497,7 @@ def tune_xgboost(X_train, y_train, n_iter=50):
     return search.best_estimator_, search.best_params_
 
 
-def tune_random_forest_winner(X_train, y_win_train, n_iter=40):
+def tune_random_forest_winner(X_train, y_win_train, n_iter=60):
     # winner classification is a heavily imbalanced problem (~1 positive per 20 rows)
     # class_weight='balanced_subsample' rebalances at each tree rather than globally
     # this is better than 'balanced' for large forests according to sklearn docs:
@@ -525,7 +538,7 @@ def tune_random_forest_winner(X_train, y_win_train, n_iter=40):
     return search.best_estimator_, search.best_params_
 
 
-def tune_random_forest_top10(X_train, y_top10_train, n_iter=40):
+def tune_random_forest_top10(X_train, y_top10_train, n_iter=60):
     # top-10 classification: roughly 50% positive rate, less imbalanced than winner
     # same parameter space as winner RF, still using balanced_subsample for consistency
 
@@ -611,7 +624,7 @@ def train_random_forest_top10(X_train, y_top10_train, params=None):
     return model
 
 
-def train_xgboost_ranker(X_train, y_pos_train, groups, best_params):
+def train_xgboost_ranker(X_train, y_pos_train, groups, best_params=None):
     # XGBRanker with rank:ndcg objective
     # There's a key difference from regression, instead of minimizing position error absolutely,
     # the ranker optimizes NDCG (Normalized Discounted Cumulative Gain) which measures
@@ -625,8 +638,15 @@ def train_xgboost_ranker(X_train, y_pos_train, groups, best_params):
     max_pos   = int(y_pos_train.fillna(20).max())
     relevance = (max_pos + 1 - y_pos_train.fillna(max_pos)).astype(int).clip(lower=1)
 
-    # reuse regressor hyperparams - both use the same underlying tree structure and it makes stuff easier for me 
+    # reuse regressor hyperparams - both use the same underlying tree structure and it makes stuff easier for me
     # the objective changes but depth/learning rate/regularization translate well
+    # if best_params is None (called from LOSO loop before tuning runs) fall back to tested defaults
+    if best_params is None:
+        best_params = {
+            "n_estimators": 400, "max_depth": 4, "learning_rate": 0.04,
+            "subsample": 0.75, "colsample_bytree": 0.70, "colsample_bylevel": 0.80,
+            "min_child_weight": 5, "reg_alpha": 0.3, "reg_lambda": 2.0, "gamma": 0.1,
+        }
     ranker_params = dict(best_params)
     ranker_params.setdefault("n_estimators", 500)       # default if not in best_params
     ranker_params.setdefault("colsample_bylevel", 0.8)  # might be missing from older tuning runs
@@ -774,7 +794,7 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         X_te = X_train_all[test_mask]
 
         # fit imputer only on training fold (never let test data influence imputation)
-        imp = SimpleImputer(strategy="median")
+        imp = SimpleImputer(strategy="median", keep_empty_features=True)
         X_tr = pd.DataFrame(imp.fit_transform(X_tr), columns=FEATURE_COLS)
         X_te = pd.DataFrame(imp.transform(X_te),     columns=FEATURE_COLS)
 
@@ -792,31 +812,54 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         rf_win_mod = train_random_forest_winner(X_tr, y_win_tr)
         rf_top10   = train_random_forest_top10(X_tr, y_top10_tr)
 
+        # train ranker on the same fold - XGBRanker needs data sorted by race for the group arg
+        # actually train it per fold now instead of approximating with a 1.07x XGBReg bonus
+        meta_tr_fold  = df_train[train_mask][["Year", "Round"]].reset_index(drop=True)
+        sort_idx_fold = meta_tr_fold.sort_values(["Year", "Round"]).index
+        X_tr_srt      = X_tr.loc[sort_idx_fold].reset_index(drop=True)
+        y_tr_srt      = y_pos_tr.loc[sort_idx_fold].reset_index(drop=True)
+        meta_tr_srt   = meta_tr_fold.loc[sort_idx_fold].reset_index(drop=True)
+        loso_groups   = compute_race_groups(meta_tr_srt)
+        ranker_fold   = train_xgboost_ranker(X_tr_srt, y_tr_srt, loso_groups, best_params=None)
+
         # predict on holdout
-        xgb_preds    = xgb_model.predict(X_te)
-        rf_proba     = rf_win_mod.predict_proba(X_te)[:, 1]
+        xgb_preds     = xgb_model.predict(X_te)
+        rf_proba      = rf_win_mod.predict_proba(X_te)[:, 1]
+        ranker_scores = ranker_fold.predict(X_te)
 
         # rf as position score: invert probability so lower = more likely winner
-        rf_as_pos = 1.0 - rf_proba
+        rf_as_pos     = 1.0 - rf_proba
+        # ranker outputs relevance (higher = better) so negate for idxmin() winner detection
+        ranker_as_pos = -ranker_scores
 
-        # per-model winner accuracy for BMA weight computation
-        _, n_xgb, n_tot = winner_accuracy(meta_te, xgb_preds, y_pos_te)
-        _, n_rf,  _     = winner_accuracy(meta_te, rf_as_pos,  y_pos_te)
-        # approximate ranker performance - we don't train ranker per fold (needs sorted groups)
-        # using XGBReg + small bonus as proxy (ranker is usually 5-10% better on winner accuracy)
-        # TODO: actually implement per-fold ranker if time allows
-        n_ranker_approx = min(int(n_xgb * 1.07), n_tot)
+        # per-model winner accuracy for BMA weight computation - now using the actual ranker
+        _, n_xgb,    n_tot = winner_accuracy(meta_te, xgb_preds,    y_pos_te)
+        _, n_rf,     _     = winner_accuracy(meta_te, rf_as_pos,     y_pos_te)
+        _, n_ranker, _     = winner_accuracy(meta_te, ranker_as_pos, y_pos_te)
 
         model_correct["xgb"]    += n_xgb
-        model_correct["ranker"] += n_ranker_approx
+        model_correct["ranker"] += n_ranker
         model_correct["rf"]     += n_rf
         total_validated_races   += n_tot
 
-        # compute main metrics using XGBReg (ranker not trained per fold)
-        w_acc, w_correct, w_total = winner_accuracy(meta_te, xgb_preds, y_pos_te)
-        jaccard   = top10_set_accuracy(meta_te, xgb_preds, y_pos_te)
-        mae       = average_position_mae(meta_te, xgb_preds, y_pos_te)
-        pod_exact, pod_overlap, _ = podium_accuracy(meta_te, xgb_preds, y_pos_te)
+        # compute main metrics using full three-model ensemble (now that ranker is trained per fold)
+        fold_ens = ensemble_predict(
+            xgb_preds, rf_proba, meta_te,
+            ranker_raw_scores=ranker_scores,
+            ensemble_weights=None,   # fixed 40/40/20 fallback - BMA weights not known yet during LOSO
+            apply_bayesian_prior=False,
+        )
+        # align ensemble predictions back to meta_te row order for fair evaluation
+        ens_aligned = meta_te.merge(
+            fold_ens[["Year", "Round", "Driver", "PredictedPosition"]],
+            on=["Year", "Round", "Driver"], how="left"
+        )
+        ens_pred_arr = ens_aligned["PredictedPosition"].values.astype(float)
+
+        w_acc, w_correct, w_total = winner_accuracy(meta_te, ens_pred_arr, y_pos_te)
+        jaccard   = top10_set_accuracy(meta_te, ens_pred_arr, y_pos_te)
+        mae       = average_position_mae(meta_te, ens_pred_arr, y_pos_te)
+        pod_exact, pod_overlap, _ = podium_accuracy(meta_te, ens_pred_arr, y_pos_te)
 
         results.append({
             "holdout_year":    holdout_year,
@@ -931,21 +974,21 @@ def main():
     print("─" * 55)
 
     # fit one global imputer on all training data (this is what we'll use at inference time)
-    global_imputer = SimpleImputer(strategy="median")
+    global_imputer = SimpleImputer(strategy="median", keep_empty_features=True)
     X_final = pd.DataFrame(
         global_imputer.fit_transform(X_all), columns=FEATURE_COLS
     )
 
-    print("\n  Tuning XGBoost regressor (50 iterations x 3-fold)...")
-    xgb_final, xgb_best_params = tune_xgboost(X_final, y_pos.fillna(20), n_iter=50)
+    print("\n  Tuning XGBoost regressor (80 iterations x 3-fold)...")
+    xgb_final, xgb_best_params = tune_xgboost(X_final, y_pos.fillna(20), n_iter=80)
     print("  ✓ XGBoost regressor tuned")
 
-    print("\n  Tuning Random Forest (winner classifier, 40 iterations)...")
-    rf_win_final, rf_win_params = tune_random_forest_winner(X_final, y_win, n_iter=40)
+    print("\n  Tuning Random Forest (winner classifier, 60 iterations)...")
+    rf_win_final, rf_win_params = tune_random_forest_winner(X_final, y_win, n_iter=60)
     print("  ✓ Random Forest winner tuned")
 
-    print("\n  Tuning Random Forest (top-10 classifier, 40 iterations)...")
-    rf_top10_final, rf_top10_params = tune_random_forest_top10(X_final, y_top10, n_iter=40)
+    print("\n  Tuning Random Forest (top-10 classifier, 60 iterations)...")
+    rf_top10_final, rf_top10_params = tune_random_forest_top10(X_final, y_top10, n_iter=60)
     print("  ✓ Random Forest top-10 tuned")
 
     # XGBRanker: data must be sorted by (Year, Round) before fitting

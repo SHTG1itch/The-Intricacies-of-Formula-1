@@ -188,7 +188,7 @@ def build_combined_training_data():
     # fit a new imputer on the combined 2022-2025 training data
     # can't reuse the 2022-2024 imputer because the feature distribution may have shifted
     # ref: https://scikit-learn.org/stable/modules/impute.html
-    imputer = SimpleImputer(strategy="median")
+    imputer = SimpleImputer(strategy="median", keep_empty_features=True)
     X = pd.DataFrame(imputer.fit_transform(X_raw), columns=FEATURE_COLS)
 
     y_pos   = combined["finish_position"].astype(float) if "finish_position" in combined else None

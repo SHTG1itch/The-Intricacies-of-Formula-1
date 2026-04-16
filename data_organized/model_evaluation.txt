@@ -1,0 +1,24 @@
+F1 Race Prediction — Model Evaluation Summary
+=======================================================
+
+Leave-One-Season-Out CV:
+ holdout_year  winner_accuracy  winners_correct  total_races  podium_exact  podium_overlap  top10_jaccard  position_mae
+         2022         0.500000               11           22      0.045455        1.818182       0.615127      3.671982
+         2023         0.590909               13           22      0.090909        1.681818       0.686556      3.699317
+         2024         0.416667               10           24      0.208333        1.833333       0.750097      2.839248
+
+Mean Winner Accuracy : 50.3%
+Mean Podium Exact    : 11.5%
+Mean Top-10 Jaccard  : 0.684
+Mean Position MAE    : 3.40 places
+
+Bayesian Model Averaging Weights (posterior from LOSO):
+  w_xgb: 0.2121
+  w_ranker: 0.3939
+  w_rf: 0.3939
+
+In-sample (training set, expected to be optimistic):
+  Winner accuracy : 64.7%  (44/68 races)
+  Podium exact    : 29.4%  (avg overlap: 2.15/3)
+  Top-10 Jaccard  : 0.726
+  Position MAE    : 3.39 places

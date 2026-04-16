@@ -9,7 +9,7 @@
 # Took a while to figure out the right set of features. Started with just grid
 # position and a couple of FP deltas, kept adding things as the model kept
 # getting tripped up on specific scenarios (weather, rookies, first-timers at
-# new circuits, the Q2/Q3 boundary, etc.).
+# new circuits, etc.).
 #
 # One thing that bites you immediately if you're not careful: rolling stats and
 # circuit history have to be computed BEFORE the current race result goes in.
@@ -339,9 +339,11 @@ def quali_gap_to_pole_and_teammate(quali_session):
             fastest_teammate = valid["BestQ"].min()
             for _, row in valid.iterrows():
                 abbr = str(row["Abbreviation"])
+                gap_abs = row["BestQ"] - pole_time
                 out[abbr] = {
-                    "gap_to_pole":  round(row["BestQ"] - pole_time, 3),
+                    "gap_to_pole":  round(gap_abs, 3),
                     "teammate_gap": round(row["BestQ"] - fastest_teammate, 3),  # 0 if fastest in team
+                    "gap_pct":      round(gap_abs / pole_time, 6) if pole_time > 0 else np.nan,  # fractional gap - scale-invariant across circuits
                 }
         return out
     except Exception as e:
@@ -410,38 +412,54 @@ class RollingStats:
 
     def __init__(self, window=5):
         self.window = window
-        self._driver      = defaultdict(list)  # {abbr: [(finish_pos, points, is_dnf), ...]}
+        self._driver      = defaultdict(list)  # {abbr: [(finish_pos, points, is_dnf, is_win, is_podium), ...]}
         self._team        = defaultdict(list)  # {team: [finish_pos, ...]}
         self._season_pts  = defaultdict(list)  # for season-level accumulators
         self._season_finsh = defaultdict(list)
+        self._season_wins  = defaultdict(int)  # win count this season - resets at start of each year
 
     def get_driver_rolling(self, driver):
-        # returns both 3-race and 5-race windows
-        # 3-race window catches hot streaks and recent slumps but is noisier
-        # 5-race window is a more stable baseline, less thrown off by one bad race
-        # having both lets the model decide which horizon matters more for this context
-        hist5 = self._driver[driver][-self.window:]   # last 5 races
-        hist3 = self._driver[driver][-3:]             # last 3 races
+        # returns 3-race, 5-race, and 10-race rolling windows
+        # 3-race: hot streaks and recent slumps, noisier but more current
+        # 5-race: stable mid-term baseline - the main reference window
+        # 10-race: longer trend that smooths out peaks and valleys in the data
+        # win rate and podium rate capture dominant-car phases that avg finish alone misses
+        # e.g. VER in 2023 had avg finish ~1.3 but win_rate_5 was often 1.0 - a much cleaner signal
+        hist10 = self._driver[driver][-10:]           # last 10 races
+        hist5  = self._driver[driver][-self.window:]  # last 5 races
+        hist3  = self._driver[driver][-3:]            # last 3 races
 
         if not hist5:
             # new driver or start of season - NaN here, imputer fills it later
             return {
-                "rolling_avg_finish_3": np.nan,
-                "rolling_avg_finish_5": np.nan,
-                "rolling_dnf_rate_5":   np.nan,
-                "rolling_points_5":     np.nan,
+                "rolling_avg_finish_3":  np.nan,
+                "rolling_avg_finish_5":  np.nan,
+                "rolling_dnf_rate_5":    np.nan,
+                "rolling_points_5":      np.nan,
+                "rolling_win_rate_5":    np.nan,
+                "driver_podium_rate_5":  np.nan,
+                "rolling_avg_finish_10": np.nan,
+                "rolling_points_10":     np.nan,
             }
 
-        pos3      = [h[0] for h in hist3 if pd.notna(h[0])]
-        positions = [h[0] for h in hist5 if pd.notna(h[0])]
-        dnfs      = [h[2] for h in hist5]
-        points    = [h[1] for h in hist5 if pd.notna(h[1])]
+        pos3  = [h[0] for h in hist3  if pd.notna(h[0])]
+        pos5  = [h[0] for h in hist5  if pd.notna(h[0])]
+        pos10 = [h[0] for h in hist10 if pd.notna(h[0])]
+        dnfs  = [h[2] for h in hist5]
+        pts5  = [h[1] for h in hist5  if pd.notna(h[1])]
+        pts10 = [h[1] for h in hist10 if pd.notna(h[1])]
+        wins5 = [h[3] for h in hist5]   # 1 if won that race, 0 otherwise
+        pods5 = [h[4] for h in hist5]   # 1 if finished P1/P2/P3
 
         return {
-            "rolling_avg_finish_3": np.mean(pos3)      if pos3      else np.nan,
-            "rolling_avg_finish_5": np.mean(positions) if positions else np.nan,
-            "rolling_dnf_rate_5":   np.mean(dnfs)      if dnfs      else np.nan,
-            "rolling_points_5":     np.sum(points)     if points    else np.nan,  # sum not mean for points
+            "rolling_avg_finish_3":  np.mean(pos3)  if pos3  else np.nan,
+            "rolling_avg_finish_5":  np.mean(pos5)  if pos5  else np.nan,
+            "rolling_dnf_rate_5":    np.mean(dnfs)  if dnfs  else np.nan,
+            "rolling_points_5":      np.sum(pts5)   if pts5  else np.nan,  # sum not mean for points
+            "rolling_win_rate_5":    np.mean(wins5) if wins5 else np.nan,  # fraction of last 5 that were wins
+            "driver_podium_rate_5":  np.mean(pods5) if pods5 else np.nan,  # fraction of last 5 on podium
+            "rolling_avg_finish_10": np.mean(pos10) if pos10 else np.nan,
+            "rolling_points_10":     np.sum(pts10)  if pts10 else np.nan,
         }
 
     def get_team_rolling(self, team):
@@ -456,15 +474,19 @@ class RollingStats:
         # cumulative season stats up to but not including this race
         # season_pts_pct: normalised so 1.0 means they won every race this season
         # season_avg_finish: mean finishing position so far (lower is better)
+        # season_wins_pct: wins / races_so_far - captures whether a driver is in a dominant streak
         pts   = self._season_pts[driver]
         finsh = self._season_finsh[driver]
+        wins  = self._season_wins[driver]
         n     = len(finsh)
         if n == 0:
-            return {"season_pts_pct": np.nan, "season_avg_finish": np.nan}
-        pts_pct = sum(pts) / (n * 25) if n > 0 else np.nan  # 25 pts is the max per race
+            return {"season_pts_pct": np.nan, "season_avg_finish": np.nan, "season_wins_pct": np.nan}
+        pts_pct  = sum(pts) / (n * 25) if n > 0 else np.nan  # 25 pts is the max per race
+        wins_pct = wins / n if n > 0 else 0.0
         return {
             "season_pts_pct":    round(pts_pct, 4),
             "season_avg_finish": round(np.mean(finsh), 2) if finsh else np.nan,
+            "season_wins_pct":   round(wins_pct, 4),
         }
 
     def update(self, race_results, new_season=False):
@@ -472,14 +494,18 @@ class RollingStats:
         if new_season:
             self._season_pts.clear()    # reset the season accumulators at the start of a new year
             self._season_finsh.clear()
+            self._season_wins.clear()   # win count resets with the season
 
         for abbr, info in race_results.items():
             fp   = info["finish_pos"]
             pts  = info["points"]
             dnf  = is_dnf(info["status"])
             team = info["team"]
+            # track wins and podiums in the tuple so the rolling stat methods can read them back
+            is_win    = int(fp == 1) if pd.notna(fp) else 0
+            is_podium = int(fp <= 3) if pd.notna(fp) else 0
 
-            self._driver[abbr].append((fp, pts, dnf))
+            self._driver[abbr].append((fp, pts, dnf, is_win, is_podium))
             if team and pd.notna(fp):
                 self._team[team].append(fp)
 
@@ -487,6 +513,8 @@ class RollingStats:
                 self._season_pts[abbr].append(float(pts))
             if pd.notna(fp):
                 self._season_finsh[abbr].append(float(fp))
+            if is_win:
+                self._season_wins[abbr] += 1
 
 
 # ── circuit history tracker ───────────────────────────────────────────────────
@@ -508,6 +536,7 @@ class CircuitHistory:
     def __init__(self):
         self._driver = defaultdict(list)  # {(abbr, circuit): [finish_positions]}
         self._team   = defaultdict(list)  # {(team, circuit): [finish_positions]}
+        self._gains  = defaultdict(list)  # {(abbr, circuit): [grid_pos - finish_pos]; positive = gained places
 
     def get_driver_avg(self, driver, circuit):
         h = self._driver[(driver, circuit)]
@@ -521,14 +550,25 @@ class CircuitHistory:
         # raw count of prior completed races at this circuit
         return len(self._driver[(driver, circuit)])
 
+    def get_driver_circuit_gains(self, driver, circuit):
+        # average positions gained (grid_pos - finish_pos) at this specific circuit
+        # positive = driver typically moves forward in races at this track
+        # useful for circuits where track knowledge enables overtaking (e.g. Hamilton at Silverstone)
+        h = self._gains[(driver, circuit)]
+        return round(np.mean(h), 3) if h else np.nan
+
     def update(self, race_results, circuit):
         for abbr, info in race_results.items():
             fp   = info["finish_pos"]
             team = info["team"]
+            grid = info.get("grid_pos", np.nan)
             if pd.notna(fp):
                 self._driver[(abbr, circuit)].append(fp)
                 if team:
                     self._team[(team, circuit)].append(fp)
+            # track grid-to-finish gains; grid must be valid (>0) to avoid pit lane start contamination
+            if pd.notna(fp) and pd.notna(grid) and grid > 0:
+                self._gains[(abbr, circuit)].append(float(grid) - float(fp))
 
 
 # ── main feature extraction loop ─────────────────────────────────────────────
@@ -658,9 +698,9 @@ def build_features(years, include_race_target=True):
                 team = str(drow.get("TeamName", ""))
 
                 # get rolling stats BEFORE this race (from prior races only)
-                drv_roll  = rolling.get_driver_rolling(abbr)
-                team_roll = rolling.get_team_rolling(team)
-                season    = rolling.get_season_stats(abbr)
+                drv_roll      = rolling.get_driver_rolling(abbr)
+                team_roll     = rolling.get_team_rolling(team)
+                season        = rolling.get_season_stats(abbr)
 
                 # circuit history BEFORE this race
                 circ_drv  = circuit_hist.get_driver_avg(abbr, circuit)
@@ -677,6 +717,22 @@ def build_features(years, include_race_target=True):
                 # whether they found pace as the weekend went on
                 progression = (fp1_d - fp2_d) if (pd.notna(fp1_d) and pd.notna(fp2_d)) else np.nan
 
+                # derived grid position features
+                grid_pos     = grid_pos_dict.get(abbr, np.nan)
+                n_drivers    = max(len(drivers_df), 1)
+                is_front_row = int(grid_pos <= 2) if pd.notna(grid_pos) else 0
+                grid_pos_pct = (grid_pos / n_drivers) if pd.notna(grid_pos) else np.nan  # normalised to [0,1]
+
+                # how is this driver doing vs their own team's baseline?
+                # negative means outperforming the car, positive means underperforming
+                # useful for isolating driver skill from car quality in the rolling stats
+                drv_avg5    = drv_roll.get("rolling_avg_finish_5", np.nan)
+                team_avg5   = team_roll.get("team_rolling_avg_5", np.nan)
+                drv_vs_team = (drv_avg5 - team_avg5) if (pd.notna(drv_avg5) and pd.notna(team_avg5)) else np.nan
+
+                # circuit-specific position gains history - before this race
+                circ_gains = circuit_hist.get_driver_circuit_gains(abbr, circuit)
+
                 row = {
                     # identifiers - not used as ML features
                     "Year":      year,
@@ -687,10 +743,12 @@ def build_features(years, include_race_target=True):
                     "Team":      team,
 
                     # sprint / qualifying grid
-                    "IsSprintWeekend":  int(is_sprint_wknd),
-                    "grid_position":    grid_pos_dict.get(abbr, np.nan),
-                    "sprint_quali_pos": sprint_quali_pos.get(abbr, np.nan),
-                    "sprint_pos":       sprint_pos_dict.get(abbr, np.nan),
+                    "IsSprintWeekend":   int(is_sprint_wknd),
+                    "grid_position":     grid_pos,
+                    "sprint_quali_pos":  sprint_quali_pos.get(abbr, np.nan),
+                    "sprint_pos":        sprint_pos_dict.get(abbr, np.nan),
+                    "is_front_row":      is_front_row,    # 1 if P1 or P2; front row starters win ~70% of races
+                    "grid_position_pct": grid_pos_pct,    # grid_pos / field_size, normalised to [0,1]
 
                     # FP best-lap deltas (seconds behind session fastest)
                     "fp1_pace_delta": fp1_d,
@@ -716,6 +774,7 @@ def build_features(years, include_race_target=True):
                     # a P10 was comfortably in Q3 or barely sneaking in from Q2 borderline
                     # helps the model at the tricky P10/P11 boundary cases
                     "q3_appearance": q3_appeared.get(abbr, 0),
+                    "quali_gap_pct": q_gaps.get("gap_pct", np.nan),  # fractional gap vs pole, scale-invariant
 
                     # session weather (pre-race only - no race-day weather, that's leakage)
                     "fp1_track_temp": fp1_track_temp,
@@ -727,14 +786,18 @@ def build_features(years, include_race_target=True):
                     "quali_wet":        q_wet,
 
                     # rolling form and season stats (all computed from prior races only)
-                    **drv_roll,    # rolling_avg_finish_3, _5, dnf_rate_5, points_5
+                    **drv_roll,    # rolling_avg_finish_3/5/10, dnf_rate_5, points_5/10, win_rate_5, podium_rate_5
                     **team_roll,   # team_rolling_avg_5
-                    **season,      # season_pts_pct, season_avg_finish
+                    **season,      # season_pts_pct, season_avg_finish, season_wins_pct
+
+                    # driver vs team: negative means outperforming the car baseline
+                    "driver_vs_team_avg_delta": drv_vs_team,
 
                     # circuit history (from prior races at this specific track only)
-                    "circuit_driver_avg_finish": circ_drv,
-                    "circuit_team_avg_finish":   circ_team,
-                    "circuit_experience":         circ_exp,
+                    "circuit_driver_avg_finish":        circ_drv,
+                    "circuit_team_avg_finish":          circ_team,
+                    "circuit_experience":               circ_exp,
+                    "driver_circuit_positions_gained":  circ_gains,  # avg positions gained at this circuit
                 }
 
                 # add race result targets if we want them
