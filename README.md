@@ -177,15 +177,15 @@ This is the most intuitive visualization for answering "has the gap between rich
 
 ---
 
-### RQ3: Can we predict the WDC winner, and is it skill or car?
+### RQ4: Can we predict the WDC winner, and is it skill or car?
 
 This question is our **challenge goal**: build a model that predicts championship outcomes and then decompose those predictions to understand what factors drive the championship. Is it raw car pace, driver experience, reliability, or strategy.
 
 #### Plot A — Feature Importance Radar Chart (2024 vs. 2025 Champion Profile)
 
-![RQ3 Plot A: WDC Feature Profile Radar](sketches/rq3a_wdc_radar.png)
+![RQ4 Plot A: WDC Feature Profile Radar](sketches/rq3a_wdc_radar.png)
 
-**Why this plot matters for RQ3:** This radar chart compares the "winning profile" of two consecutive champions across 4 feature dimensions: **Car Pace** (qualifying speed), **Driver Experience** (career starts), **Reliability** (inverse DNFs), and **Strategic Efficiency** (pit stop times). The shape of each polygon reveals *why* the driver won:
+**Why this plot matters for RQ4:** This radar chart compares the "winning profile" of two consecutive champions across 4 feature dimensions: **Car Pace** (qualifying speed), **Driver Experience** (career starts), **Reliability** (inverse DNFs), and **Strategic Efficiency** (pit stop times). The shape of each polygon reveals *why* the driver won:
 
 - **2025 WDC (red):** Heavily skewed toward "Car Pace" (0.95), with lower experience (0.62) — suggesting a car-dominant championship where raw pace was the deciding factor.
 - **2024 WDC (blue):** More balanced across all dimensions, with high experience (0.90) and strategy (0.88) — suggesting a championship won through human factors: knowledge, consistency, and team coordination.
@@ -197,9 +197,9 @@ This radar chart is the visual output of our feature importance analysis from th
 
 #### Plot B — Championship Rank Confusion Matrix (Predicted vs. Actual, 2025)
 
-![RQ3 Plot B: Championship Rank Confusion Matrix](sketches/rq3b_standings_confusion_matrix.png)
+![RQ4 Plot B: Championship Rank Confusion Matrix](sketches/rq3b_standings_confusion_matrix.png)
 
-**Why this plot matters for RQ3:** This confusion matrix shows how well a **car-pace-only model** predicts the actual championship standings. Each cell shows the number of races (out of 23) where the model's rank prediction matched or missed the actual outcome:
+**Why this plot matters for RQ4:** This confusion matrix shows how well a **car-pace-only model** predicts the actual championship standings. Each cell shows the number of races (out of 23) where the model's rank prediction matched or missed the actual outcome:
 
 - **Bright diagonal cells** (highlighted with gold borders) indicate races where car pace alone correctly predicted the finishing order — a strong diagonal means the championship is mostly decided by the car.
 - **Off-diagonal entries** represent races where driver skill, strategy, or other factors *overrode* what the car pace predicted — these are the moments where human elements made the difference.
