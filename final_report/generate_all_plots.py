@@ -791,9 +791,11 @@ def plot_rq2_1a_field_spread():
     if cost_cap_yr in yr_idx:
         idx  = yr_idx[cost_cap_yr]
         y_cc = idx * offset_h + offset_h * 0.5
+        # xytext placed in the low-density tail (x>3.5) so the box doesn't
+        # overlap with the ridge fill which peaks between x=0.5 and x=2
         ax.annotate(
             "Cost Cap\nIntroduced\n(2021 Season)",
-            xy=(-0.05, y_cc), xytext=(1.0, y_cc),
+            xy=(0.8, y_cc + offset_h * 0.55), xytext=(3.8, y_cc + offset_h * 0.55),
             fontsize=8, color="#333333",
             arrowprops=dict(arrowstyle="->", color="#555555", lw=0.8),
             bbox=dict(boxstyle="round,pad=0.3", fc="#FFF9C4", ec="#CCCC00", alpha=0.9),
@@ -2542,6 +2544,8 @@ def plot_fastf1_champion_pace():
     manual_ls = {"NOR": "solid", "PIA": "dashed",
                  "VER": "solid", "LEC": "solid", "HAM": "solid"}
 
+    end_labels = []  # collect (y_val, drv, color) to stagger before drawing
+
     for drv in TARGET_DRIVERS:
         sub = df_pace[df_pace["Driver"] == drv].sort_values("Round")
         if sub.empty:
@@ -2566,10 +2570,28 @@ def plot_fastf1_champion_pace():
         ax.scatter(sub["Round"], sub["RelPace"], color=drv_color, s=35,
                    zorder=5, edgecolors="white", linewidths=0.5, alpha=0.90)
 
-        # label at the end of the line
         last = sub.iloc[-1]
-        ax.text(last["Round"] + 0.3, last["RelPace"], drv,
-                fontsize=9.5, color=drv_color, fontweight="bold", va="center")
+        end_labels.append((last["RelPace"], drv, drv_color))
+
+    # stagger end-of-line labels so nearby drivers don't overlap
+    end_labels.sort(key=lambda t: t[0])
+    min_gap = 0.22  # minimum vertical gap between labels (% units)
+    nudged_y = [end_labels[0][0]]
+    for i in range(1, len(end_labels)):
+        y_prev = nudged_y[-1]
+        y_raw  = end_labels[i][0]
+        nudged_y.append(max(y_raw, y_prev + min_gap))
+
+    last_round = max(all_rounds)
+    for (y_raw, drv, drv_color), y_label in zip(end_labels, nudged_y):
+        ax.annotate(
+            drv,
+            xy=(last_round, y_raw),
+            xytext=(last_round + 0.4, y_label),
+            fontsize=9.5, color=drv_color, fontweight="bold", va="center",
+            arrowprops=dict(arrowstyle="-", color=drv_color, lw=0.8, alpha=0.5)
+            if abs(y_label - y_raw) > 0.05 else None,
+        )
 
     # reference line: 0% = exactly at field median
     ax.axhline(0, color=DARK, linewidth=1.0, linestyle="-", alpha=0.5,

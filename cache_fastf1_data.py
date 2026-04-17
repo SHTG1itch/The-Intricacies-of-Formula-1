@@ -54,38 +54,42 @@ def session_key(year, round_num, idx):
     return f"{year}_{round_num}_{idx}"
 
 
-def already_cached(year, round_num, idx):
-    """Quick check using offline mode — if it loads fine, data is already there."""
-    try:
-        fastf1.Cache.offline_mode(True)
-        session = fastf1.get_session(year, round_num, idx)
-        session.load(laps=True, telemetry=True, weather=True, messages=False)
-        return True
-    except Exception:
-        return False
-    finally:
-        fastf1.Cache.offline_mode(False)
-
-
 def fetch_session(year, round_num, idx):
-    """Actually download and cache a session with exponential backoff."""
+    """
+    Download and cache one session.  Returns a (status, session) tuple:
+      ('ok', session)     — loaded successfully
+      ('not_found', None) — this session index doesn't exist for this event
+      ('failed', None)    — network/parse error after all retries; try again next run
+
+    Keeping these three outcomes distinct is critical:
+    - 'not_found' means we should stop trying higher session indices for this round.
+    - 'failed'    means a transient error; we skip this session but keep going so
+                  we don't miss sessions 3-5 just because session 2 had a hiccup.
+    """
     for attempt, delay in enumerate(RETRY_DELAYS + [None], 1):
         try:
             session = fastf1.get_session(year, round_num, idx)
             session.load(laps=True, telemetry=True, weather=True, messages=False)
-            return session
+            return "ok", session
         except ValueError:
-            return None  # session index doesn't exist for this event
+            # session index out of range for this event — no point retrying
+            return "not_found", None
         except Exception as exc:
             if delay is None:
-                log.error("  [%d R%02d S%d] gave up after %d attempts: %s", year, round_num, idx, attempt - 1, exc)
-                return None
-            log.warning("  [%d R%02d S%d] attempt %d failed: %s — retry in %ds", year, round_num, idx, attempt, exc, delay)
+                log.error(
+                    "  [%d R%02d S%d] gave up after %d attempts: %s",
+                    year, round_num, idx, attempt - 1, exc,
+                )
+                return "failed", None
+            log.warning(
+                "  [%d R%02d S%d] attempt %d failed: %s — retry in %ds",
+                year, round_num, idx, attempt, exc, delay,
+            )
             time.sleep(delay)
 
 
 def process_round(year, round_num, event_name, done_set):
-    """Load all sessions for one round, skipping anything already done."""
+    """Load all sessions for one round, skipping anything already in done_set."""
     loaded = 0
     for idx in range(1, MAX_SESSIONS + 1):
         key = session_key(year, round_num, idx)
@@ -94,19 +98,21 @@ def process_round(year, round_num, event_name, done_set):
             if key in done_set:
                 continue
 
-        # check the HTTP cache before hitting the network
-        if already_cached(year, round_num, idx):
-            log.info("  [%d R%02d S%d] already cached, skipping", year, round_num, idx)
-            with state_lock:
-                done_set.add(key)
-                save_state(done_set)
-            loaded += 1
+        status, session = fetch_session(year, round_num, idx)
+
+        if status == "not_found":
+            # No session at this index — stop trying higher indices for this round
+            break
+
+        if status == "failed":
+            # Transient error — skip and continue so later sessions still get tried
+            log.warning(
+                "  [%d R%02d S%d] skipped after repeated errors — will retry on next run",
+                year, round_num, idx,
+            )
             continue
 
-        session = fetch_session(year, round_num, idx)
-        if session is None:
-            break  # no more sessions for this round
-
+        # status == "ok"
         log.info("  [%d R%02d] + %s", year, round_num, session.name)
         with state_lock:
             done_set.add(key)
@@ -155,7 +161,10 @@ def cache_year(year, done_set):
 
 def main():
     done_set = load_state()
-    log.info("=== FastF1 cache: %d-%d | %d sessions already done ===", min(YEARS), max(YEARS), len(done_set))
+    log.info(
+        "=== FastF1 cache: %d-%d | %d sessions already done ===",
+        min(YEARS), max(YEARS), len(done_set),
+    )
 
     start = time.time()
     for year in YEARS:
