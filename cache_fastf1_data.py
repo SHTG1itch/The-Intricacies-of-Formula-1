@@ -26,8 +26,19 @@ fastf1.Cache.enable_cache(CACHE_DIR)
 
 YEARS = range(2018, 2027)
 MAX_SESSIONS = 5
-RETRY_DELAYS = [5, 15, 45]
-WORKERS = 4  # parallel rounds per year — don't go too high or the API gets unhappy
+
+# Default to 1 worker: FastF1's internal rate limiter is not thread-safe under
+# concurrent load (200 calls/h to ergast, 500/h to any API), so parallel workers
+# race each other into the limit.  Set FF1_WORKERS=2 only when running locally
+# with a fully warm HTTP cache (discovery_raw_data/fastf1_http_cache.sqlite).
+WORKERS = int(os.environ.get("FF1_WORKERS", "1"))
+
+# Back-off schedule for fastf1.RateLimitExceededError (seconds).
+# FastF1 uses a 1-hour rolling window, so the worst case is waiting ~60 min.
+RATE_LIMIT_BACKOFFS = [60, 300, 1200, 3600]
+
+# Back-off schedule for other transient errors (seconds).
+RETRY_DELAYS = [15, 45, 120]
 
 state_lock = threading.Lock()
 
@@ -46,7 +57,7 @@ def save_state(done: set):
     # atomic write so a crash mid-save doesn't corrupt the file
     tmp = STATE_FILE + ".tmp"
     with open(tmp, "w") as f:
-        json.dump(sorted(done), f)
+        json.dump(sorted(done), f, indent=2)
     os.replace(tmp, STATE_FILE)
 
 
@@ -56,36 +67,60 @@ def session_key(year, round_num, idx):
 
 def fetch_session(year, round_num, idx):
     """
-    Download and cache one session.  Returns a (status, session) tuple:
+    Download and cache one session. Returns (status, session):
       ('ok', session)     — loaded successfully
-      ('not_found', None) — this session index doesn't exist for this event
-      ('failed', None)    — network/parse error after all retries; try again next run
+      ('not_found', None) — no session at this index for this event
+      ('failed', None)    — unrecoverable after all retries
 
-    Keeping these three outcomes distinct is critical:
-    - 'not_found' means we should stop trying higher session indices for this round.
-    - 'failed'    means a transient error; we skip this session but keep going so
-                  we don't miss sessions 3-5 just because session 2 had a hiccup.
+    RateLimitExceededError retries are tracked separately so they don't consume
+    the transient-error budget — FastF1's rolling window can require a full hour
+    to reset, and we'd rather wait than permanently skip a session.
     """
-    for attempt, delay in enumerate(RETRY_DELAYS + [None], 1):
+    rl_attempt = 0   # rate-limit retry counter
+    tx_attempt = 0   # transient-error retry counter
+
+    while True:
         try:
             session = fastf1.get_session(year, round_num, idx)
             session.load(laps=True, telemetry=True, weather=True, messages=False)
             return "ok", session
+
         except ValueError:
-            # session index out of range for this event — no point retrying
+            # FastF1 raises ValueError when the session index is out of range
             return "not_found", None
-        except Exception as exc:
-            if delay is None:
+
+        except fastf1.RateLimitExceededError as exc:
+            # FastF1 enforces 200 calls/h (ergast) and 500 calls/h (any API).
+            # Back off through the schedule; give up only after the longest wait.
+            if rl_attempt >= len(RATE_LIMIT_BACKOFFS):
                 log.error(
-                    "  [%d R%02d S%d] gave up after %d attempts: %s",
-                    year, round_num, idx, attempt - 1, exc,
+                    "  [%d R%02d S%d] rate-limit retries exhausted: %s",
+                    year, round_num, idx, exc,
                 )
                 return "failed", None
+            wait = RATE_LIMIT_BACKOFFS[rl_attempt]
+            log.warning(
+                "  [%d R%02d S%d] rate-limited (backoff %d/%d) — sleeping %ds",
+                year, round_num, idx,
+                rl_attempt + 1, len(RATE_LIMIT_BACKOFFS), wait,
+            )
+            time.sleep(wait)
+            rl_attempt += 1
+
+        except Exception as exc:
+            if tx_attempt >= len(RETRY_DELAYS):
+                log.error(
+                    "  [%d R%02d S%d] gave up after %d attempts: %s",
+                    year, round_num, idx, tx_attempt, exc,
+                )
+                return "failed", None
+            delay = RETRY_DELAYS[tx_attempt]
             log.warning(
                 "  [%d R%02d S%d] attempt %d failed: %s — retry in %ds",
-                year, round_num, idx, attempt, exc, delay,
+                year, round_num, idx, tx_attempt + 1, exc, delay,
             )
             time.sleep(delay)
+            tx_attempt += 1
 
 
 def process_round(year, round_num, event_name, done_set):
@@ -101,13 +136,20 @@ def process_round(year, round_num, event_name, done_set):
         status, session = fetch_session(year, round_num, idx)
 
         if status == "not_found":
-            # No session at this index — stop trying higher indices for this round
+            # idx and all higher indices don't exist for this event.
+            # Mark every remaining index in done_set so cache_year won't keep
+            # re-queuing this round just because some keys are missing.
+            with state_lock:
+                for mark in range(idx, MAX_SESSIONS + 1):
+                    done_set.add(session_key(year, round_num, mark))
+                save_state(done_set)
             break
 
         if status == "failed":
-            # Transient error — skip and continue so later sessions still get tried
+            # Transient error after all retries — skip this session but keep
+            # going so a single bad session doesn't block the whole round.
             log.warning(
-                "  [%d R%02d S%d] skipped after repeated errors — will retry on next run",
+                "  [%d R%02d S%d] skipped after repeated errors — will retry next run",
                 year, round_num, idx,
             )
             continue
@@ -131,7 +173,9 @@ def cache_year(year, done_set):
 
     rounds = [(int(r["RoundNumber"]), r["EventName"]) for _, r in schedule.iterrows()]
 
-    # figure out which rounds still need work
+    # A round is pending if any of its session keys is absent from done_set.
+    # Because process_round now writes not_found keys for missing sessions,
+    # every completed round will have all MAX_SESSIONS keys present.
     pending = []
     for round_num, name in rounds:
         keys = [session_key(year, round_num, i) for i in range(1, MAX_SESSIONS + 1)]
