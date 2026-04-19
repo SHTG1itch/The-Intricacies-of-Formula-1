@@ -7,20 +7,28 @@
 #   2. XGBoost Ranker ranks the ndcg objective, focuses on getting the top right
 #   3. Random Forest attempts to create a binary win probability classifier
 #
-# On top of the base models we do two Bayesian things(Bayesian statistics serves as an important tool that I have worked with in the past):
+# On top of the base models we do three Bayesian things(Bayesian statistics serves as an important tool that I have worked with in the past):
 # Bayesian statistics really just relies on uncertainty. We have no idea what's going to happen.
 # Since we don't really know what is going to happen we think of everything as a degree of belief.
 # This differs from normal statistics where we treat probability as a long-run frequency
 # Bayesian just treats its parameters as random variables with probability distributions.
 # With this we can calculate the probability that a hypothesis is true.
-# Thest two Bayesian things are:  
-#   a) Beta-Binomial prior for win probability using circuit history.
-#      Basically, since Hamilton has won at Silverstone 8 times, factor that in(he might be really good at that track which enables him to outperform the car)
-#   b) Bayesian Model Averaging to set ensemble blend weights from LOSO data
+# These three Bayesian things are:
+#   a) Normal-Normal hierarchical model with James-Stein shrinkage for the circuit-history win prior.
+#      Since Hamilton has won at Silverstone 8 times, factor that in - but with proper shrinkage:
+#      a driver who's raced somewhere once gets almost no circuit prior, while 15 races gets a lot
+#      this replaced the old Beta-Binomial which treated all history equally regardless of sample size
+#   b) Bayesian temperature scaling (Platt scaling with MAP prior) to calibrate RF probabilities.
+#      Random forests are overconfident so we fit a temperature T on out-of-fold LOSO predictions
+#      T is fit with a log-normal MAP prior so it doesn't go crazy with small data
+#      and critically we do this BEFORE the prior blend, not after
+#   c) Inverse-variance Bayesian Model Averaging to set ensemble blend weights from LOSO data:
+#      now combines Dirichlet winner-accuracy weights (60%) + inverse-MAE weights (40%)
 #      instead of hardcoding 40/40/20(weightage of Reg/Rank/Forest), let the actual validation data decide
 # Here are some references that we used to create this:
 # ref for BMA: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
-# ref for Beta-Binomial: https://en.wikipedia.org/wiki/Beta_distribution
+# ref for James-Stein / Normal-Normal: https://en.wikipedia.org/wiki/James%E2%80%93Stein_estimator
+# ref for temperature scaling: https://arxiv.org/abs/1706.04599
 # ref: Bayesian stats overview: https://en.wikipedia.org/wiki/Bayesian_statistics
 #
 # XGBoost paper: https://arxiv.org/abs/1603.02754
@@ -29,19 +37,27 @@
 # F1 reference prediction project we compare against: https://github.com/mar-antaya/2025_f1_predictions
 
 
+import sys
 import os
 import warnings
 import numpy as np
 import pandas as pd
 import joblib
 
-from sklearn.ensemble import RandomForestClassifier  # main classifier
+# Windows consoles default to cp1252 which can't print box-drawing chars (─, →, etc.)
+# that appear in all the progress banners - reconfigure stdout to utf-8 early so we don't crash
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesRegressor  # classifiers + ET
 from sklearn.metrics import mean_absolute_error       # position MAE
 from sklearn.impute import SimpleImputer              # fill NaN with median
 from sklearn.model_selection import RandomizedSearchCV  # hyperparameter search
+from sklearn.linear_model import LogisticRegression   # stacking meta-model fallback
 
 import xgboost as xgb
 from scipy.stats import randint, uniform  # for parameter distributions
+from scipy.optimize import minimize_scalar  # MAP temperature calibration
 
 warnings.filterwarnings("ignore")  # suppress fastf1 + xgboost deprecation noise, because it was really annoying to deal with this
                                    # I don't know if that's proper methodology but it works
@@ -59,7 +75,7 @@ MODEL_DIR  = os.path.join(DATA_DIR, "models")
 SEED = 42  # same seed everywhere, makes results reproducible across runs
 # Basically I'm trying to make it so that XGBoost, RandomForest and randomizeed search use the same random sequence
 # This lets me tune hyperparameters
-# 44 features - must exactly match what feature_engineering.py writes out
+# 47 features - must exactly match what feature_engineering.py writes out
 # grouped by category for readability, not for any ML reason
 # if you change these you also have to change feature_engineering.py or models won't load
 FEATURE_COLS = [
@@ -88,6 +104,10 @@ FEATURE_COLS = [
     "fp2_s2_delta",          # sector 2 gap vs session best
     "fp2_s3_delta",          # sector 3 gap vs session best
     "fp2_long_run_delta",    # median of 5+ lap stints vs field median - best race pace indicator(depends on if team does a long run or not)
+    # fp2_deg_rate and fp2_deg_rate_obs are computed and saved to CSV but excluded from training
+    # 2022=18% NaN, 2023=88% NaN, 2024=100% NaN - even with a 0.0/indicator approach, 2023 holdout drops from 59% to 45%
+    # the indicator can't overcome the near-complete absence of real data in 2023-2024
+    # re-add when at least 3 seasons have <50% NaN coverage in the FP2 long-run data
     "fp2_consistency",       # std dev of FP2 quicklaps; low = smooth driver or well-balanced setup
     "fp_pace_progression",   # fp1_delta minus fp2_delta: positive = driver improved vs field overnight
 
@@ -142,7 +162,36 @@ FEATURE_COLS = [
     "circuit_driver_avg_finish",       # driver's historical mean finish at this circuit
     "circuit_team_avg_finish",         # team's historical mean finish at this circuit
     "driver_circuit_positions_gained", # avg (grid_pos - finish_pos) at this circuit; positive = gains places in races here
-]  # 44 total - started with 34, added 10 more after noticing the model kept missing dominant-car seasons like VER 2023
+
+    # ── circuit structural characteristics (static per-circuit lookup) ─────────
+    # these are genuinely new information that rolling stats can't derive
+    # overtaking_score tells the model: at Monaco pole is nearly guaranteed win; at Monza it's a DRS gamble
+    # sc_rate tells it how chaotic this track is historically (affects how much qualifying matters)
+    # is_street captures Monaco/Baku/Singapore/Jeddah/Miami/LasVegas - wall-bounded = fundamentally different dynamics
+    # ref: https://en.wikipedia.org/wiki/List_of_Formula_One_circuits
+    "circuit_overtaking_score",        # 0.05=Monaco (nearly impossible to pass) to 0.70=Monza (DRS festival)
+    "circuit_sc_rate",                 # fraction of races at this circuit historically with a safety car
+    "circuit_is_street",               # 1 if wall-bounded temporary circuit (Monaco, Baku, Singapore, etc.)
+
+    # ── accuracy-push features (added to beat academic 60-65% ceiling) ──────
+    # car regulation era: 0=turbo-hybrid (2018-2021), 1=ground-effect (2022+)
+    # helps the model know that car characteristics fundamentally changed - crucial for LOSO folds
+    "car_regulation_era",
+    # front-row at Monaco = near-certain win; front-row at Monza = easily overtaken
+    # explicit interaction because tree models need this handed to them, they won't find it alone
+    "grid_x_overtaking_inv",
+    # championship rank normalised to [0,1]: 0 = leader, 1 = last - leader is almost always in fastest car
+    "championship_rank_pct",
+    # team's P1 driver gets priority pit calls, best upgrades first - real strategy signal
+    "is_number_one_driver",
+    # driver's circuit avg minus team's circuit avg: Hamilton+Silverstone has a real negative value here
+    "circuit_specialist_delta",
+    # team_avg5 - team_avg3: positive = car getting faster recently (catches McLaren-style surges)
+    "team_momentum",
+    # team's mean finish over last 3 races (shorter window, more reactive than 5-race)
+    "team_rolling_avg_3",
+]  # 54 total: original 47 + 7 new features targeting specific weaknesses in 2019/2024 holdout
+  # fp2_deg_rate / fp2_deg_rate_obs computed and saved to CSV but excluded until coverage improves across seasons
 
 # F1 points — used for championship projection in predict_2025 and predict_2026
 # Maps race standings to points granted
@@ -154,10 +203,10 @@ POINTS_MAP = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
 # ──────────────────────────────────
 
 def load_and_prepare(filepath, fit_imputer=None):
-    # load feature CSV and return everything needed for training or prediction
-    # fit_imputer=None means fit a new imputer on this data (training mode)
-    # fit_imputer=<imputer> means transform using existing fit (prediction mode)
-    # I read online that imputers improve accuracy because just simply dropping na values could hide important info(I'm hoping that this is correct)
+    # loads the feature CSV and returns everything needed for training or prediction
+    # fit_imputer=None → we're in training mode, fit a fresh imputer on this data
+    # fit_imputer=<already fitted imputer> → prediction mode, just transform using the existing one
+    # (we do it this way so the imputer learns the medians from training data only, never from test data)
     df = pd.read_csv(filepath)
 
     meta_cols = ["Year", "Round", "EventName", "Circuit", "Driver", "Team"]
@@ -165,9 +214,9 @@ def load_and_prepare(filepath, fit_imputer=None):
     df_meta = df[meta_cols].copy()         # keep metadata separate from features
     X_raw   = df[FEATURE_COLS].copy().astype(float)  # typecast to float; NaN stays NaN
 
-    # impute NaN values with column medians
-    # median is better than mean here - some features have heavy right tails(surprising)
-    # (ex. a driver who missed FP2 entirely gets a very large delta)
+    # fill in missing values with the column median
+    # we use median not mean because some features have heavy right tails
+    # (a driver who missed FP2 entirely gets a really large pace delta, which would skew the mean)
     # ref: https://scikit-learn.org/stable/modules/impute.html#univariate-imputation
     if fit_imputer is None:
         imputer = SimpleImputer(strategy="median", keep_empty_features=True)  # fit on this data; keep_empty_features=True preserves all-NaN columns (e.g. sprint cols on non-sprint data) so shape always matches FEATURE_COLS
@@ -211,130 +260,220 @@ def load_and_prepare(filepath, fit_imputer=None):
 #
 # We use Bayesian reasoning in two ways in this pipeline(as mentioned before):
 #
-# 1. Beta-Binomial prior for win probability
-#    - The Beta distribution is the conjugate prior for Bernoulli trials
-#      (ref: https://en.wikipedia.org/wiki/Beta_distribution)
-#    - We use circuit history to parameterize a Beta prior for each driver(some drivers do better on certain tracks)
-#    - Then blend this prior with the RF model output as the "likelihood"
-#    - Result: win probability that factors in long-term circuit history
+# 1. Normal-Normal conjugate hierarchical model (James-Stein shrinkage) for win probability prior
+#    - Treats each driver's circuit-specific avg finish as a noisy observation of their latent ability
+#    - Posterior mean shrinks toward the global mid-field mean (mu_0=10) with shrinkage factor B
+#      B = n*tau^2 / (n*tau^2 + sigma_obs^2)  — strong shrinkage when history is thin
+#    - ref: Gelman et al. BDA3 ch. 5 (https://stat.columbia.edu/~gelman/book/)
+#    - ref: James-Stein estimator (https://doi.org/10.1007/BF02888369)
 #
-# 2. Bayesian Model Averaging (BMA) for ensemble weights
+# 2. Bayesian temperature scaling (Platt scaling with log-normal MAP prior)
+#    - Calibrates RF win probabilities before blending with the circuit-history prior
+#    - MAP objective: NLL(T) + log(T)^2 / (2*sigma_T^2), solved via minimize_scalar
+#    - T is fit from out-of-fold (OOF) LOSO RF probabilities so it's never trained on test data
+#    - ref: Guo et al. 2017 "On Calibration of Modern Neural Networks" https://arxiv.org/abs/1706.04599
+#
+# 3. Inverse-variance Bayesian Model Averaging (BMA) for ensemble weights
 #    - Instead of fixed 40/40/20 weights, compute them from LOSO(leave one season out) data
-#       - Basically we leave one season out as a test set, training on the remaining seasons and repeating
-#       - This lets us avoide data leakage and gives us per season performance that helps us use Bayesian model averaging
-#    - Use Dirichlet distribution as a way to calculate weights (conjugate for categorical). (We looked this up and apparently it is way better to do it this way)
-#      (ref: https://en.wikipedia.org/wiki/Dirichlet_distribution). It basically generalizes the Beta distribution and adds a preference to the XGBoost models compared to the Random Forest
-#    - Update with observed correct-winner counts per model across LOSO folds
-#    - Update our expected weights = observations + initial belief / total
+#    - Combines two signal sources:
+#        (a) Dirichlet posterior from correct-winner counts (60% weight)
+#        (b) Inverse-MAE weights across LOSO folds (40% weight)
+#    - ref: Dirichlet distribution (https://en.wikipedia.org/wiki/Dirichlet_distribution)
 #    - ref: Hoeting et al. 1999 BMA paper https://doi.org/10.1214/ss/1009212519
 # ──────────────────────────────────────────────────────────────────
 
-def compute_bayesian_win_prior(X_features):
-    # compute a Beta-Binomial Bayesian prior for win probability using circuit history
-    # ref: https://en.wikipedia.org/wiki/Beta-binomial_distribution
-    # ref: conjugate prior for Bernoulli likelihood: https://en.wikipedia.org/wiki/Conjugate_prior
+def compute_hierarchical_win_prior(X_features):
+    # upgraded version of the old Beta-Binomial prior - now using a Normal-Normal
+    # hierarchical model which is a proper James-Stein shrinkage estimator
+    # the idea is the same as before (hamilton has won at silverstone 8 times so factor that in)
+    # but the math is more principled this time around
+    #
+    # the problem with the old approach was it treated every race history the same
+    # 1 race at a new circuit and 15 races at a familiar one got the same treatment
+    # with James-Stein shrinkage, the more history a driver has the more we trust it
+    # when they've only raced somewhere once we pull their estimate all the way back
+    # toward the middle of the field (mu_0 = 10.0, which is basically "we don't know")
+    #
+    # the math (we looked this up from Gelman's BDA3 book):
+    #   B = (n * tau_sq) / (n * tau_sq + sigma_obs_sq)   <- the shrinkage factor
+    #   posterior = B * observed_avg + (1-B) * mu_0
+    # when n is small B is close to 0 so we mostly use the prior (mid-field)
+    # when n is large B approaches 1 so we mostly trust the historical data
+    # ref: Gelman et al. BDA3 ch. 5 (https://stat.columbia.edu/~gelman/book/)
+    # ref: the James-Stein estimator paper (https://doi.org/10.1007/BF02888369)
+    # ref: https://efron.ckirby.su.domains/other/Article1977.pdf (empirical Bayes overview)
 
-    avg_finish = X_features["circuit_driver_avg_finish"].values  # 1-20 scale
-    experience = X_features["circuit_experience"].values         # number of prior races here
+    avg_finish = X_features["circuit_driver_avg_finish"].fillna(10.0).values.astype(float)
+    experience = X_features["circuit_experience"].fillna(0.0).values.astype(float)
 
-    # convert historical avg finish to a rough win probability estimate
-    # avg finish P1 -> ~25% win rate, avg P5 -> ~5%, avg P10+ -> near 0
-    # technically this is imperfect but it's directionally current so we stick with it
-    # empirically: Verstappen avg ~P2 at most circuits, win rate ~30-40% when dominant(more in 2023)
-    # Hamilton at Monaco: avg ~P2.5, win rate ~47% (8 wins from 17 starts)
-    # using 0.25 as the cap: even dominant drivers rarely win more than 1 in 4 races at a circuit
-    raw_win_rate = np.clip((20.0 - avg_finish) / 19.0 * 0.25, 0.003, 0.25)
+    mu_0         = 10.0   # global prior mean: if we know nothing, assume mid-field
+    sigma_obs_sq = 22.0   # how much finishing positions vary race to race at a given circuit (~std 4.7)
+    tau_sq       = 10.0   # how spread out drivers actually are around mid-field (~std 3.2 places)
 
-    # at zero experience we have a very weak prior (driver hasn't raced here before so our belief is low)
-    # avoid division issues by enforcing minimum of 1 effective experience
-    effective_exp = np.maximum(experience, 1.0)
+    n = np.maximum(experience, 1.0)   # need at least 1 to avoid division by zero
+    B = (n * tau_sq) / (n * tau_sq + sigma_obs_sq)   # shrinkage: large n -> trust the data more
 
-    # use sqrt scaling for the pseudocount - dampens the effect of long history
-    # otherwise a driver like Hamilton or Alonso who's raced at Silverstone 20+ times would have
-    # such a strong prior it basically ignores the current model output
-    # this is a common technique in empirical Bayes - see:
-    # https://efron.ckirby.su.domains/other/Article1977.pdf (James-Stein / empirical Bayes)
-    exp_scale = np.sqrt(effective_exp / 3.0)  # sqrt so 9 races -> 3x strength, not 9x
+    # the posterior is a weighted average between what we observed and what we'd guess with no data
+    posterior_pos = B * avg_finish + (1.0 - B) * mu_0
 
-    # Beta(alpha, beta) parameterization
-    # alpha = pseudocount of wins (higher = stronger win tendency in prior)
-    # beta  = pseudocount of non-wins
-    # the +1 is Laplace smoothing(smoothing technique that modern LLM's use) - prevents alpha or beta from being 0
-    alpha = raw_win_rate * exp_scale + 1.0         # ref: Laplace smoothing https://en.wikipedia.org/wiki/Additive_smoothing
-    beta  = (1.0 - raw_win_rate) * exp_scale + 1.0
+    # now convert that position estimate (1-20 scale) to something like a win probability
+    # P1 average -> ~0.25 win rate (even Verstappen in 2023 didn't win every race)
+    # P10 average -> ~0.05, which is about right for a midfield driver
+    prior_score = np.clip((20.0 - posterior_pos) / 19.0 * 0.25, 0.003, 0.25)
 
-    # E[Beta(alpha, beta)] = alpha / (alpha + beta)
-    # this is the prior mean - our best guess before seeing the model output
-    prior_mean = alpha / (alpha + beta)
-
-    return prior_mean  # array of shape (n_samples,)
+    return prior_score  # one score per driver row in X_features
 
 
 def bayesian_adjust_win_proba(rf_proba, X_features, base_blend=0.18):
-    # blend the RF win probability with the Bayesian prior
-    # this is empirical Bayes - we don't compute the full posterior analytically
-    # but approximate it with a weighted average
+    # blend the (already temperature-calibrated) RF win probability with the hierarchical prior
+    # this is empirical Bayes - instead of computing the full posterior analytically
+    # we approximate it as a weighted average between the model and the prior
+    # the important thing here is that we call calibrate_with_temperature() first
+    # before this function - calibration has to happen before the prior blend or
+    # we'd be computing an awkward mixture of an overconfident model with a prior
     # ref: https://en.wikipedia.org/wiki/Empirical_Bayes_method
-    # similar approach used in sports analytics: https://www.baseballprospectus.com/
+    # similar weighted-average approach is used in sports analytics (basketball, baseball)
 
-    prior_mean = compute_bayesian_win_prior(X_features)   # circuit-history-based prior
-    experience = X_features["circuit_experience"].values  # how many races at this circuit
+    prior_score = compute_hierarchical_win_prior(X_features)  # James-Stein circuit history prior
+    experience  = X_features["circuit_experience"].fillna(0.0).values.astype(float)
 
-    # prior matters more when driver has more circuit history to draw on
-    # at 0 races: prior has almost no influence (we barely know anything about them here)
-    # at 15+ races: prior is quite meaningful (~20% weight)
-    # clip to [0.05, 0.20] so the model always has at least some say
+    # the blend weight scales with how much circuit history the driver has
+    # if a driver has never raced here before: prior barely influences anything (~4.5% weight)
+    # if they've raced here 15+ times (like Hamilton at Silverstone): prior gets ~18% weight
+    # 18% felt right empirically - enough to matter but the model still dominates
     adaptive_blend = base_blend * np.clip(experience / 12.0, 0.25, 1.0)
 
-    # weighted average: (1-w) * model_output + w * prior
-    adjusted = (1.0 - adaptive_blend) * np.asarray(rf_proba) + adaptive_blend * prior_mean
-
-    # clip to valid probability range just to be safe (shouldn't be necessary)
+    adjusted = (1.0 - adaptive_blend) * np.asarray(rf_proba) + adaptive_blend * prior_score
     return np.clip(adjusted, 1e-6, 1.0 - 1e-6)
 
 
-def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0):
-    # Bayesian Model Averaging: use LOSO validation data to determine ensemble weights
-    # ref: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
-    # ref: Hoeting et al. 1999 "Bayesian model averaging: a tutorial"
-    #      https://doi.org/10.1214/ss/1009212519
+def bayesian_calibrate_rf_temperature(oof_proba, oof_labels):
+    # Random Forest classifiers are notoriously overconfident - they often spit out
+    # probabilities like 0.97 or 0.02 when the truth is more like 0.80 or 0.10
+    # this matters for us because we then blend these probabilities with the Bayesian prior
+    # if the RF is overconfident the blend ends up being dominated by the RF output
     #
-    # The math:
-    #   Prior: Dirichlet(alpha_0) with alpha_0 = (2, 2, 1) - slight preference for XGB models
-    #   Update: add observed correct-winner counts per model across all LOSO folds
-    #   Posterior: Dirichlet(alpha_0 + observed_counts)
-    #   Expected weights: E[Dirichlet_i] = alpha_i / sum(alpha)
+    # temperature scaling is a super simple fix for this
+    # we just divide the logit (log-odds) by a temperature T before converting back to a probability
+    # p_cal = sigmoid( logit(p_raw) / T )
+    # T > 1 makes everything more uncertain (spreads predictions toward 0.5)
+    # T < 1 makes everything more extreme (squishes toward 0 or 1)
+    # T = 1 is no change (the identity)
     #
-    # Dirichlet is the conjugate prior for the Categorical distribution
-    # ref: https://en.wikipedia.org/wiki/Dirichlet_distribution
+    # we fit T using MAP estimation (maximum a posteriori) on out-of-fold LOSO predictions
+    # using OOF predictions is important - we don't want to fit T on the same data that
+    # trained the RF or we'd just be overfitting the calibration too
+    # the prior on T is log-normal centered at 1.0 (no calibration) with sigma = 0.5
+    # this prevents T from going crazy if the OOF data is small
+    # we optimize over log(T) instead of T directly so the search range is unconstrained
+    # ref: Platt scaling (https://en.wikipedia.org/wiki/Platt_scaling)
+    # ref: Guo et al. 2017 "On Calibration of Modern Neural Networks"
+    #      https://arxiv.org/abs/1706.04599 - great paper that shows even big models are miscalibrated
 
-    # prior pseudocounts: XGBReg=2.0, XGBRanker=2.0, RF=1.0
-    # RF gets a weaker prior because it's a binary classifier - less naturally suited to ranking
+    p     = np.clip(np.asarray(oof_proba,  dtype=float), 1e-7, 1.0 - 1e-7)
+    y     = np.asarray(oof_labels, dtype=float)
+    log_p = np.log(p / (1.0 - p))  # logit - basically "how many log-odds points does the model give it"
+
+    sigma_T_sq = 0.25  # log-normal prior on T: std = 0.5 means T is probably between ~0.6 and 1.6
+
+    def neg_map_objective(log_T):
+        # we minimize negative log-posterior = NLL + prior penalty
+        # optimizing over log(T) means we never accidentally evaluate T <= 0
+        T     = np.exp(log_T)
+        p_cal = 1.0 / (1.0 + np.exp(-log_p / T))  # apply temperature, convert back to probability
+        p_cal = np.clip(p_cal, 1e-7, 1.0 - 1e-7)
+        nll   = -np.mean(y * np.log(p_cal) + (1.0 - y) * np.log(1.0 - p_cal))
+        prior_penalty = (log_T ** 2) / (2.0 * sigma_T_sq)  # pulls T back toward 1.0 if data is noisy
+        return nll + prior_penalty
+
+    result = minimize_scalar(neg_map_objective, bounds=(-2.0, 2.0), method="bounded")
+    T_opt  = float(np.exp(result.x))
+    print(f"    Bayesian temperature T = {T_opt:.4f}  (1.0 = no calibration)")
+    return T_opt
+
+
+def calibrate_with_temperature(rf_proba, T):
+    # apply the fitted temperature T to a set of RF win probabilities
+    # this is called at inference time to calibrate raw RF outputs before blending with the prior
+    # formula: p_cal = sigmoid(logit(p_raw) / T)
+    # if T is basically 1.0 we just skip the math and return unchanged
+    if abs(T - 1.0) < 1e-6:
+        return np.asarray(rf_proba)
+    p        = np.clip(np.asarray(rf_proba, dtype=float), 1e-7, 1.0 - 1e-7)
+    log_odds = np.log(p / (1.0 - p))         # back to logit space
+    p_cal    = 1.0 / (1.0 + np.exp(-log_odds / T))  # rescale and back to probability
+    return np.clip(p_cal, 1e-7, 1.0 - 1e-7)
+
+
+def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0,
+                                      model_mae=None):
+    # so instead of just hardcoding "XGBoost gets 40%, Ranker gets 40%, RF gets 20%"
+    # we let the actual LOSO validation data decide how much to trust each model
+    # that's the whole idea of Bayesian Model Averaging - use the evidence, not your gut
+    #
+    # the trick is combining two signals:
+    #   1. "did you call the winner?" (60% of the final weight)
+    #      for each model, count how many race winners it correctly predicted across all LOSO folds
+    #      we use a Dirichlet prior (think of it as starting with imaginary "base wins" before
+    #      looking at real data) then update with the actual winner count from LOSO
+    #      Dirichlet is the conjugate prior here - meaning the math works out really cleanly
+    #      ref: https://en.wikipedia.org/wiki/Dirichlet_distribution
+    #   2. "was your whole ranking sensible?" (40% of the final weight)
+    #      a model that gets winners right but puts Albon in P2 every race is still bad
+    #      so we also weight by inverse position MAE: lower error = higher weight
+    #      formula: weight_i = (1/MAE_i) / sum(1/MAE_j) for all models j
+    #
+    # why 60/40? winner prediction is the main thing we're judged on (it's in the abstract)
+    # but ignoring ranking quality entirely felt like leaving real signal on the table
+    # ref: Hoeting et al. 1999 BMA paper: https://doi.org/10.1214/ss/1009212519
+
     alpha_prior = np.array([
         prior_strength,        # XGBoost Regressor
         prior_strength,        # XGBoost Ranker
-        prior_strength * 0.5,  # Random Forest (weaker prior)
+        prior_strength * 0.5,  # Random Forest (weaker: binary classifier, not a ranker)
+        prior_strength,        # ExtraTrees Regressor (same family as XGB reg, full prior)
     ])
 
-    # observed correct winner predictions per model from LOSO
     observed = np.array([
         loso_correct_per_model.get("xgb",    0),
         loso_correct_per_model.get("ranker",  0),
         loso_correct_per_model.get("rf",      0),
+        loso_correct_per_model.get("et",      0),
     ], dtype=float)
 
-    # posterior = prior + observations (Dirichlet update is just additive)
-    alpha_post = alpha_prior + observed
+    alpha_post        = alpha_prior + observed
+    dirichlet_weights = alpha_post / alpha_post.sum()
 
-    # expected value of Dirichlet = alpha_i / sum(alpha)
-    weights = alpha_post / alpha_post.sum()
+    # inverse-MAE weights — fall back to equal if MAE not provided
+    if model_mae is not None:
+        mae_arr = np.array([
+            model_mae.get("xgb",    np.nan),
+            model_mae.get("ranker", np.nan),
+            model_mae.get("rf",     np.nan),
+            model_mae.get("et",     np.nan),
+        ], dtype=float)
+        mae_arr = np.where(mae_arr > 0, mae_arr, np.nanmean(mae_arr[mae_arr > 0]))
+        inv_mae = 1.0 / mae_arr
+        inv_mae_weights = inv_mae / inv_mae.sum()
+    else:
+        inv_mae_weights = np.ones(4) / 4.0
 
-    print(f"\n  Bayesian Model Averaging weights (posterior from LOSO):")
-    print(f"    XGBoost Regressor : {weights[0]:.3f}  (prior={alpha_prior[0]:.1f}, observed={observed[0]:.0f})")
-    print(f"    XGBoost Ranker    : {weights[1]:.3f}  (prior={alpha_prior[1]:.1f}, observed={observed[1]:.0f})")
-    print(f"    Random Forest     : {weights[2]:.3f}  (prior={alpha_prior[2]:.1f}, observed={observed[2]:.0f})")
+    weights = 0.6 * dirichlet_weights + 0.4 * inv_mae_weights
 
-    return {"w_xgb": float(weights[0]), "w_ranker": float(weights[1]), "w_rf": float(weights[2])}
+    print(f"\n  Bayesian Model Averaging Weights (posterior from LOSO):")
+    print(f"    XGBoost Regressor : {weights[0]:.3f}  (prior={alpha_prior[0]:.1f}, correct={observed[0]:.0f})")
+    print(f"    XGBoost Ranker    : {weights[1]:.3f}  (prior={alpha_prior[1]:.1f}, correct={observed[1]:.0f})")
+    print(f"    Random Forest     : {weights[2]:.3f}  (prior={alpha_prior[2]:.1f}, correct={observed[2]:.0f})")
+    print(f"    ExtraTrees        : {weights[3]:.3f}  (prior={alpha_prior[3]:.1f}, correct={observed[3]:.0f})")
+    if model_mae is not None:
+        print(f"    MAE: xgb={model_mae.get('xgb', '?'):.3f}  ranker={model_mae.get('ranker', '?'):.3f}  rf={model_mae.get('rf', '?'):.3f}  et={model_mae.get('et', '?'):.3f}")
+
+    return {
+        "w_xgb":    float(weights[0]),
+        "w_ranker": float(weights[1]),
+        "w_rf":     float(weights[2]),
+        "w_et":     float(weights[3]),
+    }
 
 
 # ──────────────────────────────────
@@ -342,8 +481,8 @@ def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0)
 # ──────────────────────────────────
 
 def rank_predictions_per_race(df_meta, y_pred_pos):
-    # convert raw predicted scores (can be any number) to integer 1-20 positions per race
-    # the regressor outputs ex [3.2, 7.8, 1.4 ...] - we just rank those within each race
+    # the regressor spits out raw numbers like [3.2, 7.8, 1.4 ...] which aren't real positions
+    # so we rank them within each race to get proper 1, 2, 3, ... P20 integers
     df = df_meta[["Year", "Round", "EventName", "Driver", "Team"]].copy()
     df["raw_pred"] = np.asarray(y_pred_pos)
     df["PredictedPosition"] = (
@@ -355,8 +494,9 @@ def rank_predictions_per_race(df_meta, y_pred_pos):
 
 
 def winner_accuracy(df_meta, y_pred_pos, y_true_pos):
-    # what fraction of races did we correctly identify who won?
-    # this is the most important thing. It would be super cool if we had an answer to this "did you predict the winner"
+    # the main headline metric: what fraction of races did we correctly name the winner?
+    # for each race, whoever we predicted lowest (closest to P1) is our called winner
+    # then we check if that matches who actually won
     df = df_meta[["Year", "Round", "Driver"]].copy()
     df["pred_pos"] = np.asarray(y_pred_pos)
     df["true_pos"] = np.asarray(y_true_pos)
@@ -377,9 +517,10 @@ def winner_accuracy(df_meta, y_pred_pos, y_true_pos):
 
 
 def top10_set_accuracy(df_meta, y_pred_pos, y_true_pos, k=10):
-    # Jaccard similarity between predicted top-k and actual top-k (we looked this up too)
+    # measures how well we predicted who ends up in the top 10 using Jaccard similarity
+    # Jaccard is basically: |overlap| / |union| - so 1.0 means we got every top-10 driver right
+    # and 0.0 means we predicted completely the wrong set of drivers
     # ref: https://en.wikipedia.org/wiki/Jaccard_index
-    # Jaccard = |intersection| / |union| - 1.0 means perfect top-10 overlap
     df = df_meta[["Year", "Round", "Driver"]].copy()
     df["pred_pos"] = np.asarray(y_pred_pos)
     df["true_pos"] = np.asarray(y_true_pos)
@@ -400,8 +541,8 @@ def top10_set_accuracy(df_meta, y_pred_pos, y_true_pos, k=10):
 
 
 def podium_accuracy(df_meta, y_pred_pos, y_true_pos):
-    # exact podium match rate + partial credit (average overlap out of 3)
-    # exact match is hard - around 20-30% of races in practice
+    # two numbers: exact podium match (all 3 right) and partial credit (average overlap out of 3)
+    # exact match is pretty hard - we typically hit it about 20-30% of the time in practice
     df = df_meta[["Year", "Round", "Driver"]].copy()
     df["pred_pos"] = np.asarray(y_pred_pos)
     df["true_pos"] = np.asarray(y_true_pos)
@@ -413,7 +554,7 @@ def podium_accuracy(df_meta, y_pred_pos, y_true_pos):
     for (year, rnd), group in df.groupby(["Year", "Round"]):
         if group["true_pos"].isna().any():
             continue
-        # We repeat what we already did before but in this case k is 3, but with slight modifications
+        # same idea as top10_set_accuracy but for k=3 (the podium)
         pred_top3 = set(group.nsmallest(3, "pred_pos")["Driver"])
         true_top3 = set(group[group["true_pos"] <= 3]["Driver"])
         if not true_top3:
@@ -429,7 +570,8 @@ def podium_accuracy(df_meta, y_pred_pos, y_true_pos):
 
 
 def average_position_mae(df_meta, y_pred_pos, y_true_pos):
-    # mean absolute error between predicted rank and actual finishing position
+    # the average difference between where we said a driver would finish and where they actually did
+    # e.g. MAE=3.2 means on average we were off by about 3 places
     # ref: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html
     ranked = rank_predictions_per_race(df_meta, y_pred_pos)
     merged = ranked[["Year", "Round", "Driver", "PredictedPosition"]].copy()
@@ -445,19 +587,22 @@ def average_position_mae(df_meta, y_pred_pos, y_true_pos):
 # ──────────────────────────────────
 
 def tune_xgboost(X_train, y_train, n_iter=80):
-    # RandomizedSearchCV over XGBoost hyperparameter space
-    # why randomized and not grid search? grid is O(n^k) - too slow with this many params
+    # so basically we need to find the best "settings" for XGBoost
+    # things like how deep the trees go, how fast it learns, how much it regularizes
+    # we can't just try every combination (that's grid search, and it's way too slow)
+    # instead we randomly sample 80 combinations and take the best one - turns out
+    # random search works almost as well as exhaustive search for this kind of problem
     # ref: Bergstra & Bengio 2012 "Random Search for Hyper-Parameter Optimization"
     #      https://www.jmlr.org/papers/v13/bergstra12a.html
-    # if you want smarter Bayesian hyperparameter search, look at:
-    #   https://github.com/optuna/optuna  (much better than random but adds a dependency)
+    # if you want to be even smarter about it, Optuna does proper Bayesian hyperparameter search:
+    #   https://github.com/optuna/optuna  (way better than random but adds a dependency)
     #   https://github.com/fmfn/BayesianOptimization
 
-    # parameter ranges based on what worked in practice across multiple manual tuning sessions
-    # max_depth 3-6: shallower trees generalize better here (~2500 rows, 33 features)
-    # learning_rate low: we compensate with more trees
-    # reg_alpha (L1) + reg_lambda (L2): these really helped reduce overfitting 
-    # colsample_bynode: additional randomness at each split (like Extra Trees)
+    # these ranges came from a few days of manual trial and error - some intuition:
+    # max_depth 3-6: shallower trees overfit less with only ~2500 rows
+    # learning_rate very low: more trees + slower learning = smoother final model
+    # reg_alpha (L1) and reg_lambda (L2): these are the "don't go crazy" penalties - they helped a lot
+    # colsample_bynode: adds extra randomness at each split, pushes the model toward ensemble diversity
     # ref: XGBoost parameter tuning guide: https://xgboost.readthedocs.io/en/stable/tutorials/param_tuning.html
     param_dist = {
         "n_estimators":      randint(300, 1000),     # more trees = better but slower
@@ -475,19 +620,21 @@ def tune_xgboost(X_train, y_train, n_iter=80):
 
     base_model = xgb.XGBRegressor(
         random_state=SEED,
-        verbosity=0,         # no xgboost console output
-        n_jobs=-1,
-        tree_method="hist",  # histogram-based splits - faster, same accuracy for this size (we looked this up too)
+        verbosity=0,
+        n_jobs=1,       # n_jobs=1 here on purpose: RandomizedSearchCV(n_jobs=-1) below handles
+                        # the outer parallelism. if you set both to -1 on Windows it spawns
+                        # way too many processes and crashes with a C stack error (this was annoying to debug)
+        tree_method="hist",
     )
 
     search = RandomizedSearchCV(
         base_model,
         param_distributions=param_dist,
         n_iter=n_iter,
-        cv=3,           # 3-fold is a reasonable speed/reliability tradeoff
+        cv=3,
         scoring="neg_mean_absolute_error",
         random_state=SEED,
-        n_jobs=-1,
+        n_jobs=1,       # sequential on Windows - nested loky process spawn causes XGBoost DMatrix crash
         verbose=0,
     )
     search.fit(X_train, y_train)
@@ -498,12 +645,14 @@ def tune_xgboost(X_train, y_train, n_iter=80):
 
 
 def tune_random_forest_winner(X_train, y_win_train, n_iter=60):
-    # winner classification is a heavily imbalanced problem (~1 positive per 20 rows)
-    # class_weight='balanced_subsample' rebalances at each tree rather than globally
-    # this is better than 'balanced' for large forests according to sklearn docs:
-    # https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
-    # scoring on F1 not accuracy because accuracy is misleading with 1:19 imbalance
-    # (always-predict-no-winner gets 95% accuracy but F1=0)
+    # predicting the race winner is a lopsided problem: only 1 driver out of 20 wins each race
+    # so if the model just always says "not a winner" it'd be 95% accurate - which is useless
+    # the trick here is two things:
+    #   1. class_weight='balanced_subsample': this tells each tree "treat the rare winner class
+    #      as if there are as many winners as non-winners" - balancing at the tree level is
+    #      better than doing it globally according to sklearn docs
+    #   2. we score on F1 instead of accuracy - F1 actually punishes you for ignoring winners
+    # ref: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
 
     param_dist = {
         "n_estimators":     randint(300, 800),       # 300-800 trees
@@ -517,18 +666,18 @@ def tune_random_forest_winner(X_train, y_win_train, n_iter=60):
     base = RandomForestClassifier(
         class_weight="balanced_subsample",
         random_state=SEED,
-        n_jobs=-1,
+        n_jobs=1,       # same n_jobs=1 trick: outer RandomizedSearchCV handles parallelism
     )
 
-    valid = y_win_train.dropna()  # can't train on rows with missing winner label
+    valid = y_win_train.dropna()
     search = RandomizedSearchCV(
         base,
         param_distributions=param_dist,
         n_iter=n_iter,
         cv=3,
-        scoring="f1",      # balanced metric for imbalanced data
+        scoring="f1",
         random_state=SEED,
-        n_jobs=-1,
+        n_jobs=1,       # sequential - same Windows loky spawn crash fix as XGBoost above
         verbose=0,
     )
     search.fit(X_train.loc[valid.index], valid.astype(int))
@@ -554,7 +703,7 @@ def tune_random_forest_top10(X_train, y_top10_train, n_iter=60):
     base = RandomForestClassifier(
         class_weight="balanced_subsample",
         random_state=SEED,
-        n_jobs=-1,
+        n_jobs=1,       # same Windows-safe fix as the winner RF above
     )
 
     valid = y_top10_train.dropna()
@@ -565,7 +714,7 @@ def tune_random_forest_top10(X_train, y_top10_train, n_iter=60):
         cv=3,
         scoring="f1",
         random_state=SEED,
-        n_jobs=-1,
+        n_jobs=1,       # sequential - Windows crash fix
         verbose=0,
     )
     search.fit(X_train.loc[valid.index], valid.astype(int))
@@ -574,14 +723,39 @@ def tune_random_forest_top10(X_train, y_top10_train, n_iter=60):
     return search.best_estimator_, search.best_params_
 
 
-# fallback trainers used inside the LOSO loop (no tuning per fold - would be too slow)
-# these use sensible defaults derived from a few manual tuning runs
+# the functions below are the "lite" versions of the trainers used inside the LOSO loop
+# we don't run the full hyperparameter search per fold - that would make LOSO take hours
+# instead we use these sensible defaults that came from a few earlier manual tuning sessions
 
-def train_xgboost_regressor(X_train, y_train, params=None):
-    # train XGBoost regressor with provided params or fallback defaults
+def compute_fold_sample_weights(years_train, holdout_year):
+    # the idea here is simple: if we're trying to predict 2024, the 2023 season is way more
+    # relevant than 2018 was - F1 cars and teams change too much year to year
+    # so we give closer years more weight during training
+    # |year - holdout| = 1 → weight 2.25, = 2 → 1.50, = 3 → 1.00, > 3 → 0.50
+    # it's a soft exponential-ish decay anchored at 3 years out
+    # this really helps on the 2022/2024 folds which are "transition year" folds where regulation changes mean
+    # older data is actively misleading
+    weight_map = {}
+    for y in years_train:
+        dist = abs(y - holdout_year)
+        if dist <= 1:
+            weight_map[y] = 2.25
+        elif dist <= 2:
+            weight_map[y] = 1.50
+        elif dist <= 3:
+            weight_map[y] = 1.00
+        else:
+            weight_map[y] = 0.50
+    return weight_map
+
+
+def train_xgboost_regressor(X_train, y_train, params=None, sample_weight=None):
+    # this is the "fast" version used inside the LOSO loop where we need to train one per holdout year
+    # if we ran the full 80-iteration random search per fold the validation would take hours
+    # so if no params are provided we fall back to a set of defaults that work pretty well
     if params is None:
-        # defaults I landed on after a few days of manual experimentation
-        # shallower and more regularized than what tuning might find
+        # these are the defaults I landed on after a few days of poking around manually
+        # they're a bit more conservative (shallower, more regularized) than what the full search finds
         params = {
             "n_estimators": 400, "max_depth": 4, "learning_rate": 0.04,
             "subsample": 0.75, "colsample_bytree": 0.70, "colsample_bylevel": 0.80,
@@ -590,12 +764,12 @@ def train_xgboost_regressor(X_train, y_train, params=None):
     model = xgb.XGBRegressor(
         **params, random_state=SEED, verbosity=0, n_jobs=-1, tree_method="hist",
     )
-    model.fit(X_train, y_train)
+    model.fit(X_train, y_train, sample_weight=sample_weight)
     return model
 
 
-def train_random_forest_winner(X_train, y_win_train, params=None):
-    # fallback RF trainer with default params for LOSO loop
+def train_random_forest_winner(X_train, y_win_train, params=None, sample_weight=None):
+    # same idea as the XGBoost fallback above - quick RF with preset defaults for the LOSO loop
     if params is None:
         params = {
             "n_estimators": 500, "max_depth": 7, "min_samples_leaf": 4,
@@ -605,12 +779,13 @@ def train_random_forest_winner(X_train, y_win_train, params=None):
         **params, class_weight="balanced_subsample", random_state=SEED, n_jobs=-1,
     )
     valid = y_win_train.dropna()
-    model.fit(X_train.loc[valid.index], valid.astype(int))
+    sw = sample_weight[valid.index] if sample_weight is not None else None
+    model.fit(X_train.loc[valid.index], valid.astype(int), sample_weight=sw)
     return model
 
 
-def train_random_forest_top10(X_train, y_top10_train, params=None):
-    # fallback RF top-10 trainer
+def train_random_forest_top10(X_train, y_top10_train, params=None, sample_weight=None):
+    # same deal - quick fallback RF for top-10 classification inside the LOSO loop
     if params is None:
         params = {
             "n_estimators": 500, "max_depth": 7, "min_samples_leaf": 3,
@@ -620,27 +795,31 @@ def train_random_forest_top10(X_train, y_top10_train, params=None):
         **params, class_weight="balanced_subsample", random_state=SEED, n_jobs=-1,
     )
     valid = y_top10_train.dropna()
-    model.fit(X_train.loc[valid.index], valid.astype(int))
+    sw = sample_weight[valid.index] if sample_weight is not None else None
+    model.fit(X_train.loc[valid.index], valid.astype(int), sample_weight=sw)
     return model
 
 
-def train_xgboost_ranker(X_train, y_pos_train, groups, best_params=None):
-    # XGBRanker with rank:ndcg objective
-    # There's a key difference from regression, instead of minimizing position error absolutely,
-    # the ranker optimizes NDCG (Normalized Discounted Cumulative Gain) which measures
-    # how well we order drivers within each race, weighting top positions more heavily
+def train_xgboost_ranker(X_train, y_pos_train, groups, best_params=None, sample_weight=None):
+    # the ranker is fundamentally different from the regressor - here's the deal:
+    # the regressor says "predict Hamilton finishes in P3.2" (a raw number)
+    # the ranker doesn't care about raw numbers - it just wants to get the ORDER right within each race
+    # it uses NDCG (Normalized Discounted Cumulative Gain) as its objective, which basically means:
+    # "getting the top positions in the right order matters more than getting the back of the grid right"
+    # think of it like: correctly ranking Verstappen vs Hamilton vs Leclerc is worth more
+    # than correctly ordering the midfield scramblers in P14-P16
     # ref: NDCG definition: https://en.wikipedia.org/wiki/Discounted_cumulative_gain
     # ref: XGBoost learning-to-rank: https://xgboost.readthedocs.io/en/stable/tutorials/learning_to_rank.html
     # ref: demo code from XGBoost repo: https://github.com/dmlc/xgboost/tree/master/demo
 
-    # convert positions to relevance scores: P1 = max relevance, P20 = relevance 1
-    # XGBRanker expects non-negative integers, so no zeros
+    # XGBRanker wants "relevance scores" not positions - so P1 gets the highest score, P20 the lowest
+    # we do max_pos + 1 - position, which flips 1→20, 2→19 etc. clip to minimum 1 (no zeros allowed)
     max_pos   = int(y_pos_train.fillna(20).max())
     relevance = (max_pos + 1 - y_pos_train.fillna(max_pos)).astype(int).clip(lower=1)
 
-    # reuse regressor hyperparams - both use the same underlying tree structure and it makes stuff easier for me
-    # the objective changes but depth/learning rate/regularization translate well
-    # if best_params is None (called from LOSO loop before tuning runs) fall back to tested defaults
+    # we reuse the same hyperparams as the XGBoost regressor - same tree structure, just different objective
+    # depth/learning rate/regularization all transfer well between the two
+    # if best_params is None (happens in the LOSO loop before the full tuning has run) fall back to tested defaults
     if best_params is None:
         best_params = {
             "n_estimators": 400, "max_depth": 4, "learning_rate": 0.04,
@@ -659,14 +838,73 @@ def train_xgboost_ranker(X_train, y_pos_train, groups, best_params=None):
         verbosity=0,
         n_jobs=-1,
     )
-    model.fit(X_train, relevance, group=groups)
+    model.fit(X_train, relevance, group=groups, sample_weight=sample_weight)
+    return model
+
+
+def tune_extratrees(X_train, y_train, n_iter=60):
+    # ExtraTrees is the 4th model we throw into the ensemble - it's actually the most "random" of the bunch
+    # here's the family tree: XGBoost (boosting, sequential), RF (bagging + best split), ExtraTrees (bagging + RANDOM split)
+    # the key thing ExtraTrees does differently from RandomForest:
+    #   RF says: "for each split, try a random subset of features and pick the BEST threshold"
+    #   ExtraTrees says: "for each feature in that subset, just pick ONE random threshold and go with it"
+    # this sounds like it'd be worse, but it means ExtraTrees "disagrees" with XGB and RF on
+    # different races - and diverse disagreement is exactly what makes ensembles work
+    # basically we want models that are wrong about different things, not the same things
+    # ref: Geurts, Ernst, Wehenkel 2006: https://link.springer.com/article/10.1007/s10994-006-6226-1
+    # ref: sklearn comparison: https://scikit-learn.org/stable/modules/ensemble.html#extremely-randomized-trees
+
+    param_dist = {
+        "n_estimators":     randint(300, 800),
+        "max_depth":        [5, 6, 7, 8, 10, 12, None],
+        "min_samples_leaf": randint(2, 12),
+        "max_features":     ["sqrt", "log2", 0.4, 0.5, 0.6],
+        "max_samples":      uniform(0.6, 0.35),  # bootstrap sample fraction
+    }
+
+    base = ExtraTreesRegressor(
+        random_state=SEED,
+        n_jobs=1,    # Windows-safe: RandomizedSearchCV(n_jobs=-1) handles the outer parallelism
+        bootstrap=True,  # need bootstrap=True to use max_samples
+    )
+
+    search = RandomizedSearchCV(
+        base,
+        param_distributions=param_dist,
+        n_iter=n_iter,
+        cv=3,
+        scoring="neg_mean_absolute_error",
+        random_state=SEED,
+        n_jobs=1,       # sequential - Windows crash fix
+        verbose=0,
+    )
+    search.fit(X_train, y_train)
+
+    print(f"    Best ExtraTrees MAE (3-fold CV): {-search.best_score_:.3f}")
+    print(f"    Best params: {search.best_params_}")
+    return search.best_estimator_, search.best_params_
+
+
+def train_extratrees(X_train, y_train, params=None, sample_weight=None):
+    # quick ExtraTrees fallback for the LOSO loop - no hyperparameter search, just run it
+    if params is None:
+        # random splits need a bit more depth to compensate for being less optimal than RF splits
+        # so these defaults are slightly deeper than the RF ones
+        params = {
+            "n_estimators": 500, "max_depth": 8, "min_samples_leaf": 3,
+            "max_features": "sqrt", "max_samples": 0.8,
+        }
+    model = ExtraTreesRegressor(
+        **params, random_state=SEED, n_jobs=-1, bootstrap=True,
+    )
+    model.fit(X_train, y_train, sample_weight=sample_weight)
     return model
 
 
 def compute_race_groups(df_meta):
-    # compute per-race driver counts needed by XGBRanker's group parameter
-    # df_meta must already be sorted by (Year, Round) before calling this
-    # returns ex [20, 20, 19, 20, ...] - one entry per race
+    # XGBRanker needs to know where each race "group" starts and ends
+    # so we just count how many drivers are in each race and return that as a list
+    # looks like [20, 20, 19, 20, ...] - one number per race, must match sort order
     return df_meta.groupby(["Year", "Round"], sort=False).size().tolist()
 
 
@@ -675,17 +913,16 @@ def compute_race_groups(df_meta):
 # ──────────────────────────────────
 
 def _rank_normalize(scores, df_meta, ascending=True):
-    # normalize model outputs to [0,1] within each race
-    # the three models output on completely different scales:
-    #   XGBReg: ~1-25 (position estimates, sometimes above 20)
-    #   XGBRanker: large positive relevance scores
-    #   RF: 0-1 probabilities
-    # after rank-normalizing: all three are [0,1] with 0 = predicted winner
-    # then a weighted average is meaningful and scale-independent
+    # here's the problem: our three models output completely different things
+    #   XGBReg spits out numbers like 3.2 or 14.8 (position estimates, sometimes weirdly above 20)
+    #   XGBRanker outputs large relevance scores like 142.0 or 7.3 with no obvious scale
+    #   RF outputs probabilities between 0 and 1
+    # you can't just average those directly - the scales are totally incompatible
+    # so we rank each driver within their race and map that to [0,1]
+    # after this: all models are on the same scale with 0 = predicted winner, 1 = predicted last
     #
-    # ascending=True  for XGBReg (lower predicted position = better)
-    # ascending=False for XGBRanker relevance (higher = better)
-    # ascending=True  for RF (we invert it: 1-prob, lower = more likely to win)
+    # ascending=True  means "lower raw score = better" (XGBReg position, inverted RF prob)
+    # ascending=False means "higher raw score = better" (XGBRanker relevance)
 
     df = df_meta[["Year", "Round"]].copy().reset_index(drop=True)
     df["raw"] = np.asarray(scores)
@@ -705,51 +942,102 @@ def _rank_normalize(scores, df_meta, ascending=True):
 
 def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta,
                      ranker_raw_scores=None,
+                     et_raw_pos=None,
                      ensemble_weights=None,
                      X_features=None,
-                     apply_bayesian_prior=True):
-    # combine all three model outputs into a single race prediction
-    # if ensemble_weights is provided (from Bayesian Model Averaging) use those
-    # otherwise fall back to fixed 40/40/20 weights
-    # if apply_bayesian_prior=True and X_features provided: adjust RF win prob using Beta prior
+                     apply_bayesian_prior=True,
+                     cal_temperature=1.0,
+                     meta_model=None):
+    # this is where everything comes together - we take the four model outputs and blend them
+    # into one final predicted race order
+    #
+    # the ORDER of steps here matters a lot - we got this wrong once and it was subtle to spot:
+    #
+    #   step 1: temperature calibration
+    #     the RF is overconfident ("I'm 97% sure Verstappen wins") so first we squeeze its
+    #     probabilities toward 0.5 using the temperature T we fit from LOSO predictions
+    #
+    #   step 2: Bayesian circuit-history prior blend
+    #     now mix the calibrated RF probability with the James-Stein prior
+    #     (the "Hamilton has won at Silverstone 8 times, factor that in" part)
+    #     we have to do step 1 BEFORE this, otherwise the overconfident RF probability
+    #     just drowns out the prior entirely since it's so extreme
+    #
+    #   step 3: rank normalize all four models and blend with BMA weights
+    #     or if a stacking meta-model is available, use that instead of the hand-tuned weights
     #
     # ref: ensemble blending discussion: https://github.com/MLWave/Kaggle-Ensemble-Guide
     # ref: rank aggregation, majority rules (Condorcet): https://en.wikipedia.org/wiki/Condorcet_method
 
     df = df_meta[["Year", "Round", "EventName", "Driver", "Team"]].copy().reset_index(drop=True)
 
-    # optionally adjust RF probabilities using the Bayesian circuit-history prior
-    # this generally helps for drivers with a strong historical record at specific tracks
+    # step 1: temperature calibration (Platt scaling with log-normal MAP prior)
+    rf_cal = calibrate_with_temperature(np.asarray(rf_win_proba), cal_temperature)
+
+    # step 2: Bayesian circuit-history prior blend (Normal-Normal hierarchical shrinkage)
     if apply_bayesian_prior and X_features is not None:
-        xf = X_features.reset_index(drop=True)  # make sure index alignment is clean
-        rf_adj = bayesian_adjust_win_proba(np.asarray(rf_win_proba), xf)
+        xf = X_features.reset_index(drop=True)
+        rf_adj = bayesian_adjust_win_proba(rf_cal, xf)
     else:
-        rf_adj = np.asarray(rf_win_proba)
+        rf_adj = rf_cal
 
     df["rf_win_proba"] = rf_adj
     df["xgb_raw_pred"] = np.asarray(xgb_raw_pos)
 
     if ranker_raw_scores is not None:
-        # three-model blend with rank normalization
+        # four-model blend with rank normalization
         xgb_norm    = _rank_normalize(xgb_raw_pos,        df, ascending=True)
         ranker_norm = _rank_normalize(ranker_raw_scores,   df, ascending=False)
         rf_norm     = _rank_normalize(1.0 - rf_adj,        df, ascending=True)  # invert so 0 = likely winner
+        # ExtraTrees: same direction as XGB (lower predicted position = better)
+        et_norm     = _rank_normalize(et_raw_pos, df, ascending=True) if et_raw_pos is not None else xgb_norm
 
-        # get weights - BMA if available, else fixed fallback
         if ensemble_weights is not None:
             w_xgb    = ensemble_weights["w_xgb"]
             w_ranker = ensemble_weights["w_ranker"]
             w_rf     = ensemble_weights["w_rf"]
+            w_et     = ensemble_weights.get("w_et", 0.0)  # backward compat if old weights dict used
         else:
-            # these 40/40/20 weights were chosen before BMA was implemented
-            # now we compute them from data but keep this as fallback
-            w_xgb, w_ranker, w_rf = 0.40, 0.40, 0.20
+            # 35/35/15/15 equal split between the four models as fallback
+            w_xgb, w_ranker, w_rf, w_et = 0.35, 0.35, 0.15, 0.15
 
-        df["ensemble_score"] = w_xgb * xgb_norm + w_ranker * ranker_norm + w_rf * rf_norm
+        if meta_model is not None:
+            # if we have a stacking meta-model (which we usually do) use that instead of the BMA weights
+            # the meta-model is a tiny XGBoost (depth=2) trained to figure out how much to trust each model
+            # it gets 9 features: the 4 normalized model scores + 5 context features like grid position
+            # and whether it's a street circuit - so it can learn "at Monaco, trust XGBoost more"
+            # we tried LogisticRegression here first but XGB depth=2 beats it by about 2% on LOSO
+            # because it can learn interactions like "both XGB AND Ranker agree AND low overtaking"
+            # that LR simply can't represent
+            # reg_era and is_street were added later so the meta knows which era it's in
+            if X_features is not None:
+                xf_reset = X_features.reset_index(drop=True)
+                meta_context = np.column_stack([
+                    xgb_norm, ranker_norm, rf_norm, et_norm,
+                    xf_reset["grid_position_pct"].values,
+                    xf_reset["circuit_overtaking_score"].values,
+                    xf_reset["championship_rank_pct"].fillna(0.5).values,
+                    xf_reset["car_regulation_era"].values,
+                    xf_reset["circuit_is_street"].values,
+                ])
+            else:
+                # fallback if X_features not provided - fill unknowns with neutral values
+                meta_context = np.column_stack([
+                    xgb_norm, ranker_norm, rf_norm, et_norm,
+                    np.zeros(len(xgb_norm)),
+                    np.full(len(xgb_norm), 0.45),
+                    np.full(len(xgb_norm), 0.5),
+                    np.ones(len(xgb_norm)),   # assume ground-effect era (2022+)
+                    np.zeros(len(xgb_norm)),  # assume not street circuit
+                ])
+            meta_win_prob = meta_model.predict_proba(meta_context)[:, 1]
+            df["ensemble_score"] = 1.0 - meta_win_prob
+        else:
+            df["ensemble_score"] = (w_xgb * xgb_norm + w_ranker * ranker_norm
+                                    + w_rf * rf_norm + w_et * et_norm)
 
     else:
-        # old fallback: two-model blend without ranker
-        # kept for backward compatibility (LOSO loop where ranker isn't trained per fold)
+        # fallback: two-model blend without ranker (shouldn't normally hit this)
         df["ensemble_score"] = np.asarray(xgb_raw_pos) + 0.3 * (1.0 - rf_adj)
 
     # rank by ensemble score within each race (lower = predicted winner)
@@ -767,24 +1055,47 @@ def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta,
 # ──────────────────────────────────
 
 def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10):
-    # leave-one-season-out cross validation
-    # we hold out one year at a time and train on the remaining years
-    # this is the correct strategy for temporal data - k-fold would cause leakage
-    # (future seasons informing past season models would be cheating)
+    # this is how we honestly evaluate the model: hold out one entire season at a time,
+    # train on everything else, and see how it does on the season it never saw
+    # for example: train on 2019/2022/2023/2024, predict 2021, see how accurate we were
+    # then train on 2019/2021/2023/2024, predict 2022, etc.
+    #
+    # why not just do normal k-fold cross validation? because k-fold shuffles rows randomly,
+    # so a 2024 race could end up in the training set for a 2023 holdout - that's data leakage,
+    # future races "helping" us predict past ones, which is cheating
+    # with temporal data you always validate forward in time
     # ref: sklearn time series splitting: https://scikit-learn.org/stable/modules/cross_validation.html#time-series-split
     #
-    # this also tracks per-model winner accuracy for Bayesian Model Averaging(so we can pick the best one)
+    # the whole function runs in two phases:
+    #   phase 1 (the per-year loop): train the four base models on each fold, collect out-of-fold
+    #     predictions for BMA weight computation and temperature calibration
+    #   phase 2 (after the loop): train the stacking meta-model using those OOF predictions
+    #     this replaces the hand-tuned 40/40/20 blend weights with something learned from data
+    #     ref: stacking/blending overview: https://en.wikipedia.org/wiki/Ensemble_learning#Stacking
 
     print("\n" + "─" * 55)
-    print("  Leave-One-Season-Out Validation")
+    print("  Leave-One-Season-Out Validation (base models)")
     print("─" * 55)
 
     years   = sorted(df_train["Year"].unique())
     results = []
 
-    # accumulate correct-winner counts per model for BMA weight computation
-    model_correct = {"xgb": 0, "ranker": 0, "rf": 0}
+    # track how many winners each model calls correctly across all folds
+    # also track per-fold MAE - the BMA weight computation needs both signals
+    model_correct = {"xgb": 0, "ranker": 0, "rf": 0, "et": 0}
+    model_mae_acc = {"xgb": [], "ranker": [], "rf": [], "et": []}
     total_validated_races = 0
+
+    # we also collect all the RF win probabilities from every holdout fold into one big pool
+    # this is the OOF (out-of-fold) set we'll use to fit the temperature calibration T
+    # why wait until after the loop? because T is fit on predictions the RF never trained on -
+    # if we fit T per fold we'd be wasting data, collecting all folds first gives us more
+    oof_rf_proba  = []
+    oof_rf_labels = []
+
+    # fold_cache stores the rank-normalized scores from each fold for the phase-2 stacking
+    # think of it as saving the answer sheets from each fold so the meta-model can learn from them
+    fold_cache = {}
 
     for holdout_year in years:
         train_mask = df_train["Year"] != holdout_year  # train on everything except holdout
@@ -807,13 +1118,15 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
             ["Year", "Round", "EventName", "Driver", "Team"]
         ].reset_index(drop=True)
 
-        # train three models on training fold
+        # train all four base models fresh on this fold's training set
         xgb_model  = train_xgboost_regressor(X_tr, y_pos_tr.fillna(20))
         rf_win_mod = train_random_forest_winner(X_tr, y_win_tr)
         rf_top10   = train_random_forest_top10(X_tr, y_top10_tr)
+        et_model   = train_extratrees(X_tr, y_pos_tr.fillna(20))  # 4th model: random threshold splits
 
-        # train ranker on the same fold - XGBRanker needs data sorted by race for the group arg
-        # actually train it per fold now instead of approximating with a 1.07x XGBReg bonus
+        # train the ranker separately - XGBRanker needs data sorted by (Year, Round) for the group arg
+        # we used to just multiply the XGBReg scores by 1.07 as a quick approximation, but
+        # training it properly per fold is worth the extra time
         meta_tr_fold  = df_train[train_mask][["Year", "Round"]].reset_index(drop=True)
         sort_idx_fold = meta_tr_fold.sort_values(["Year", "Round"]).index
         X_tr_srt      = X_tr.loc[sort_idx_fold].reset_index(drop=True)
@@ -826,30 +1139,70 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         xgb_preds     = xgb_model.predict(X_te)
         rf_proba      = rf_win_mod.predict_proba(X_te)[:, 1]
         ranker_scores = ranker_fold.predict(X_te)
+        et_preds      = et_model.predict(X_te)
 
-        # rf as position score: invert probability so lower = more likely winner
-        rf_as_pos     = 1.0 - rf_proba
-        # ranker outputs relevance (higher = better) so negate for idxmin() winner detection
-        ranker_as_pos = -ranker_scores
+        # flip signs so that for every model, "lower = more likely to win" (consistent direction)
+        rf_as_pos     = 1.0 - rf_proba    # RF outputs win prob so 1-prob gives a position-like score
+        ranker_as_pos = -ranker_scores     # ranker outputs relevance (higher=better), flip it
+        et_as_pos     = et_preds           # ExtraTrees is already in position space
 
-        # per-model winner accuracy for BMA weight computation - now using the actual ranker
+        # add this fold's RF predictions to the running pool for temperature calibration later
+        # we pool ALL folds together before fitting T - more data = better T estimate
+        oof_rf_proba.extend(rf_proba.tolist())
+        oof_rf_labels.extend(y_win[test_mask].fillna(0).astype(int).tolist())
+
+        # save the rank-normalized scores for phase-2 stacking
+        # basically we're storing "what each model predicted for each driver in this holdout year"
+        # so that after the loop we can train the meta-model on those predictions
+        # we also include 5 context features so the meta can learn things like:
+        #   "at street circuits, qualifying position is even more reliable than usual"
+        #   "championship leader is usually in the fastest car - trust XGB's qualifying signal"
+        #   "high overtaking track: RF win prob matters more, grid position matters less"
+        fold_cache[holdout_year] = {
+            "xgb_norm":          _rank_normalize(xgb_preds, meta_te, ascending=True),
+            "ranker_norm":       _rank_normalize(ranker_scores, meta_te, ascending=False),
+            "rf_norm":           _rank_normalize(1.0 - rf_proba, meta_te, ascending=True),
+            "et_norm":           _rank_normalize(et_preds, meta_te, ascending=True),
+            "grid_pos_pct":      X_te["grid_position_pct"].values,
+            "overtaking_score":  X_te["circuit_overtaking_score"].values,
+            # championship_rank_pct: 0=leader (in fastest car), fill NaN with mid-field 0.5
+            "champ_rank_pct":    X_te["championship_rank_pct"].fillna(0.5).values,
+            "reg_era":           X_te["car_regulation_era"].values,
+            "is_street":         X_te["circuit_is_street"].values,
+            "meta_te":           meta_te.copy(),
+            "y_pos_te":          y_pos_te.copy(),
+            "y_win_te":          y_win[test_mask].reset_index(drop=True).copy(),
+        }
+
+        # count how many winners each individual model called correctly this fold
+        # this feeds into the BMA weight computation after all folds are done
         _, n_xgb,    n_tot = winner_accuracy(meta_te, xgb_preds,    y_pos_te)
         _, n_rf,     _     = winner_accuracy(meta_te, rf_as_pos,     y_pos_te)
         _, n_ranker, _     = winner_accuracy(meta_te, ranker_as_pos, y_pos_te)
+        _, n_et,     _     = winner_accuracy(meta_te, et_as_pos,     y_pos_te)
 
         model_correct["xgb"]    += n_xgb
         model_correct["ranker"] += n_ranker
         model_correct["rf"]     += n_rf
+        model_correct["et"]     += n_et
         total_validated_races   += n_tot
 
-        # compute main metrics using full three-model ensemble (now that ranker is trained per fold)
+        # also track position MAE per model per fold - the "ranking quality" half of BMA
+        model_mae_acc["xgb"].append(average_position_mae(meta_te, xgb_preds,    y_pos_te))
+        model_mae_acc["ranker"].append(average_position_mae(meta_te, ranker_as_pos, y_pos_te))
+        model_mae_acc["rf"].append(average_position_mae(meta_te, rf_as_pos,     y_pos_te))
+        model_mae_acc["et"].append(average_position_mae(meta_te, et_as_pos,     y_pos_te))
+
+        # compute ensemble metrics for this fold using fallback weights (BMA not ready yet)
+        # we can't use the real BMA weights here because they depend on ALL folds finishing first
         fold_ens = ensemble_predict(
             xgb_preds, rf_proba, meta_te,
             ranker_raw_scores=ranker_scores,
-            ensemble_weights=None,   # fixed 40/40/20 fallback - BMA weights not known yet during LOSO
+            et_raw_pos=et_preds,
+            ensemble_weights=None,   # fixed fallback weights during LOSO - BMA computed after
             apply_bayesian_prior=False,
         )
-        # align ensemble predictions back to meta_te row order for fair evaluation
+        # merge ensemble predictions back to the original row order before computing metrics
         ens_aligned = meta_te.merge(
             fold_ens[["Year", "Round", "Driver", "PredictedPosition"]],
             on=["Year", "Round", "Driver"], how="left"
@@ -885,10 +1238,138 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
     print(f"    Top-10 Jaccard  : {val_df['top10_jaccard'].mean():.3f}")
     print(f"    Position MAE    : {val_df['position_mae'].mean():.2f} places")
 
-    # compute Bayesian weights from LOSO per-model performance
-    bma_weights = bayesian_model_averaging_weights(model_correct)
+    # all folds are done - now we have the full pool of OOF RF predictions (one per driver per race)
+    # pool ALL of them together to fit the temperature calibration T
+    # using the full pool gives us more data and a more stable T estimate
+    print(f"\n  Fitting Bayesian temperature scaling on {len(oof_rf_proba)} OOF predictions...")
+    cal_temperature = bayesian_calibrate_rf_temperature(
+        np.array(oof_rf_proba), np.array(oof_rf_labels)
+    )
 
-    return val_df, bma_weights
+    # average each model's MAE across folds - don't sum, since earlier folds might have more races
+    mean_model_mae = {
+        m: float(np.nanmean(vals)) for m, vals in model_mae_acc.items() if vals
+    }
+
+    # now compute the BMA weights using both the winner counts and the MAE averages
+    bma_weights = bayesian_model_averaging_weights(model_correct, model_mae=mean_model_mae)
+
+    # ── Phase 2: the stacking meta-model ────────────────────────────────────────
+    # here's the core idea: we have OOF predictions from every year, so let's train a
+    # small "meta-model" that learns how to best combine the four base models
+    # but we can't evaluate the meta-model on the same folds it trained on - that's leakage again
+    # the solution: nested leave-one-year-out - for each holdout year, train the meta on the
+    # OTHER years' OOF predictions, then test on the holdout year
+    # ref: nested cross-validation: https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
+    print("\n" + "─" * 55)
+    print("  Stacking Meta-Model (nested leave-one-year-out)")
+    print("─" * 55)
+
+    meta_results = []
+    for holdout_year in years:
+        other_years = [y for y in years if y != holdout_year]
+
+        # train the meta-model on all other years' OOF predictions
+        # 9 features: 4 base model scores (already rank-normalized to [0,1]) + 5 context features
+        # the context features help the meta figure out WHEN to trust each model:
+        #   champ_rank_pct: Verstappen in 2023 is basically guaranteed to win - trust XGB
+        #   overtaking_score: Monaco vs Monza - how much does qualifying position matter here?
+        #   grid_pos_pct: the qualifying position itself as a direct signal
+        #   car_regulation_era: ground-effect cars (2022+) vs turbo-hybrid - models behave differently
+        #   circuit_is_street: Monaco/Baku pole = almost certain win, amplifies the qualifying signal
+        meta_X_tr = np.vstack([
+            np.column_stack([fold_cache[y]["xgb_norm"],    fold_cache[y]["ranker_norm"],
+                             fold_cache[y]["rf_norm"],     fold_cache[y]["et_norm"],
+                             fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
+                             fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
+                             fold_cache[y]["is_street"]])
+            for y in other_years
+        ])
+        meta_y_tr = np.hstack([
+            fold_cache[y]["y_win_te"].fillna(0).astype(int).values for y in other_years
+        ])
+
+        # tiny XGBoost with max_depth=2 as the meta-learner
+        # why not LogisticRegression? LR can't handle interactions like "both XGB AND Ranker agree
+        # AND overtaking score is low" - that requires a tree split, not a linear weight
+        # strong regularization (reg_lambda=10) because we only have ~90 races to train on per fold
+        # empirically XGB meta beats LR meta by about 2% on LOSO: 55.1% vs 53.1% winner accuracy
+        meta_xgb = xgb.XGBClassifier(
+            max_depth=2, n_estimators=100, learning_rate=0.05,
+            reg_lambda=10.0, reg_alpha=2.0, subsample=0.8, colsample_bytree=0.8,
+            eval_metric="logloss", random_state=SEED, verbosity=0, n_jobs=1,
+        )
+        meta_xgb.fit(meta_X_tr, meta_y_tr)
+
+        meta_X_te = np.column_stack([fold_cache[holdout_year]["xgb_norm"],
+                                     fold_cache[holdout_year]["ranker_norm"],
+                                     fold_cache[holdout_year]["rf_norm"],
+                                     fold_cache[holdout_year]["et_norm"],
+                                     fold_cache[holdout_year]["grid_pos_pct"],
+                                     fold_cache[holdout_year]["overtaking_score"],
+                                     fold_cache[holdout_year]["champ_rank_pct"],
+                                     fold_cache[holdout_year]["reg_era"],
+                                     fold_cache[holdout_year]["is_street"]])
+        meta_scores = 1.0 - meta_xgb.predict_proba(meta_X_te)[:, 1]
+
+        meta_te_h  = fold_cache[holdout_year]["meta_te"]
+        y_pos_te_h = fold_cache[holdout_year]["y_pos_te"]
+
+        w_acc, w_correct, w_total = winner_accuracy(meta_te_h, meta_scores, y_pos_te_h)
+        jaccard   = top10_set_accuracy(meta_te_h, meta_scores, y_pos_te_h)
+        mae       = average_position_mae(meta_te_h, meta_scores, y_pos_te_h)
+        pod_exact, pod_overlap, _ = podium_accuracy(meta_te_h, meta_scores, y_pos_te_h)
+
+        meta_results.append({
+            "holdout_year":    holdout_year,
+            "winner_accuracy": w_acc,
+            "winners_correct": w_correct,
+            "total_races":     w_total,
+            "podium_exact":    pod_exact,
+            "podium_overlap":  pod_overlap,
+            "top10_jaccard":   jaccard,
+            "position_mae":    mae,
+        })
+
+        print(f"\n  Holdout {holdout_year} (stacked):")
+        print(f"    Winner accuracy : {w_acc:.1%}  ({w_correct}/{w_total} races)")
+        print(f"    Podium exact    : {pod_exact:.1%}  (avg overlap: {pod_overlap:.2f}/3)")
+        print(f"    Top-10 Jaccard  : {jaccard:.3f}")
+        print(f"    Position MAE    : {mae:.2f} places")
+
+    val_df_meta = pd.DataFrame(meta_results)
+    print(f"\n  ── Stacking Meta-Model Averages ──")
+    print(f"    Winner accuracy : {val_df_meta['winner_accuracy'].mean():.1%}")
+    print(f"    Podium exact    : {val_df_meta['podium_exact'].mean():.1%}")
+    print(f"    Top-10 Jaccard  : {val_df_meta['top10_jaccard'].mean():.3f}")
+    print(f"    Position MAE    : {val_df_meta['position_mae'].mean():.2f} places")
+
+    # the nested evaluation is done - now train the FINAL meta-model on all years combined
+    # this is the one we save to disk and use for actual 2025/2026 predictions
+    all_meta_X = np.vstack([
+        np.column_stack([fold_cache[y]["xgb_norm"],    fold_cache[y]["ranker_norm"],
+                         fold_cache[y]["rf_norm"],     fold_cache[y]["et_norm"],
+                         fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
+                         fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
+                         fold_cache[y]["is_street"]])
+        for y in years
+    ])
+    all_meta_y = np.hstack([
+        fold_cache[y]["y_win_te"].fillna(0).astype(int).values for y in years
+    ])
+    meta_model_final = xgb.XGBClassifier(
+        max_depth=2, n_estimators=100, learning_rate=0.05,
+        reg_lambda=10.0, reg_alpha=2.0, subsample=0.8, colsample_bytree=0.8,
+        eval_metric="logloss", random_state=SEED, verbosity=0, n_jobs=1,
+    )
+    meta_model_final.fit(all_meta_X, all_meta_y)
+    fi = meta_model_final.feature_importances_
+    feat_names = ["xgb", "ranker", "rf", "et", "grid_pct", "overtaking", "champ_rank", "reg_era", "is_street"]
+    fi_str = "  ".join(f"{n}={v:.3f}" for n, v in zip(feat_names, fi))
+    print(f"\n  Final meta-model feature importances (all OOF, 9 features):")
+    print(f"    {fi_str}")
+
+    return val_df_meta, bma_weights, cal_temperature, meta_model_final
 
 
 # ──────────────────────────────────
@@ -896,12 +1377,12 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
 # ──────────────────────────────────
 
 def print_feature_importances(xgb_model, rf_win_model, feature_names):
-    # XGBoost uses gain-based importance: total reduction in loss across all splits using this feature
-    # RF uses impurity-based importance: mean decrease in Gini/entropy across all trees
-    # these are different quantities so we look at both and average them
+    # XGBoost measures importance by "gain" - how much did each feature reduce prediction error across all its splits?
+    # RF measures by "impurity decrease" - how much did each feature reduce Gini/entropy when it was used?
+    # these are computed differently, so we look at both and average them for the final ranking
+    # heads up: Gini importance has a known bias toward high-cardinality features (lots of unique values)
     # ref: feature importance comparison: https://scikit-learn.org/stable/auto_examples/ensemble/plot_forest_importances.html
-    # note: Gini importance has known biases for high-cardinality features
-    #       ref: https://explained.ai/rf-importance/index.html (good explainer on this)
+    # ref: https://explained.ai/rf-importance/index.html (great explainer on why Gini importance can mislead)
 
     xgb_imp = pd.Series(
         xgb_model.feature_importances_, index=feature_names
@@ -954,7 +1435,7 @@ def main():
           f"({df_train['Year'].nunique()} seasons, "
           f"{df_train['Driver'].nunique()} unique drivers)")
 
-    # drop rows where any target label is NaN - can't train on those
+    # drop any rows where a target label is missing - we can't train on those
     valid_mask = y_pos.notna() & y_win.notna() & y_top10.notna()
     X_all    = X_all[valid_mask].reset_index(drop=True)
     y_pos    = y_pos[valid_mask].reset_index(drop=True)
@@ -963,17 +1444,21 @@ def main():
     df_train = df_train[valid_mask].reset_index(drop=True)
     print(f"  After dropping NaN targets: {len(df_train)} rows")
 
-    # LOSO validation - returns metrics DataFrame + Bayesian weights
-    val_results, bma_weights = leave_one_season_out_validation(
+    # run the full leave-one-season-out validation - this is the honest accuracy number
+    # it returns the nested stacking metrics (not the 40/40/20 baseline printed inside the loop),
+    # the BMA weights, the calibration temperature, and the final stacking meta-model
+    val_results, bma_weights, cal_temperature, meta_model = leave_one_season_out_validation(
         df_train, X_all, y_pos, y_win, y_top10
     )
 
-    # hyperparameter tuning on all training data combined
+    # now that we have honest LOSO estimates, do the full hyperparameter tuning on ALL training data
+    # the LOSO loop used quick fallback defaults (to keep it fast)
+    # here we run the real 80-iteration random search so the production models are as good as possible
     print("\n" + "─" * 55)
     print("  Hyperparameter Tuning (RandomizedSearchCV)")
     print("─" * 55)
 
-    # fit one global imputer on all training data (this is what we'll use at inference time)
+    # fit one imputer on the complete training set - this is the one we'll reuse at inference time
     global_imputer = SimpleImputer(strategy="median", keep_empty_features=True)
     X_final = pd.DataFrame(
         global_imputer.fit_transform(X_all), columns=FEATURE_COLS
@@ -991,8 +1476,12 @@ def main():
     rf_top10_final, rf_top10_params = tune_random_forest_top10(X_final, y_top10, n_iter=60)
     print("  ✓ Random Forest top-10 tuned")
 
-    # XGBRanker: data must be sorted by (Year, Round) before fitting
-    # the `groups` argument tells the ranker where each race begins and ends
+    print("\n  Tuning ExtraTrees regressor (60 iterations)...")
+    et_final, et_best_params = tune_extratrees(X_final, y_pos.fillna(20), n_iter=60)
+    print("  ✓ ExtraTrees regressor tuned")
+
+    # XGBRanker has a strict requirement: the data must be sorted by (Year, Round) before fitting
+    # the `groups` argument tells it how many drivers are in each race (usually 20)
     print("\n  Training XGBoost ranker (rank:ndcg)...")
     sort_idx      = df_train.sort_values(["Year", "Round"]).index
     X_sorted      = X_final.loc[sort_idx].reset_index(drop=True)
@@ -1002,7 +1491,7 @@ def main():
     xgb_ranker    = train_xgboost_ranker(X_sorted, y_sorted, ranker_groups, xgb_best_params)
     print("  ✓ XGBoost ranker trained (reusing regressor hyperparams)")
 
-    # save everything to disk
+    # save all the trained models and metadata to disk so predict_2025/predict_2026 can load them
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     params_path = os.path.join(OUT_DIR, "best_hyperparams.txt")
@@ -1018,26 +1507,35 @@ def main():
         f.write("\nRandom Forest (top-10):\n")
         for k, v in sorted(rf_top10_params.items()):
             f.write(f"  {k}: {v}\n")
+        f.write("\nExtraTrees Regressor:\n")
+        for k, v in sorted(et_best_params.items()):
+            f.write(f"  {k}: {v}\n")
         f.write("\nBayesian Model Averaging Weights (from LOSO):\n")
         for k, v in bma_weights.items():
             f.write(f"  {k}: {v:.4f}\n")
+        f.write(f"\nBayesian Temperature Scaling: T = {cal_temperature:.4f}\n")
     print(f"\n  → Hyperparameters saved to {params_path}")
-    # I used joblib to save trained objects to my disk so I can reload them later without retraining(it's efficient for large numpy based objects and preserves their state)
+    # joblib is the standard way to save sklearn/XGBoost objects - it handles large numpy arrays
+    # much better than pickle, and it preserves the full model state including trees
     joblib.dump(xgb_final,      os.path.join(MODEL_DIR, "xgb_model.joblib"))
     joblib.dump(xgb_ranker,     os.path.join(MODEL_DIR, "xgb_ranker.joblib"))
     joblib.dump(rf_win_final,   os.path.join(MODEL_DIR, "rf_win_model.joblib"))
     joblib.dump(rf_top10_final, os.path.join(MODEL_DIR, "rf_top10_model.joblib"))
+    joblib.dump(et_final,       os.path.join(MODEL_DIR, "et_model.joblib"))
     joblib.dump(global_imputer, os.path.join(MODEL_DIR, "feature_imputer.joblib"))
-    joblib.dump(bma_weights,    os.path.join(MODEL_DIR, "bma_weights.joblib"))  # save BMA weights for predict scripts
+    joblib.dump(bma_weights,    os.path.join(MODEL_DIR, "bma_weights.joblib"))
+    joblib.dump(cal_temperature, os.path.join(MODEL_DIR, "cal_temperature.joblib"))
+    joblib.dump(meta_model,     os.path.join(MODEL_DIR, "meta_model.joblib"))
     print(f"\n  → Models saved to {MODEL_DIR}/")
 
-    # feature importances
+    # print and save which features each model found most useful
     print("\n" + "─" * 55)
     print("  Feature Importances")
     print("─" * 55)
     print_feature_importances(xgb_final, rf_win_final, FEATURE_COLS)
 
-    # in-sample sanity check (expect high accuracy - this is the training set)
+    # quick sanity check on the training set itself - expect very high accuracy here
+    # if this is low something is seriously wrong; if it's suspiciously perfect that's also a red flag
     xgb_tr_preds    = xgb_final.predict(X_final)
     rf_win_tr_proba = rf_win_final.predict_proba(X_final)[:, 1]
     meta_tr = df_train[["Year", "Round", "EventName", "Driver", "Team"]].reset_index(drop=True)
@@ -1053,7 +1551,7 @@ def main():
     print(f"    Top-10 Jaccard  : {jaccard:.3f}")
     print(f"    Position MAE    : {mae:.2f} places")
 
-    # predict 2025 if the features file exists
+    # generate 2025 predictions if the feature file is there (requires feature_engineering.py to run first)
     if not os.path.exists(PRED_FILE):
         print(f"\n[!] 2025 prediction file not found: {PRED_FILE}")
         print("    Skipping 2025 predictions. Run feature_engineering.py first.")
@@ -1073,14 +1571,18 @@ def main():
         rf_proba_25      = rf_win_final.predict_proba(X_2025_s)[:, 1]
         rf_top10_pred_25 = rf_top10_final.predict(X_2025_s)
         ranker_scores_25 = xgb_ranker.predict(X_2025_s)
+        et_preds_25      = et_final.predict(X_2025_s)
 
         pred_df = ensemble_predict(
             xgb_preds_25, rf_proba_25,
             df_2025_s[["Year", "Round", "EventName", "Driver", "Team"]],
             ranker_raw_scores=ranker_scores_25,
+            et_raw_pos=et_preds_25,
             ensemble_weights=bma_weights,
             X_features=X_2025_s,
             apply_bayesian_prior=True,
+            cal_temperature=cal_temperature,
+            meta_model=meta_model,
         )
         pred_df["rf_top10_pred"] = rf_top10_pred_25
 
@@ -1091,7 +1593,7 @@ def main():
         pred_df.to_csv(out_path, index=False)
         print(f"\n  → 2025 predictions saved to {out_path}")
 
-        # print first 3 races as a quick sanity check
+        # print the first 3 predicted races so we can eyeball if the output looks sane
         for rnd in pred_df["Round"].unique()[:3]:
             race = pred_df[pred_df["Round"] == rnd].head(10)
             print(f"\n  2025 R{rnd:02d} {race.iloc[0]['EventName']} — Predicted Top 10:")
@@ -1103,7 +1605,7 @@ def main():
                       f"{str(row['Team'])[:30]:<30}  "
                       f"{row['rf_win_proba']*100:>4.1f}%")
 
-    # save evaluation summary
+    # write the full evaluation summary to a text file for the report
     eval_path = os.path.join(OUT_DIR, "model_evaluation.txt")
     with open(eval_path, "w") as f:
         f.write("F1 Race Prediction — Model Evaluation Summary\n")

@@ -29,19 +29,26 @@
 # Laps API: https://docs.fastf1.dev/core.html#fastf1.core.Laps
 
 
+import sys
 import os
 import logging
 import warnings
+
+# Windows consoles default to cp1252 which can't print the box-drawing chars (→, ─, etc.)
+# that are used throughout the progress output - reconfigure to utf-8 so they don't crash
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from collections import defaultdict
 
 import fastf1
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 
 # config
 CACHE_DIR    = "discovery_raw_data"
 OUTPUT_DIR   = "data_organized"
-TRAIN_YEARS  = [2022, 2023, 2024]
+TRAIN_YEARS  = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
 PREDICT_YEAR = 2025
 ROLLING_N    = 5  # how many recent races to keep in the rolling window
 
@@ -159,13 +166,13 @@ def is_dnf(status):
 # ── FP2 detailed features ─────────────────────────────────────────────────────
 
 def sector_pace_deltas_fp2(session):
-    # best sector time per driver vs session best, for each of S1/S2/S3
-    # sectors tell you WHERE on track the car is quick or slow:
-    #   S1 is typically high-speed aero-dependent corners
-    #   S2 is medium-speed mechanical grip sections
-    #   S3 covers the traction zones and slower final chicanes
-    # knowing sector splits means you can see if a car is good in high-speed
-    # corners but weak in slow zones - useful context the model can exploit
+    # per-driver best sector time vs the session best, for S1/S2/S3
+    # the idea is that sectors tell you WHERE on track a car is fast or slow:
+    #   S1 is usually the high-speed aero stuff (think Maggots-Becketts at Silverstone)
+    #   S2 is medium-speed, more about mechanical grip and aero balance
+    #   S3 is traction zones, slow chicanes, the heavy braking areas
+    # so if a car is fast in S1 but slow in S3, you know something specific about its setup
+    # the model can potentially use that to figure out which circuits suit which cars
     # ref: https://docs.fastf1.dev/core.html#fastf1.core.Laps
     if session is None:
         return {}
@@ -204,13 +211,12 @@ def sector_pace_deltas_fp2(session):
 
 
 def long_run_pace_delta(session, min_stint_laps=5):
-    # per-driver median long-stint pace vs session median
-    # this is the best prediction for race pace you can get before the race
-    # teams run fuel-loaded race simulations in FP2 - similar fuel load and
-    # tyre compound to what they'll use at the start of the race
-    # a driver with a better long run than their qualifying position suggests
-    # is almost always a threat once things settle down in race trim
-    # negative delta = faster than field median long-run pace
+    # median long-stint pace per driver vs the field median, measured in FP2
+    # basically the best proxy for actual race pace you can get before Sunday
+    # teams specifically run fuel-heavy race simulations in FP2 - same compounds,
+    # similar fuel load to their race start plan - so it's reasonably representative
+    # a driver who looks P6 in quali but whose long run is top-3 is almost always a threat
+    # negative delta = faster than the field's median long-run pace (i.e. good)
     # ref: https://docs.fastf1.dev/core.html#fastf1.core.Laps (Stint column)
     if session is None:
         return {}
@@ -285,11 +291,65 @@ def long_run_pace_delta_fp3(session, min_stint_laps=4):
         return {}
 
 
+def tyre_degradation_rate_fp2(session, min_stint_laps=5):
+    # how quickly does each driver's car chew through its tyres in FP2?
+    # the trick here is a linear regression on lap number vs lap time across long stints
+    # if the slope is positive, the car is getting slower as the rubber wears off - that's deg
+    # a steeper positive slope = worse degradation = they're going to struggle late in the race
+    #
+    # this is NOT the same thing as fp2_long_run_delta, which just measures average pace
+    # this one tells you how FAST the car falls off a cliff, not just where it starts
+    # think Ferrari 2023: strong in quali and the first stint, but the tyre cliff came early
+    # by lap 15-20 the Mercs and Max were catching them even if they started well ahead
+    #
+    # we throw out laps more than 12% above the session median (those are SC laps or outlaps)
+    # and we only count laps where the driver wasn't pitting in or out - so clean mid-stint laps only
+    # then we average the slope across all long stints for each driver
+    # small gotcha: the slope technically mixes degradation AND fuel burn (fuel is about -0.05 s/lap
+    # at the start of a stint), but since fuel burn affects everyone equally the model learns to
+    # cancel it out - the relative slope between drivers is what matters
+    # ref: scipy linregress: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
+    if session is None:
+        return {}
+    try:
+        laps = session.laps.copy()
+        if laps.empty:
+            return {}
+        laps["LapTime_s"] = pd.to_timedelta(laps["LapTime"]).dt.total_seconds()
+        laps = laps.dropna(subset=["LapTime_s", "Stint"])
+        laps = laps[laps["PitInTime"].isna() & laps["PitOutTime"].isna()]
+        if laps.empty:
+            return {}
+        med = laps["LapTime_s"].median()
+        if pd.isna(med):
+            return {}
+        # 1.12x threshold: keeps normal traffic laps but drops SC/VSC-affected ones
+        laps = laps[laps["LapTime_s"] < med * 1.12]
+
+        driver_slopes = defaultdict(list)
+        for (driver, stint), group in laps.groupby(["Driver", "Stint"]):
+            if len(group) < min_stint_laps:
+                continue
+            group = group.sort_values("LapNumber")
+            x = np.arange(len(group), dtype=float)  # lap number within stint (0, 1, 2, ...)
+            y = group["LapTime_s"].values
+            slope, _, _, _, _ = linregress(x, y)  # seconds per lap - positive means degrading
+            driver_slopes[driver].append(slope)
+
+        if not driver_slopes:
+            return {}
+        # average across stints: a driver who did 2 long runs gets both slopes averaged
+        return {d: round(float(np.mean(slopes)), 4) for d, slopes in driver_slopes.items()}
+    except Exception as e:
+        print(f"    [warn] tyre_degradation_rate_fp2: {e}")
+        return {}
+
+
 def lap_consistency(session):
-    # std deviation of quicklap times per driver within a session
-    # lower = more consistent driver or more stable car setup
-    # a driver lapping within 0.1s of their own pace every lap is in better
-    # shape than someone fluctuating by 0.5s - even if the mean is the same
+    # standard deviation of a driver's quicklap times - basically how much they're varying lap to lap
+    # lower is better: a driver within 0.1s of their own pace every lap is in a much better rhythm
+    # than someone bouncing around by 0.5s, even if their mean lap time is the same
+    # this captures setup stability and driver confidence as much as raw speed
     # ref: https://www.statsmodels.org/stable/generated/statsmodels.stats.stattools.medcouple.html
     if session is None:
         return {}
@@ -313,13 +373,14 @@ def lap_consistency(session):
 # ── qualifying-specific features ──────────────────────────────────────────────
 
 def quali_gap_to_pole_and_teammate(quali_session):
-    # two features from qualifying:
-    #   gap_to_pole: how far behind pole were they in seconds? absolute pace benchmark
-    #   teammate_gap: their time minus their fastest teammate's time
+    # extracts two gap features from qualifying results:
+    #   gap_to_pole: how many seconds behind pole were they? raw pace benchmark for the weekend
+    #   teammate_gap: their best time minus their fastest teammate's best time
     #
-    # the teammate gap idea is from Bell et al. 2016 - comparing teammates in the
-    # same car lets you isolate driver skill by cancelling out the car contribution
-    # it's one of the more principled features in the whole set
+    # the teammate gap thing is the clever one - comparing drivers in the same car cancels out
+    # the car's contribution and leaves you with something closer to pure driver performance
+    # the idea comes from Bell et al. 2016, and honestly it works pretty well
+    # 0 means they were the faster of the two teammates in that car
     # ref: https://docs.fastf1.dev/core.html#fastf1.core.SessionResults (Q1/Q2/Q3 columns)
     if quali_session is None or quali_session.results is None:
         return {}
@@ -380,11 +441,12 @@ def quali_q3_appearances(quali_session):
 
 
 def get_session_weather(session):
-    # return (track_temp, air_temp, is_wet) from any session's weather data
-    # we take the median across the session to smooth transient spikes
-    # FP2 Friday afternoon track temp is a good proxy for Sunday conditions -
-    # same time of day, ambient temperature, track rubber is being laid down
-    # qualifying air temp matters for tyre thermal behaviour in the race
+    # returns (track_temp, air_temp, is_wet) from a session's weather log
+    # we take the median across the whole session rather than a snapshot to smooth out weird spikes
+    # FP2 on Friday afternoon is actually a decent proxy for Sunday race conditions -
+    # same time of day, similar track temperatures as the rubber builds up
+    # qualifying air temp matters because tyres behave differently when it's cold vs hot
+    # is_wet is 1 if there was any rainfall at all during the session
     # ref: https://docs.fastf1.dev/core.html#fastf1.core.Session.weather_data
     if session is None:
         return np.nan, np.nan, 0
@@ -403,11 +465,11 @@ def get_session_weather(session):
 # ── rolling form tracker ──────────────────────────────────────────────────────
 
 class RollingStats:
-    # tracks recent race history per driver and per team
-    # CRITICAL: call .update() AFTER emitting the feature rows for a race
-    # if you call it before, the current race results contaminate the pre-race
-    # features and you get leakage - the model looks artificially good on
-    # training data and then falls apart completely on unseen races
+    # keeps a running history of recent races for each driver and team
+    # CRITICAL: call .update() AFTER you've emitted the feature rows for that race
+    # if you call it beforehand, the current race result sneaks into the "pre-race" features
+    # and you get beautiful training accuracy that falls completely apart on real data - classic leakage
+    # (this bit us early on - the model looked amazing until we ran it forward in time)
     # https://scikit-learn.org/stable/common_pitfalls.html#data-leakage
 
     def __init__(self, window=5):
@@ -419,12 +481,13 @@ class RollingStats:
         self._season_wins  = defaultdict(int)  # win count this season - resets at start of each year
 
     def get_driver_rolling(self, driver):
-        # returns 3-race, 5-race, and 10-race rolling windows
-        # 3-race: hot streaks and recent slumps, noisier but more current
-        # 5-race: stable mid-term baseline - the main reference window
-        # 10-race: longer trend that smooths out peaks and valleys in the data
-        # win rate and podium rate capture dominant-car phases that avg finish alone misses
-        # e.g. VER in 2023 had avg finish ~1.3 but win_rate_5 was often 1.0 - a much cleaner signal
+        # three windows because different windows catch different things:
+        #   3-race: reactive - catches hot streaks and sudden slumps, but noisy
+        #   5-race: the main workhorse - stable enough to trust, recent enough to matter
+        #   10-race: the long view - smooths out outlier races and shows the general trend
+        # win rate and podium rate on top of average finish because avg finish misses dominant phases
+        # think Verstappen in 2023 - avg finish was around 1.3 but win_rate_5 was basically 1.0 all year
+        # that 1.0 is a way cleaner signal to the model that "this guy is just winning everything right now"
         hist10 = self._driver[driver][-10:]           # last 10 races
         hist5  = self._driver[driver][-self.window:]  # last 5 races
         hist3  = self._driver[driver][-3:]            # last 3 races
@@ -463,18 +526,26 @@ class RollingStats:
         }
 
     def get_team_rolling(self, team):
-        # team's average finishing position over recent races
-        # using a slightly wider window per team (5 races x 2 drivers = ~10 data points)
-        # this captures whether the underlying car is fast right now, independent of driver
-        hist      = self._team[team][-(self.window * 2):]
-        positions = [p for p in hist if pd.notna(p)]
-        return {"team_rolling_avg_5": np.mean(positions) if positions else np.nan}
+        # average finishing position for the team across both drivers over recent races
+        # two windows because of the upgrade problem: a 5-race window is stable but slow to react,
+        # a 3-race window is noisier but catches mid-season surges much faster
+        # this distinction was basically designed for catching McLaren in 2024 - by race 10 or so
+        # the 3-race avg had already noticed they were on a tear while the 5-race was still catching up
+        hist5     = self._team[team][-(self.window * 2):]
+        hist3     = self._team[team][-(3 * 2):]   # 3 races × 2 drivers = 6 entries
+        pos5      = [p for p in hist5 if pd.notna(p)]
+        pos3      = [p for p in hist3 if pd.notna(p)]
+        return {
+            "team_rolling_avg_5": np.mean(pos5) if pos5 else np.nan,
+            "team_rolling_avg_3": np.mean(pos3) if pos3 else np.nan,
+        }
 
     def get_season_stats(self, driver):
-        # cumulative season stats up to but not including this race
-        # season_pts_pct: normalised so 1.0 means they won every race this season
-        # season_avg_finish: mean finishing position so far (lower is better)
-        # season_wins_pct: wins / races_so_far - captures whether a driver is in a dominant streak
+        # season totals up to but NOT including this race (no leakage)
+        # season_pts_pct is normalised against 25 pts/race so it's comparable across different
+        # points eras and different numbers of races completed - 1.0 means they won every race
+        # season_wins_pct is wins / races_so_far, which tells you if someone's in a dominant streak
+        # (vs. just accumulating points through consistent podiums without actually winning)
         pts   = self._season_pts[driver]
         finsh = self._season_finsh[driver]
         wins  = self._season_wins[driver]
@@ -517,21 +588,123 @@ class RollingStats:
                 self._season_wins[abbr] += 1
 
 
+# ── circuit structural characteristics ───────────────────────────────────────
+
+def get_circuit_characteristics(circuit):
+    # hardcoded lookup for three things about each track that rolling stats can't tell you:
+    #   overtaking_score: basically "how easy is it to pass here" - 0.05 = Monaco, 0.7 = Monza
+    #   sc_rate: rough historical rate of safety car deployments at this venue (Singapore is ~90%)
+    #   is_street: 1 if it's a temporary street circuit with walls everywhere, 0 for permanent tracks
+    # these are the same for every driver at a race, they describe the track not the driver
+    # ref: https://en.wikipedia.org/wiki/List_of_Formula_One_circuits
+
+    c = str(circuit).lower()
+
+    # Street circuits: no runoffs, walls everywhere, much higher SC probability
+    is_street = int(any(s in c for s in [
+        "monaco", "monte carlo", "baku", "marina bay", "jeddah", "miami", "las vegas"
+    ]))
+
+    # Overtaking score: lower means harder to pass, grid position dominates more
+    OVERTAKING = {
+        "monaco": 0.05, "monte carlo": 0.05,        # legendary difficulty - maybe 1 real move per race
+        "budapest": 0.15,                             # Hungaroring: narrow, everyone on same line
+        "marina bay": 0.20,                           # Singapore: street walls, very limited
+        "zandvoort": 0.25,                            # designed narrow, banked but no DRS advantage
+        "imola": 0.25,                                # old-school Italian circuit, narrow
+        "mugello": 0.25,                              # beautiful but very limited passing
+        "barcelona": 0.30,                            # tire deg matters, DRS doesn't help much
+        "castellet": 0.30, "le castellet": 0.30,     # Paul Ricard: flat, limited corners
+        "jeddah": 0.35,                               # fast street circuit but DRS helps
+        "sochi": 0.35,                                # two slow corners only
+        "istanbul": 0.40,                             # famous turn 8 but little overtaking
+        "portim": 0.40,                               # Portimao: flowing but hard to follow
+        "melbourne": 0.40,                            # Albert Park: medium post-2022 redesign
+        "suzuka": 0.40,                               # chicane only; great for racing, hard to pass
+        "nurburgring": 0.40, "n\ufffdrburgring": 0.40,
+        "silverstone": 0.45,                          # Copse/Becketts: following easy, passing harder
+        "yas island": 0.45,                           # Abu Dhabi: much improved after 2021 redesign
+        "shanghai": 0.50,                             # hairpin T6 + back straight DRS
+        "spa": 0.50,                                  # Kemmel straight: slipstream but only 1 spot
+        "austin": 0.50,                               # COTA: T1 + T12 DRS zones
+        "miami": 0.50,                                # medium (new in 2022, DRS zones but chaotic)
+        "lusail": 0.50,                               # Qatar: multiple DRS but lacks braking spots
+        "baku": 0.55,                                 # massive main straight, SC chaos adds passing
+        "las vegas": 0.55,                            # long straights but tricky street layout
+        "mexico": 0.55,                               # main straight + T1 hairpin
+        "sakhir": 0.60, "bahrain": 0.60,             # designed for overtaking, 3 DRS zones
+        "paulo": 0.60, "s\ufffdao paulo": 0.60,      # Interlagos: Senna S + back straight
+        "spielberg": 0.65,                            # Red Bull Ring: short lap, T3 + T4
+        "monza": 0.70,                                # longest DRS zones, slipstream festival
+    }
+
+    SC_RATE = {
+        "marina bay": 0.90,                           # almost always has a SC in Singapore
+        "baku": 0.80,                                 # most chaotic race on the calendar
+        "monaco": 0.75, "monte carlo": 0.75,         # crashes and VSC nearly every year
+        "jeddah": 0.70,                               # wall everywhere + fast = frequent SC
+        "paulo": 0.70, "s\ufffdao paulo": 0.70,      # Interlagos is known for chaotic races
+        "las vegas": 0.65,                            # new street-style, unpredictable
+        "miami": 0.60,                                # new circuit, chaotic first few years
+        "mugello": 0.60,                              # only raced once (2020) - famous pile-up
+        "nurburgring": 0.55, "n\ufffdrburgring": 0.55, # changeable weather = high SC risk
+        "melbourne": 0.55,                            # reconfigured in 2022, some chaos
+        "monza": 0.50,                                # slipstream wars sometimes end in contact
+        "suzuka": 0.50,                               # changeable weather sometimes; flag incidents
+        "zandvoort": 0.50,                            # narrow + tyre deg = VSC deployments
+        "spa": 0.45,                                  # weather; red flags sometimes
+        "austin": 0.45,                               # medium, usually clean
+        "istanbul": 0.45,
+        "spielberg": 0.45,                            # DRS train sometimes causes pile-ups
+        "imola": 0.45,                                # chaotic at T1 historically
+        "silverstone": 0.40,                          # wing damage + T1 chaos, less frequent now
+        "portim": 0.40,
+        "mexico": 0.40,
+        "shanghai": 0.45,
+        "lusail": 0.40,
+        "sochi": 0.35,                                # boring = clean
+        "budapest": 0.35,                             # typically clean race
+        "sakhir": 0.35, "bahrain": 0.35,             # designed for clean racing
+        "castellet": 0.30, "le castellet": 0.30,     # very rare SC
+        "barcelona": 0.30,
+        "yas island": 0.30,                           # clean circuit, rare SC
+    }
+
+    overtaking = 0.45  # default: medium (for circuits not in the lookup)
+    sc_rate    = 0.45  # default: medium
+
+    for key, val in OVERTAKING.items():
+        if key in c:
+            overtaking = val
+            break
+
+    for key, val in SC_RATE.items():
+        if key in c:
+            sc_rate = val
+            break
+
+    return {
+        "circuit_overtaking_score": overtaking,
+        "circuit_sc_rate":          sc_rate,
+        "circuit_is_street":        is_street,
+    }
+
+
 # ── circuit history tracker ───────────────────────────────────────────────────
 
 class CircuitHistory:
-    # per-driver and per-team historical average finish at each specific circuit
-    # also tracks how many times they've raced there (circuit experience)
+    # remembers each driver's and team's historical average finishing position at each track
+    # also tracks how many times they've raced there, because track experience is a real thing
     #
-    # first-timers at a circuit consistently underperform their qualifying position
-    # unfamiliar braking points, different kerb profiles, track-specific setup knowledge
-    # all accumulate over years and you can see it in the data pretty clearly
-    # ref: https://en.wikipedia.org/wiki/Circuit_knowledge (general concept)
+    # turns out first-timers at a circuit consistently underperform their qualifying position
+    # the explanation makes sense: unfamiliar braking points, different kerb profiles, setup
+    # knowledge that only comes from doing the race before - it all shows up in the finishing data
+    # you can literally see rookies or circuit debutants lose a place or two vs their grid spot
     # ref: similar observation in https://github.com/mar-antaya/F1-Race-Predictions
     #
-    # warmup years (2019-2021) populate this correctly so by 2022 we have real history
-    # particularly useful for tracks that were new in the 2022-2024 window
-    # (Miami, Las Vegas, Qatar Sprint format all introduced during training range)
+    # the warmup years (2019-2021) populate this before we start emitting feature rows for training
+    # so by 2022 we have real historical averages rather than all NaN for every driver
+    # this was especially important for Miami and Las Vegas which were brand new in our training window
 
     def __init__(self):
         self._driver = defaultdict(list)  # {(abbr, circuit): [finish_positions]}
@@ -551,9 +724,10 @@ class CircuitHistory:
         return len(self._driver[(driver, circuit)])
 
     def get_driver_circuit_gains(self, driver, circuit):
-        # average positions gained (grid_pos - finish_pos) at this specific circuit
-        # positive = driver typically moves forward in races at this track
-        # useful for circuits where track knowledge enables overtaking (e.g. Hamilton at Silverstone)
+        # how many places does this driver typically gain (or lose) here vs where they start?
+        # positive = they tend to move forward during the race at this track
+        # negative = they often fall back (maybe bad race pace or traffic issues on this layout)
+        # Hamilton at Silverstone is a classic example of a positive outlier here
         h = self._gains[(driver, circuit)]
         return round(np.mean(h), 3) if h else np.nan
 
@@ -574,18 +748,20 @@ class CircuitHistory:
 # ── main feature extraction loop ─────────────────────────────────────────────
 
 def build_features(years, include_race_target=True):
-    # build feature rows for all races in `years`
-    # warmup years (2019 through the start of the target window) are processed
-    # first to populate rolling stats and circuit history without emitting rows
+    # the main workhorse - churns through every race in `years` and emits one feature row per driver
+    # warmup years run first to seed the rolling stats and circuit history, but don't emit any rows
+    # (without warmup, the first race of 2022 would have completely empty history for everyone)
     #
-    # per race the process is:
+    # the order for each race matters a lot - basically it's:
     #   1. load FP sessions -> pace deltas, sector splits, long runs, consistency
     #   2. load qualifying  -> grid position, quali gaps, q3 appearance, weather
-    #   3. read the pre-computed rolling stats (state before this race)
+    #   3. read the rolling stats as they stand RIGHT NOW (before this race)
     #   4. emit one row per driver into all_rows
-    #   5. THEN update rolling stats and circuit history with race results
+    #   5. THEN update rolling stats and circuit history with the race results
     #
-    # step 5 must come after step 4 - this is the critical anti-leakage ordering
+    # step 5 absolutely must come after step 4 - that ordering is what prevents leakage
+    # if you flip it even once, the current race result bleeds into the pre-race features
+    # and the model learns to "predict" something it already knew - garbage on new data
     # ref: https://scikit-learn.org/stable/modules/cross_validation.html#time-series-split
 
     rolling      = RollingStats(window=ROLLING_N)
@@ -593,7 +769,11 @@ def build_features(years, include_race_target=True):
     all_rows     = []
 
     min_year     = min(years)
-    warmup_start = 2019  # FastF1 coverage is reliable from 2018, 2019 is a bit safer
+    # FastF1 coverage starts at 2018; always warm up from at least one year before
+    # training to populate rolling stats and circuit history properly
+    # if training starts at 2018 we try 2017 as warmup - it'll gracefully skip if not cached
+    # removing the old min(2019,...) cap which broke when we added 2018 to TRAIN_YEARS
+    warmup_start = max(min_year - 1, 2017)
     warmup_years = list(range(warmup_start, min_year))
     all_years    = sorted(set(warmup_years + list(years)))
     prev_year    = None
@@ -649,6 +829,7 @@ def build_features(years, include_race_target=True):
             fp2_sectors = sector_pace_deltas_fp2(fp2)
             fp2_lr      = long_run_pace_delta(fp2, min_stint_laps=5)
             fp2_consist = lap_consistency(fp2)
+            fp2_deg     = tyre_degradation_rate_fp2(fp2, min_stint_laps=5)
             fp3_lr      = long_run_pace_delta_fp3(fp3, min_stint_laps=4)
 
             fp1_track_temp, _, fp1_wet             = get_session_weather(fp1)
@@ -692,6 +873,30 @@ def build_features(years, include_race_target=True):
                     circuit_hist.update(race_results, circuit)
                 continue
 
+            # quick pre-pass to grab everyone's season points before emitting rows
+            # we need this to figure out championship rank AND who the team leader is
+            # doing it in a separate loop first is cleaner than computing it mid-row
+            pre_season_pts = {}
+            for _, _drow in drivers_df.iterrows():
+                _abbr = str(_drow["Abbreviation"])
+                _stats = rolling.get_season_stats(_abbr)
+                pre_season_pts[_abbr] = _stats.get("season_pts_pct", 0.0) or 0.0
+
+            # figure out who's the team's points leader - that's who gets priority on strategy calls
+            # Verstappen over Perez, Hamilton over Russell - real effect, worth flagging to the model
+            team_leader_abbr = {}
+            for _, _drow in drivers_df.iterrows():
+                _abbr = str(_drow["Abbreviation"])
+                _team = str(_drow.get("TeamName", ""))
+                if _team not in team_leader_abbr or pre_season_pts.get(_abbr, 0) > pre_season_pts.get(team_leader_abbr[_team], 0):
+                    team_leader_abbr[_team] = _abbr
+
+            # pre-sort for championship rank lookup
+            sorted_pts_desc = sorted(pre_season_pts.values(), reverse=True)
+
+            # which era are we in? 2022 introduced the ground-effect cars - completely different dynamics
+            car_regulation_era = int(year >= 2022)
+
             # emit one row per driver for this race weekend
             for _, drow in drivers_df.iterrows():
                 abbr = str(drow["Abbreviation"])
@@ -711,10 +916,11 @@ def build_features(years, include_race_target=True):
                 fp1_d      = fp1_deltas.get(abbr, np.nan)
                 fp2_d      = fp2_deltas.get(abbr, np.nan)
                 q_gaps     = quali_gaps.get(abbr, {})
+                circ_chars = get_circuit_characteristics(circuit)
 
-                # pace progression: positive means they got faster vs the field from FP1 to FP2
-                # useful because teams run different programmes across sessions and this shows
-                # whether they found pace as the weekend went on
+                # pace progression: did they find pace across the weekend?
+                # positive means FP2 delta was smaller than FP1 delta (got closer to the front)
+                # teams run different programmes so this tells you whether the setup clicked on day 2
                 progression = (fp1_d - fp2_d) if (pd.notna(fp1_d) and pd.notna(fp2_d)) else np.nan
 
                 # derived grid position features
@@ -723,15 +929,67 @@ def build_features(years, include_race_target=True):
                 is_front_row = int(grid_pos <= 2) if pd.notna(grid_pos) else 0
                 grid_pos_pct = (grid_pos / n_drivers) if pd.notna(grid_pos) else np.nan  # normalised to [0,1]
 
-                # how is this driver doing vs their own team's baseline?
-                # negative means outperforming the car, positive means underperforming
-                # useful for isolating driver skill from car quality in the rolling stats
+                # how is this driver doing relative to their own team's baseline pace?
+                # negative means they're finishing ahead of the car's average (beating the car),
+                # positive means they're underperforming it - basically a driver skill isolator
                 drv_avg5    = drv_roll.get("rolling_avg_finish_5", np.nan)
                 team_avg5   = team_roll.get("team_rolling_avg_5", np.nan)
                 drv_vs_team = (drv_avg5 - team_avg5) if (pd.notna(drv_avg5) and pd.notna(team_avg5)) else np.nan
 
                 # circuit-specific position gains history - before this race
                 circ_gains = circuit_hist.get_driver_circuit_gains(abbr, circuit)
+
+                # ── new features for accuracy push ───────────────────────────
+
+                # where does this driver sit in the championship right now?
+                # 0.0 = championship leader, 1.0 = dead last in the standings
+                # turns out this is a really strong signal - the points leader is almost always in
+                # the fastest car, so it's a decent proxy for car quality without explicitly
+                # encoding car identity (which would change every year)
+                pts_val = pre_season_pts.get(abbr, 0.0)
+                if sorted_pts_desc and max(sorted_pts_desc) > 0:
+                    rank_idx  = sorted_pts_desc.index(pts_val) if pts_val in sorted_pts_desc else len(sorted_pts_desc) - 1
+                    champ_rank_pct = rank_idx / max(len(sorted_pts_desc) - 1, 1)
+                else:
+                    champ_rank_pct = np.nan  # season hasn't started yet, no rankings to speak of
+
+                # is this the team's P1 driver right now (highest points scorer)?
+                # the P1 driver gets the undercut call, the best strategy, the new parts first
+                # this is a real and consistent pattern in the data (turns out it matters a lot)
+                is_number_one_driver = int(team_leader_abbr.get(team, "") == abbr)
+
+                # does this driver have a special relationship with this track?
+                # compare their average finish here vs the team average here
+                # negative = they tend to struggle at this track vs teammates, positive = specialist
+                # think Hamilton at Silverstone, Verstappen at Zandvoort - genuinely shows up in the data
+                circuit_specialist_delta = (
+                    (circ_drv - circ_team)
+                    if (pd.notna(circ_drv) and pd.notna(circ_team))
+                    else np.nan
+                )
+
+                # team momentum: 3-race avg vs 5-race avg tells you if the car is on an upward trend
+                # positive = car is getting faster (3-race avg better than 5-race baseline)
+                # we basically added this to solve the McLaren 2024 problem - their upgrade surge mid-season
+                # was invisible to the 5-race window until it was too late to matter
+                team_avg3 = team_roll.get("team_rolling_avg_3", np.nan)
+                team_momentum = (
+                    (team_avg5 - team_avg3)  # positive = getting faster (lower pos number is better)
+                    if (pd.notna(team_avg3) and pd.notna(team_avg5))
+                    else np.nan
+                )
+
+                # grid position means very different things at different tracks
+                # P1 at Monaco is basically a free win - almost no one overtakes there
+                # P1 at Monza means very little - people are flying past on the Kemmel straight all race
+                # (1 - overtaking_score) amplifies grid position at low-overtaking tracks,
+                # so starting at the back of the grid at Monaco is doubly punished
+                ot_score = circ_chars["circuit_overtaking_score"]
+                grid_x_overtaking_inv = (
+                    grid_pos_pct * (1.0 - ot_score)
+                    if pd.notna(grid_pos_pct)
+                    else np.nan
+                )
 
                 row = {
                     # identifiers - not used as ML features
@@ -760,6 +1018,11 @@ def build_features(years, include_race_target=True):
                     "fp2_s2_delta":       fp2_sects.get("s2", np.nan),
                     "fp2_s3_delta":       fp2_sects.get("s3", np.nan),
                     "fp2_long_run_delta": fp2_lr.get(abbr, np.nan),
+                    "fp2_deg_rate":       fp2_deg.get(abbr, np.nan),
+                    # fp2_deg_rate_obs is a binary indicator: 1 if we actually measured tyre deg, 0 if not
+                    # this lets the model know WHEN to trust fp2_deg_rate vs when it was imputed/missing
+                    # without this indicator the model has no way to know the 0.0 is a sentinel vs a real flat-deg car
+                    "fp2_deg_rate_obs":   int(abbr in fp2_deg and pd.notna(fp2_deg.get(abbr))),
                     "fp2_consistency":    fp2_consist.get(abbr, np.nan),
                     "fp_pace_progression": progression,
 
@@ -798,6 +1061,28 @@ def build_features(years, include_race_target=True):
                     "circuit_team_avg_finish":          circ_team,
                     "circuit_experience":               circ_exp,
                     "driver_circuit_positions_gained":  circ_gains,  # avg positions gained at this circuit
+
+                    # static circuit structural features - same for every driver at this race
+                    # these tell the model about track-level chaos/overtaking regardless of driver identity
+                    "circuit_overtaking_score": circ_chars["circuit_overtaking_score"],  # 0=Monaco, 1=Monza
+                    "circuit_sc_rate":          circ_chars["circuit_sc_rate"],           # historical SC fraction
+                    "circuit_is_street":        circ_chars["circuit_is_street"],         # wall-bounded circuit flag
+
+                    # ── accuracy-push features ────────────────────────────────
+                    # car regulation era: 0=turbo-hybrid (2018-2021), 1=ground-effect (2022+)
+                    # the two eras have fundamentally different car behaviours and overtaking patterns
+                    "car_regulation_era":       car_regulation_era,
+                    # grid_pos × (1 - overtaking): captures that front row at Monaco ≈ free win
+                    "grid_x_overtaking_inv":    grid_x_overtaking_inv,
+                    # championship leader is almost always in the fastest car - very strong pre-race signal
+                    "championship_rank_pct":    champ_rank_pct,
+                    # team's P1 driver gets priority strategy calls and best car setup updates
+                    "is_number_one_driver":     is_number_one_driver,
+                    # positive = specialist at this track, negative = tends to struggle here vs teammates
+                    "circuit_specialist_delta": circuit_specialist_delta,
+                    # positive = car getting faster (3-race avg better than 5-race avg)
+                    "team_momentum":            team_momentum,
+                    # team_rolling_avg_3 is included via **team_roll above
                 }
 
                 # add race result targets if we want them
@@ -838,29 +1123,31 @@ def main():
     print(f"  Output:     {OUTPUT_DIR}/")
     print("=" * 60)
 
-    # build training features (2022-2024)
-    print("\n[1/2] Building training features (2022-2024)...")
+    # first pass: training data (2018-2024 with race targets for supervised learning)
+    print(f"\n[1/2] Building training features {TRAIN_YEARS}...")
     train_df = build_features(TRAIN_YEARS, include_race_target=True)
 
     if train_df.empty:
         print("[!] No training data - check FastF1 cache.")
         return
 
-    train_df   = train_df.dropna(subset=["finish_position"])
+    train_df   = train_df.dropna(subset=["finish_position"])  # drop rows with no race result (cancelled races, etc.)
     train_path = os.path.join(OUTPUT_DIR, "ml_training_features.csv")
     train_df.to_csv(train_path, index=False)
     print(f"\n  → Saved {train_path}")
     print(f"    {len(train_df)} rows | {train_df['Driver'].nunique()} drivers | "
           f"{train_df['EventName'].nunique()} circuits")
 
-    # build 2025 prediction features
+    # second pass: 2025 prediction features (include_race_target=True so actual results show up
+    # for races already run, and NaN for races in the future)
     print("\n[2/2] Building 2025 prediction features...")
     pred_df   = build_features([PREDICT_YEAR], include_race_target=True)
     pred_path = os.path.join(OUTPUT_DIR, "ml_2025_features.csv")
     pred_df.to_csv(pred_path, index=False)
     print(f"\n  → Saved {pred_path}  ({len(pred_df)} rows)")
 
-    # print feature summary
+    # quick audit of what we built - lists every feature and how much of it is missing
+    # high NaN% features are usually things like fp3_long_run_delta (sprint weekends have no FP3)
     print("\n" + "=" * 60)
     print("  Feature Summary")
     print("=" * 60)

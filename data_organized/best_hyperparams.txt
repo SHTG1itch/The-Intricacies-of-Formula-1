@@ -2,35 +2,45 @@ Best Hyperparameters (RandomizedSearchCV)
 =======================================================
 
 XGBoost Regressor:
-  colsample_bylevel: 0.5907787080486061
-  colsample_bynode: 0.808057196545925
-  colsample_bytree: 0.48514724449706276
-  gamma: 0.11105981875361631
-  learning_rate: 0.005257535444361319
-  max_depth: 3
-  min_child_weight: 10
-  n_estimators: 849
-  reg_alpha: 0.6177613712209028
-  reg_lambda: 2.395473066171981
-  subsample: 0.8753352004867391
+  colsample_bylevel: 0.5137124687301173
+  colsample_bynode: 0.8902467414836255
+  colsample_bytree: 0.5916586683172502
+  gamma: 0.317731066003266
+  learning_rate: 0.014962570820585688
+  max_depth: 5
+  min_child_weight: 7
+  n_estimators: 327
+  reg_alpha: 0.030106796666589553
+  reg_lambda: 2.288316662332713
+  subsample: 0.6240068024487907
 
 Random Forest (winner):
   criterion: entropy
-  max_depth: 10
+  max_depth: 8
   max_features: 0.4
-  max_samples: 0.8032403175027591
-  min_samples_leaf: 10
-  n_estimators: 398
+  max_samples: 0.9176482658741325
+  min_samples_leaf: 8
+  n_estimators: 530
 
 Random Forest (top-10):
-  criterion: gini
-  max_depth: None
+  criterion: entropy
+  max_depth: 8
   max_features: log2
-  max_samples: 0.6545980821176709
-  min_samples_leaf: 8
-  n_estimators: 572
+  max_samples: 0.8394815592792548
+  min_samples_leaf: 7
+  n_estimators: 627
+
+ExtraTrees Regressor:
+  max_depth: None
+  max_features: 0.5
+  max_samples: 0.9327500072434707
+  min_samples_leaf: 9
+  n_estimators: 488
 
 Bayesian Model Averaging Weights (from LOSO):
-  w_xgb: 0.2121
-  w_ranker: 0.3939
-  w_rf: 0.3939
+  w_xgb: 0.2149
+  w_ranker: 0.2584
+  w_rf: 0.2584
+  w_et: 0.2683
+
+Bayesian Temperature Scaling: T = 0.9968

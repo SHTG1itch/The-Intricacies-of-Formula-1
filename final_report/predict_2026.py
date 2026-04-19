@@ -91,6 +91,8 @@ from mach_learning import (
     tune_xgboost,
     tune_random_forest_winner,
     tune_random_forest_top10,
+    tune_extratrees,
+    train_extratrees,
     winner_accuracy,
     podium_accuracy,
     top10_set_accuracy,
@@ -222,7 +224,7 @@ def train_models_2026(X_train, y_pos, y_win, y_top10, df_meta):
     # note: leave_one_season_out_validation only needs Year/Round/EventName/Driver/Team
     # from df_meta - it does its own feature extraction internally from X_train
     print("\n  Running LOSO cross-validation on 2022-2025 (computing Bayesian weights)...")
-    val_results, bma_weights = leave_one_season_out_validation(
+    val_results, bma_weights, cal_temperature, meta_model = leave_one_season_out_validation(
         df_meta,
         X_train,
         y_pos, y_win, y_top10
@@ -240,6 +242,10 @@ def train_models_2026(X_train, y_pos, y_win, y_top10, df_meta):
     rf_top10_final, _ = tune_random_forest_top10(X_train, y_top10, n_iter=40)
     print("  ✓ Random Forest (top-10) done")
 
+    print("\n  Tuning ExtraTrees regressor (40 iterations)...")
+    et_final, _ = tune_extratrees(X_train, y_pos.fillna(20), n_iter=40)
+    print("  ✓ ExtraTrees done")
+
     # XGBRanker needs data sorted by (Year, Round) for the group structure to work
     # the groups tell the ranker which rows belong to the same race and should be ranked together
     # getting this wrong was one of the first bugs we hit - the ranker was treating all 4000+ rows
@@ -254,7 +260,7 @@ def train_models_2026(X_train, y_pos, y_win, y_top10, df_meta):
     xgb_ranker    = train_xgboost_ranker(X_sorted, y_sorted, ranker_groups, xgb_best)
     print("  ✓ XGBoost ranker done")
 
-    return xgb_final, xgb_ranker, rf_win_final, rf_top10_final, bma_weights
+    return xgb_final, xgb_ranker, rf_win_final, rf_top10_final, et_final, bma_weights, cal_temperature, meta_model
 
 
 def _train_models_without_loso(X_train, y_pos, y_win, y_top10, df_meta):
@@ -268,8 +274,8 @@ def _train_models_without_loso(X_train, y_pos, y_win, y_top10, df_meta):
     #
     # if you want the Bayesian-computed weights, call train_models_2026() instead
     # (just be prepared to wait a while)
-    print("\n  (Skipping LOSO - using fixed 40/40/20 BMA weights for speed)")
-    bma_weights = {"w_xgb": 0.40, "w_ranker": 0.40, "w_rf": 0.20}
+    print("\n  (Skipping LOSO - using fixed BMA weights for speed)")
+    bma_weights = {"w_xgb": 0.35, "w_ranker": 0.35, "w_rf": 0.15, "w_et": 0.15}
 
     print("  Tuning XGBoost regressor (50 iterations)...")
     xgb_final, xgb_best = tune_xgboost(X_train, y_pos.fillna(20), n_iter=50)
@@ -283,6 +289,10 @@ def _train_models_without_loso(X_train, y_pos, y_win, y_top10, df_meta):
     rf_top10_final, _ = tune_random_forest_top10(X_train, y_top10, n_iter=40)
     print("  ✓ RF top-10 done")
 
+    print("  Tuning ExtraTrees regressor (40 iterations)...")
+    et_final, _ = tune_extratrees(X_train, y_pos.fillna(20), n_iter=40)
+    print("  ✓ ExtraTrees done")
+
     print("  Training XGBoost ranker...")
     sort_idx      = df_meta.sort_values(["Year", "Round"]).index
     X_sorted      = X_train.loc[sort_idx].reset_index(drop=True)
@@ -292,25 +302,30 @@ def _train_models_without_loso(X_train, y_pos, y_win, y_top10, df_meta):
     xgb_ranker    = train_xgboost_ranker(X_sorted, y_sorted, ranker_groups, xgb_best)
     print("  ✓ Ranker done")
 
-    return xgb_final, xgb_ranker, rf_win_final, rf_top10_final, bma_weights
+    # no LOSO means no meta-model; return None so callers skip stacking
+    return xgb_final, xgb_ranker, rf_win_final, rf_top10_final, et_final, bma_weights, 1.0, None
 
 
-def save_models_2026(xgb_final, xgb_ranker, rf_win, rf_top10, imputer, bma_weights):
+def save_models_2026(xgb_final, xgb_ranker, rf_win, rf_top10, et_model, imputer,
+                     bma_weights, cal_temperature=1.0, meta_model=None):
     # save all model artefacts so we don't have to retrain every time we run predictions
-    # training takes long enough that re-running it unnecessarily is annoying
     os.makedirs(MODEL_DIR, exist_ok=True)
-    joblib.dump(xgb_final,   os.path.join(MODEL_DIR, "xgb_model.joblib"))
-    joblib.dump(xgb_ranker,  os.path.join(MODEL_DIR, "xgb_ranker.joblib"))
-    joblib.dump(rf_win,      os.path.join(MODEL_DIR, "rf_win_model.joblib"))
-    joblib.dump(rf_top10,    os.path.join(MODEL_DIR, "rf_top10_model.joblib"))
-    joblib.dump(imputer,     os.path.join(MODEL_DIR, "feature_imputer.joblib"))
-    joblib.dump(bma_weights, os.path.join(MODEL_DIR, "bma_weights.joblib"))
+    joblib.dump(xgb_final,      os.path.join(MODEL_DIR, "xgb_model.joblib"))
+    joblib.dump(xgb_ranker,     os.path.join(MODEL_DIR, "xgb_ranker.joblib"))
+    joblib.dump(rf_win,         os.path.join(MODEL_DIR, "rf_win_model.joblib"))
+    joblib.dump(rf_top10,       os.path.join(MODEL_DIR, "rf_top10_model.joblib"))
+    if et_model is not None:
+        joblib.dump(et_model,   os.path.join(MODEL_DIR, "et_model.joblib"))
+    joblib.dump(imputer,        os.path.join(MODEL_DIR, "feature_imputer.joblib"))
+    joblib.dump(bma_weights,    os.path.join(MODEL_DIR, "bma_weights.joblib"))
+    joblib.dump(cal_temperature, os.path.join(MODEL_DIR, "cal_temperature.joblib"))
+    if meta_model is not None:
+        joblib.dump(meta_model, os.path.join(MODEL_DIR, "meta_model.joblib"))
     print(f"  → All models saved to {MODEL_DIR}/")
 
 
 def load_models_2026():
-    # try to load cached 2026 models - if any file is missing we signal the caller to retrain
-    # returning all None is the "you need to train" signal - caller checks if xgb_model is None
+    # try to load cached 2026 models - if any required file is missing, signal caller to retrain
     required = {
         "xgb":      os.path.join(MODEL_DIR, "xgb_model.joblib"),
         "ranker":   os.path.join(MODEL_DIR, "xgb_ranker.joblib"),
@@ -319,18 +334,30 @@ def load_models_2026():
         "imputer":  os.path.join(MODEL_DIR, "feature_imputer.joblib"),
     }
     if any(not os.path.exists(p) for p in required.values()):
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None
 
     bma_path    = os.path.join(MODEL_DIR, "bma_weights.joblib")
     bma_weights = joblib.load(bma_path) if os.path.exists(bma_path) else None
+
+    cal_path    = os.path.join(MODEL_DIR, "cal_temperature.joblib")
+    cal_temperature = joblib.load(cal_path) if os.path.exists(cal_path) else 1.0
+
+    meta_path   = os.path.join(MODEL_DIR, "meta_model.joblib")
+    meta_model  = joblib.load(meta_path) if os.path.exists(meta_path) else None
+
+    et_path     = os.path.join(MODEL_DIR, "et_model.joblib")
+    et_model    = joblib.load(et_path) if os.path.exists(et_path) else None
 
     return (
         joblib.load(required["xgb"]),
         joblib.load(required["ranker"]),
         joblib.load(required["rf_win"]),
         joblib.load(required["rf_top10"]),
+        et_model,
         joblib.load(required["imputer"]),
         bma_weights,
+        cal_temperature,
+        meta_model,
     )
 
 
@@ -753,27 +780,33 @@ def main():
     # on the first run this will train from scratch (~5-10 minutes without LOSO)
     # subsequent runs load from disk in seconds
     print("\n[2/6] Loading or training 2026 models...")
-    xgb_model, xgb_ranker, rf_win, rf_top10, cached_imputer, bma_weights = load_models_2026()
+    xgb_model, xgb_ranker, rf_win, rf_top10, et_model, cached_imputer, bma_weights, cal_temperature, meta_model = \
+        load_models_2026()
 
     if xgb_model is not None:
-        # we have cached models - use them
         print(f"  ✓ Loaded cached 2026 models from {MODEL_DIR}/")
         print("    Delete the models_2026/ directory to force a full retrain.")
-        imputer     = cached_imputer
-        bma_weights = bma_weights or {"w_xgb": 0.40, "w_ranker": 0.40, "w_rf": 0.20}
+        imputer         = cached_imputer
+        bma_weights     = bma_weights or {"w_xgb": 0.35, "w_ranker": 0.35, "w_rf": 0.15, "w_et": 0.15}
+        cal_temperature = cal_temperature if cal_temperature is not None else 1.0
         if bma_weights:
-            print(f"  ✓ BMA weights: xgb={bma_weights['w_xgb']:.3f}, "
-                  f"ranker={bma_weights['w_ranker']:.3f}, rf={bma_weights['w_rf']:.3f}")
+            print(f"  ✓ BMA weights: xgb={bma_weights.get('w_xgb', '?'):.3f}, "
+                  f"ranker={bma_weights.get('w_ranker', '?'):.3f}, "
+                  f"rf={bma_weights.get('w_rf', '?'):.3f}, "
+                  f"et={bma_weights.get('w_et', '?'):.3f}")
+        print(f"  ✓ Calibration temperature T={cal_temperature:.4f}")
+        if meta_model is not None:
+            print(f"  ✓ Stacking meta-model loaded")
+        if et_model is None:
+            print("  [!] No cached ET model found - retrain for best accuracy")
     else:
-        # no cached models - train from scratch
-        # using the fast path (no LOSO) by default to avoid a very long first run
-        # to get proper Bayesian weights, swap in train_models_2026() instead
         print(f"  No cached models in {MODEL_DIR}/ - training from scratch")
-        print("  (Using fast path - skipping LOSO for speed. See train_models_2026() for full run.)")
+        print("  (Using fast path - skipping LOSO. See train_models_2026() for full run.)")
         print("─" * 55)
-        xgb_model, xgb_ranker, rf_win, rf_top10, bma_weights = \
+        xgb_model, xgb_ranker, rf_win, rf_top10, et_model, bma_weights, cal_temperature, meta_model = \
             _train_models_without_loso(X_train, y_pos, y_win, y_top10, df_meta)
-        save_models_2026(xgb_model, xgb_ranker, rf_win, rf_top10, imputer, bma_weights)
+        save_models_2026(xgb_model, xgb_ranker, rf_win, rf_top10, et_model, imputer,
+                         bma_weights, cal_temperature, meta_model)
 
     # step 3: build 2026 pre-race features from FastF1 cache
     print("\n[3/6] Building 2026 pre-race features...")
@@ -787,24 +820,23 @@ def main():
     X_2026_s   = X_2026.loc[sort_order].reset_index(drop=True)
     df_2026_s  = df_2026.loc[sort_order].reset_index(drop=True)
 
-    xgb_preds     = xgb_model.predict(X_2026_s)          # continuous position estimate
-    ranker_scores = xgb_ranker.predict(X_2026_s)          # relevance scores (higher = predicted better)
-    rf_win_proba  = rf_win.predict_proba(X_2026_s)[:, 1]  # win probability 0-1
-    rf_top10_pred = rf_top10.predict(X_2026_s)            # top-10 binary flag
+    xgb_preds     = xgb_model.predict(X_2026_s)
+    ranker_scores = xgb_ranker.predict(X_2026_s)
+    rf_win_proba  = rf_win.predict_proba(X_2026_s)[:, 1]
+    rf_top10_pred = rf_top10.predict(X_2026_s)
+    et_preds      = et_model.predict(X_2026_s) if et_model is not None else None
 
-    # ensemble_predict blends the three models with:
-    #   - Bayesian Beta-Binomial adjustment on win probability (circuit history prior)
-    #     ref: https://en.wikipedia.org/wiki/Bayesian_statistics
-    #   - Bayesian Model Averaging weights (or fixed 40/40/20 fallback)
-    #     ref: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
     pred_df = ensemble_predict(
         xgb_preds,
         rf_win_proba,
         df_2026_s[["Year", "Round", "EventName", "Driver", "Team"]],
         ranker_raw_scores=ranker_scores,
+        et_raw_pos=et_preds,
         ensemble_weights=bma_weights,
         X_features=X_2026_s,
         apply_bayesian_prior=True,
+        cal_temperature=cal_temperature,
+        meta_model=meta_model,
     )
     pred_df["rf_win_proba"]  = rf_win_proba
     pred_df["rf_top10_pred"] = rf_top10_pred
