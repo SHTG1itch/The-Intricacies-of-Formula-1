@@ -1226,7 +1226,7 @@ def plot_pl_ability_evolution(df_pred, year=2023, outdir=PLOT_DIR):
     # top-8 drivers by maximum observed θ (avoids 20-line spaghetti plot)
     top_drivers = pivot.max(axis=0).nlargest(8).index.tolist()
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(13, 6))
 
     cmap = plt.get_cmap("tab10")
     for i, drv in enumerate(top_drivers):
@@ -1235,17 +1235,13 @@ def plot_pl_ability_evolution(df_pred, year=2023, outdir=PLOT_DIR):
         series = pivot[drv].dropna()
         ax.plot(series.index, series.values, lw=2.2, marker="o", markersize=3,
                 color=cmap(i), label=drv)
-        if len(series) > 0:
-            ax.annotate(drv, (series.index[-1], series.values[-1]),
-                        xytext=(4, 0), textcoords="offset points",
-                        fontsize=8, color=cmap(i), va="center")
 
     ax.axhline(0, color="#999", lw=0.8, ls="--", alpha=0.5, label="Prior mean level")
     ax.set_xlabel("Prior races observed (information fed to PL model)", fontsize=12)
     ax.set_ylabel("PL log-quality score θ* (MAP estimate)\nhigher = model thinks driver is better", fontsize=11)
     ax.set_title(f"Plackett-Luce Ability Evolution — {year} Season\n"
                  f"(how the PL posterior updates as race results accumulate)", fontsize=12)
-    ax.legend(fontsize=9, loc="upper left", bbox_to_anchor=(0.0, 0.99))
+    ax.legend(fontsize=9, loc="upper left", bbox_to_anchor=(1.01, 1.0), borderaxespad=0)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()

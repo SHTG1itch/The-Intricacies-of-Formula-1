@@ -473,7 +473,7 @@ def plot_rq2a_points_heatmap():
 
     matrix = matrix.fillna(0).astype(float)
 
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(14, 7))
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
 
@@ -509,7 +509,7 @@ def plot_rq2a_points_heatmap():
             fontsize=8, color=GREEN,   va="center", ha="left",
             bbox=dict(boxstyle="round,pad=0.3", fc=BG, ec=GREEN, alpha=0.9))
 
-    cbar = plt.colorbar(im, ax=ax, fraction=0.028, pad=0.01)
+    cbar = plt.colorbar(im, ax=ax, fraction=0.028, pad=0.15)
     cbar.set_label("Total Points Scored (all teams combined)", fontsize=9)
 
     ax.set_title(
@@ -795,7 +795,7 @@ def plot_rq2_1a_field_spread():
         # overlap with the ridge fill which peaks between x=0.5 and x=2
         ax.annotate(
             "Cost Cap\nIntroduced\n(2021 Season)",
-            xy=(0.8, y_cc + offset_h * 0.55), xytext=(3.8, y_cc + offset_h * 0.55),
+            xy=(0.8, y_cc + offset_h * 0.55), xytext=(6.0, y_cc + offset_h * 0.55),
             fontsize=8, color="#333333",
             arrowprops=dict(arrowstyle="->", color="#555555", lw=0.8),
             bbox=dict(boxstyle="round,pad=0.3", fc="#FFF9C4", ec="#CCCC00", alpha=0.9),
@@ -1279,7 +1279,7 @@ def plot_rq3b_confusion_matrix():
 
     ax.annotate(
         "Off-diagonal entries:\nDriver skill / strategy\noverride car advantage",
-        xy=(3, 0), xytext=(5.5, 0.5), fontsize=8, color=DARK,
+        xy=(3, 0), xytext=(3.0, -1.8), fontsize=8, color=DARK,
         arrowprops=dict(arrowstyle="->", color=DARK, lw=0.8),
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=GREY, alpha=0.85),
     )
@@ -1474,7 +1474,7 @@ def plot_extra_quali_vs_race_dumbbell():
     # sort so the best-finishing driver is at the TOP of the chart
     df   = df.sort_values("AvgFinishPos").head(15).reset_index(drop=True)
 
-    fig, ax = plt.subplots(figsize=(11, 7))
+    fig, ax = plt.subplots(figsize=(11, 9))
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
 
@@ -1830,8 +1830,9 @@ def plot_extra_pole_to_win_rate():
 
     # reference line at 50%
     ax.axhline(0.50, color=GREY, linewidth=1.2, linestyle="--", alpha=0.6)
-    ax.text(all_years[-1] + 0.3, 0.505, "50% reference",
-            fontsize=8.5, color=GREY, va="bottom")
+    ax.text(0.01, 0.505, "50% reference",
+            transform=ax.get_yaxis_transform(),
+            fontsize=8.5, color=GREY, va="bottom", ha="left")
 
     # 2021 cost cap marker
     ax.axvline(2021 - 0.5, color=GREEN, linewidth=2, linestyle=":", alpha=0.8)
@@ -2239,11 +2240,11 @@ def plot_fastf1_quali_field_spread():
             ax.set_ylabel("Gap to Pole Position (seconds)", fontsize=11)
 
     # shared annotation: cost cap arrow between 2021 and 2023 columns
-    axes[1].annotate(
-        "Cost Cap\neffect --->",
-        xy=(0.52, 0.55), xycoords="axes fraction",
+    axes[2].annotate(
+        "<--- Cost Cap\neffect",
+        xy=(0.12, 0.92), xycoords="axes fraction",
         fontsize=8.5, color=GREEN, fontweight="bold",
-        ha="center",
+        ha="left",
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=GREEN, lw=1.0),
     )
 
@@ -2575,7 +2576,7 @@ def plot_fastf1_champion_pace():
 
     # stagger end-of-line labels so nearby drivers don't overlap
     end_labels.sort(key=lambda t: t[0])
-    min_gap = 0.22  # minimum vertical gap between labels (% units)
+    min_gap = 0.40  # minimum vertical gap between labels (% units)
     nudged_y = [end_labels[0][0]]
     for i in range(1, len(end_labels)):
         y_prev = nudged_y[-1]
@@ -2610,7 +2611,7 @@ def plot_fastf1_champion_pace():
         fontsize=11, fontweight="bold", pad=10,
     )
     ax.set_xticks(all_rounds)
-    ax.set_xlim(min(all_rounds) - 0.5, max(all_rounds) + 1.5)
+    ax.set_xlim(min(all_rounds) - 0.5, max(all_rounds) + 2.5)
     ax.grid(linestyle="--", alpha=0.25)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
