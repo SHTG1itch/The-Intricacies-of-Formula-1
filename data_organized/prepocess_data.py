@@ -105,6 +105,36 @@ def load_session_safe(year, round_num, session_type):
         return None
 
 
+def gap_to_winner_seconds(position, time_value):
+    """
+    Convert FastF1 race results into a gap-to-winner value.
+
+    In session.results, the winner's Time is the total race time. Classified
+    non-winners usually store Time as their gap behind the winner. Lapped
+    finishers and DNFs often have no usable Time value.
+    """
+    if pd.notna(position) and float(position) == 1.0:
+        return 0.0
+
+    if pd.isna(time_value):
+        return np.nan
+
+    gap = pd.to_timedelta(time_value, errors="coerce")
+    if pd.isna(gap):
+        return np.nan
+
+    return round(gap.total_seconds(), 3)
+
+
+def save_csv_or_keep_existing(df, path):
+    """Avoid replacing a useful CSV with an empty one when cache data is absent."""
+    if df.empty and os.path.exists(path):
+        print(f"  [!] No rows built; keeping existing {path}\n")
+        return
+    df.to_csv(path, index=False)
+    print(f"  → Saved {path}  ({len(df)} rows)\n")
+
+
 # ╔════════════════════════════════════════════════════════════════════╗
 # ║  CSV 1: qualifying_deltas.csv  (for RQ1 — Driver Skill vs. Car)  ║
 # ╚════════════════════════════════════════════════════════════════════╝
@@ -190,8 +220,7 @@ def build_qualifying_deltas():
 
     df = pd.DataFrame(rows)
     path = os.path.join(OUTPUT_DIR, "qualifying_deltas.csv")
-    df.to_csv(path, index=False)
-    print(f"  → Saved {path}  ({len(df)} rows)\n")
+    save_csv_or_keep_existing(df, path)
     return df
 
 
@@ -204,13 +233,9 @@ def build_race_results():
     For each race (2018–2025), pull every driver's finishing result
     and compute the gap to the race winner in seconds.
 
-    HOW IT WORKS:
-    1. Load the Race session for each event.
-    2. From session.results, get Position, Points, Status, Time.
-       - "Time" is a pd.Timedelta of the driver's total race time.
-       - Only the winner and drivers on the same lap have a Time value.
-       Ref: https://docs.fastf1.dev/core.html#fastf1.core.SessionResults
-    3. The winner's Time is the baseline; other drivers' gap = their Time - winner's Time.
+    FastF1 reports the winner's Time as total race duration, but classified
+    non-winners usually get a Time value that is already their gap behind the
+    winner. Lapped finishers and DNFs are left as NaN.
 
     WHY THIS MATTERS:
     By tracking the time gap to the winner at each finishing position
@@ -240,24 +265,7 @@ def build_race_results():
             #   Ref: https://docs.fastf1.dev/core.html#fastf1.core.SessionResults
             results = race.results.copy()
 
-            # Convert the Time column to seconds
-            # Time is pd.Timedelta for classified finishers, NaT for others
-            results["Time_s"] = pd.to_timedelta(results["Time"]).dt.total_seconds()
-
-            # The race winner is Position == 1
-            winner_time = results.loc[results["Position"] == 1, "Time_s"]
-            if winner_time.empty:
-                winner_time_s = np.nan
-            else:
-                winner_time_s = winner_time.values[0]
-
             for _, row in results.iterrows():
-                # Gap to winner: NaN if the driver didn't have a Time
-                # (e.g. DNF or lapped drivers in some seasons)
-                gap = np.nan
-                if pd.notna(row["Time_s"]) and pd.notna(winner_time_s):
-                    gap = round(row["Time_s"] - winner_time_s, 3)
-
                 rows.append({
                     "Year":          year,
                     "Round":         round_num,
@@ -268,15 +276,14 @@ def build_race_results():
                     "Position":      row["Position"],
                     "Points":        row["Points"],
                     "Status":        row["Status"],
-                    "GapToWinner_s": gap,
+                    "GapToWinner_s": gap_to_winner_seconds(row["Position"], row["Time"]),
                 })
 
             print(f"  ✓ {year} R{round_num:02d} {event_name}")
 
     df = pd.DataFrame(rows)
     path = os.path.join(OUTPUT_DIR, "race_results.csv")
-    df.to_csv(path, index=False)
-    print(f"  → Saved {path}  ({len(df)} rows)\n")
+    save_csv_or_keep_existing(df, path)
     return df
 
 
@@ -382,8 +389,7 @@ def build_lap_time_spreads():
 
     df = pd.DataFrame(rows)
     path = os.path.join(OUTPUT_DIR, "lap_time_spreads.csv")
-    df.to_csv(path, index=False)
-    print(f"  → Saved {path}  ({len(df)} rows)\n")
+    save_csv_or_keep_existing(df, path)
     return df
 
 
@@ -476,27 +482,41 @@ def build_driver_season_profiles():
     df_quali = pd.DataFrame(quali_rows)
     df_race = pd.DataFrame(race_rows)
 
+    path = os.path.join(OUTPUT_DIR, "driver_season_profiles.csv")
+    if df_quali.empty and df_race.empty:
+        save_csv_or_keep_existing(pd.DataFrame(), path)
+        return pd.DataFrame()
+
     # Average qualifying position per driver per season
-    quali_agg = (
-        df_quali
-        .groupby(["Year", "Driver", "Team"])
-        .agg(AvgQualiPos=("QualiPos", "mean"))
-        .reset_index()
-    )
+    if df_quali.empty:
+        quali_agg = pd.DataFrame(columns=["Year", "Driver", "Team", "AvgQualiPos"])
+    else:
+        quali_agg = (
+            df_quali
+            .groupby(["Year", "Driver", "Team"])
+            .agg(AvgQualiPos=("QualiPos", "mean"))
+            .reset_index()
+        )
 
     # Race stats per driver per season
-    race_agg = (
-        df_race
-        .groupby(["Year", "Driver", "Team"])
-        .agg(
-            AvgFinishPos=("FinishPos", "mean"),
-            TotalPoints=("Points", "sum"),
-            Wins=("IsWin", "sum"),
-            DNFs=("IsDNF", "sum"),
-            RacesStarted=("FinishPos", "count"),
+    if df_race.empty:
+        race_agg = pd.DataFrame(columns=[
+            "Year", "Driver", "Team", "AvgFinishPos", "TotalPoints",
+            "Wins", "DNFs", "RacesStarted",
+        ])
+    else:
+        race_agg = (
+            df_race
+            .groupby(["Year", "Driver", "Team"])
+            .agg(
+                AvgFinishPos=("FinishPos", "mean"),
+                TotalPoints=("Points", "sum"),
+                Wins=("IsWin", "sum"),
+                DNFs=("IsDNF", "sum"),
+                RacesStarted=("FinishPos", "count"),
+            )
+            .reset_index()
         )
-        .reset_index()
-    )
 
     # Merge qualifying and race aggregations
     df_profiles = pd.merge(
@@ -515,9 +535,7 @@ def build_driver_season_profiles():
         ["Year", "TotalPoints"], ascending=[True, False]
     )
 
-    path = os.path.join(OUTPUT_DIR, "driver_season_profiles.csv")
-    df_profiles.to_csv(path, index=False)
-    print(f"  → Saved {path}  ({len(df_profiles)} rows)\n")
+    save_csv_or_keep_existing(df_profiles, path)
     return df_profiles
 
 
@@ -540,13 +558,13 @@ def main():
     print("=" * 60 + "\n")
 
     # Step 1: Qualifying deltas (RQ1 — skill vs. car)
-    # build_qualifying_deltas()
+    build_qualifying_deltas()
 
     # Step 2: Race results with gap to winner (RQ2 — cost cap impact)
-    # build_race_results()
+    build_race_results()
 
     # Step 3: Lap time spreads (RQ2.1 — cost cap effectiveness)
-    # build_lap_time_spreads()
+    build_lap_time_spreads()
 
     # Step 4: Driver season profiles (RQ3 — WDC prediction features)
     build_driver_season_profiles()

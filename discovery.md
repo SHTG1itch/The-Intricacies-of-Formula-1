@@ -1,163 +1,68 @@
 # The Formula of Formula 1
 
-**Student Name 1:** Srivats Iyer			  
+**Student Name 1:** Srivats Iyer  
 **Student Name 2:** Aakash Bothra  
-**Date:** 1/27/2026  
-**Course:** Intermediate Data Programming  
----
+**Date:** January 27, 2026  
+**Course:** Intermediate Data Programming
 
-### Summary of research questions
+## Research Questions
 
-Give a numbered list of 3 or more research questions and a brief description of what you will investigate. Each research question should have 1–3 sentences and propose something that can be definitively answered, not just a general topic or area of investigation. See the tips on research questions [here](http://../tips/report#change-the-research-questions)
+1. **Driver vs. car:** Which measurable factors in a Formula 1 weekend are most associated with winning, and how much signal comes from the driver compared with the car?
+2. **Cost cap impact:** After the FIA introduced the 2021 cost cap, did race results become less concentrated among the top teams?
+3. **Lap-time convergence:** Did the gap between the fastest and slowest teams shrink after the cost cap and 2022 regulation reset?
+4. **Predictability:** How accurately can a model predict race winners from pre-race data, and which features explain the model's predictions?
 
-1. What factors in a race weekend lead to a win in Formula 1? Does driver skill really matter that much?  
-2. What kind of impact does family income have on the likelihood of a race win  
-3. At what accuracy are we able to predict the winner of the next world drivers championship? Is it due to their skill, or is it due to the car, or other factors that may overshadow these?  
-4. Extra: Who is the true greatest F1 driver of all time? How do we determine this?  
-   
+These questions are designed to produce measurable answers: finishing-position distributions, lap-time gaps, teammate qualifying deltas, model accuracy, and feature importance.
 
----
+## Motivation
 
-### Motivation
+Formula 1 looks like a high-speed spectacle, but it is also a data and engineering competition. Teams make decisions from telemetry, tyre degradation, weather, qualifying pace, reliability history, and race strategy. That makes F1 a strong data-programming subject because small changes in a tenth of a second can decide a race.
 
-In one or two paragraphs, expand on your research questions by providing context about why you care, or why anyone should care. How does knowing the answers affect the world or our understanding of it?
+The project also asks a question fans argue about constantly: does the driver win, or does the car win? We cannot answer that perfectly, but we can compare teammates in the same car, inspect telemetry, track team performance before and after the cost cap, and test whether machine-learning models rely more on car-pace or driver-specific features.
 
-Formula 1 and motorsports in general are mischaracterized as just high speed spectacle. In reality, they serve as one of the world’s most sophisticated hubs for data science and engineering innovation. Formula 1 is a driving force for automotive evolution, giving rise to technologies found in nearly every consumer vehicle, like traction control and Anti-lock Braking Systems. By analyzing variables that lead to success in this environment, we can see the combination of human performance and machine optimization, providing an insight into how data can be leveraged to solve these high stakes problems. In fact, Red Bull Racing has already started to do this by bringing in ORACLE as its title sponsor. ORACLE isn’t only a sponsor, but they also do the data analytics for Red Bull Racing, ensuring that their race strategy is optimized.   
-Beyond just engineering, this research addresses questions of meritocracy and accessibility within global sports. Investigating whether driver skill or technical superiority is the most critical to a victory, and examining the demographic pathways to the grid, we can see the hidden systemic structures that define the sport. This transforms F1 from a simple race to a melting pot of data-driven decisions, pit-stop timing, to aerodynamic adjustments, and how they affect outcomes. Overall, this research attempts to quantify the ‘unquantifiable’ elements of success, showcasing how elite performance is engineered, sustained, and sometimes even bought.
+## Data Sources
 
----
+The project uses the FastF1 Python API, which provides access to official Formula 1 timing data, session results, lap data, telemetry, weather, and event metadata.
 
-### Schedule
+- FastF1 documentation: <https://docs.fastf1.dev/>
+- FastF1 GitHub repository: <https://github.com/theOehrly/Fast-F1>
+- Underlying Ergast/F1 timing data reference: <https://docs.fastf1.dev/ergast.html>
 
-[Task List](https://docs.google.com/spreadsheets/d/1zUgpSpIK_AiBIrSttxw661JSu8US9uLypAuj_rLHlhI/edit?gid=0#gid=0)
+The final dataset focuses on 2018-2025 because modern FastF1 telemetry coverage is strongest in that period.
 
----
+## Data Pipeline
 
-### Datasets
+1. `cache_fastf1_data.py` downloads FastF1 sessions and saves them into `discovery_raw_data/`.
+2. `data_organized/prepocess_data.py` reads the local FastF1 cache and produces cleaner CSVs for analysis.
+3. `final_report/feature_engineering.py` turns practice, qualifying, weather, rolling form, circuit history, and race results into model-ready features.
+4. `final_report/mach_learning.py`, `walk_forward_model.py`, and the prediction scripts train and evaluate the model.
+5. `final_report/create_plots.py` generates the report plots in `final_report/plots/`.
 
-**Overview**   
-Our project uses the Fast F1 Python API to receive official Formula One timing and telemetry data. Fast F1 provides structured access to:
+The cache step is separated from preprocessing because FastF1 API calls are slow and rate-limited. Once the cache exists, most analysis can run offline.
 
-* FIA timing data  
-* session results  
-* lap times  
-* telemetry  
-* weather and event metadata
+## Organized Datasets
 
-Fast F1 documentation: [https://docs.fastf1.dev/](https://docs.fastf1.dev/)  
-Fast F1 GitHub repository: [https://github.com/theOehrly/Fast-F1](https://github.com/theOehrly/Fast-F1)  
-Underlying F1 timing data source: [https://docs.fastf1.dev/ergast.html](https://docs.fastf1.dev/ergast.html)  
-Fast F1 provides access to historical race data from:  
-2018 to present. (Full support/telemetry)  
-Partial support for some earlier seasons(lap times from 1990 to present and race results from 1950 to present).  
-All data sets are real and retrieved programmatically through the Fast F1 API. Each session contains about 500 rows
+| Dataset | Main use | Example columns |
+|---|---|---|
+| Race results | Finishing order, points, gap to winner, model targets | Year, Round, Driver, Team, Position, Points, GapToWinner_s |
+| Lap timing | Pace spread, consistency, tyre degradation, sector analysis | Driver, LapNumber, LapTime, Sector1Time, Sector2Time, Sector3Time, Compound |
+| Event schedule | Chronological ordering and race metadata | RoundNumber, EventName, Location, Country, EventDate |
+| Weather | Track conditions and wet-session indicators | AirTemp, TrackTemp, Rainfall, Humidity, WindSpeed |
+| Telemetry | Throttle/brake behavior and corner-level analysis | Distance, Speed, Throttle, Brake |
 
-### Dataset 1: Race Results
+## Data Challenges
 
-**Description:**   
-This dataset contains official race results for each Grand Prix   
-Each season contains: 
+- **Single-source dependency:** FastF1 is a rich source, but most raw data comes through the same library, so API limitations affect the whole project.
+- **Large cache:** Telemetry data is too large to treat like a small CSV download, so the project uses a resumable local cache.
+- **Missing sessions:** Some older sessions, wet sessions, sprint weekends, and lapped/DNF results have missing or inconsistent fields.
+- **Causality limits:** The cost cap and 2022 aerodynamic regulation reset overlap, so the project can show convergence but cannot prove the exact cause.
+- **Temporal leakage:** Machine-learning features must be computed using only information available before the race being predicted.
 
-* \~20-24 races(based on the season)  
-* \~20 drivers per race  
-* \~400\> rows per season  
-* Over many seasons, we can expect to see thousands of rows of data
+## Challenge Goals
 
-We use this dataset to calculate ELO updates, determine finishing position, and establish head-to-head outcomes.
+1. **API usage:** The project uses FastF1 to collect race results, lap timing, weather, and telemetry data. The cache script handles rate limits, retries, and resumable progress.
+2. **Machine learning:** The project trains multiple models, compares validation accuracy by season, studies feature importance, and validates predictions against known race outcomes.
 
-| Column Name | Description | Example Value |
-| :---- | :---- | :---- |
-| DriverNumber | Unique driver number | 1 |
-| Abbreviation | Driver code | VER |
-| FullName | Driver's full name | Max Verstappen |
-| TeamName | Constructor name | Red Bull Racing |
-| Position | Finishing position | 1 |
-| GridPosition | Starting grid position | 3 |
-| Points | Championship points earned | 25 |
-| Status | Finish status (Finished, DNF, etc.) | Finished |
-| Time | Race finishing time | 1:32:04 |
-| Q1 | Qualifying session 1 time | 1:28.123 |
-| Q2 | Qualifying session 2 time | 1:27.987 |
-| Q3 | Qualifying session 3 time | 1:27.456 |
+## Schedule
 
- 
-
-### Dataset 2: Lap Timing Data
-
-**Description:**  
-This data set includes every recorded lap for every driver in the race   
-Each race contains:  
-
-* \~50 to 70 laps(based on the race)  
-* \~20 drivers  
-* \~1000 to 1400 rows per race  
-* Across the season \~20,000 plus rows
-
-This lap timing data allows us to measure the consistency of a driver, calculate the average pace, identify performance trends, and adjust their elo ranking based on lap performance other than finishing position. It also lets us detect abnormal races. The only drawback is that this data is only available from 1990 to the present. 
-
-Here is an example of one specific lap that was completed by Lewis Hamilton:
-
-| Column Name | Description | Example Value |
-| :---- | :---- | :---- |
-| Driver | Driver abbreviation | HAM |
-| LapNumber | Lap count number | 27 |
-| LapTime | Total lap time | 1:32.456 |
-| Sector1Time | Sector 1 time | 28.123 |
-| Sector2Time | Sector 2 time | 34.567 |
-| Sector3Time | Sector 3 time | 29.766 |
-| Compound | Tire compound used | MEDIUM |
-| Stint | Tire stint number | 2 |
-| PitInTime | Time entering pit lane | 13:23:45 |
-| PitOutTime | Time exiting pit lane | 13:25:10 |
-| Position | Track position at end of lap | 5 |
-
-### 
-
-### Dataset 3: Event Schedule Data
-
-**Description:**   
-This data set contains general metadata about races in the season.   
-The dataset contains between \~23-25 rows per season.  
-We can use this dataset to order our races chronologically, to put a name to upcoming predictions, and separate training seasons/sessions from racing sessions.  
-
-| Column Name | Description |
-| :---- | :---- |
-| RoundNumber | Race number in the season |
-| EventName | Grand Prix name |
-| Location | Track location |
-| Country | Host country |
-| EventDate | Date of race |
-| OfficialEventName | Full FIA official event title |
-
-### Dataset 4: Weather Data
-
-**Description:**   
-Weather Conditions during sessions.   
-This dataset contains between \~90-120 rows per session, with 5 sessions per race weekend, which leads to \> 10,000 rows per season at 24 races.   
-Relevance: 
-
-* Impact race results  
-* Predict car/driver performance based on future weather conditions  
-* Help explain outlier performances
-
-
-| Column Name | Description |
-| :---- | :---- |
-| AirTemp | Air temperature during session |
-| TrackTemp | Track temperature during session |
-| Humidity | Humidity percentage |
-| Rainfall | Rain amount during session |
-| WindSpeed | Wind speed during session |
-
-###  
-
----
-
-### [Challenge goals](http://challenges)
-
-* Select at least 2 challenge goals that you are planning to meet.  
-* Justify why you think this challenge goal is a good fit for your project.  
-1. Web Scraping or API Usage  
-   1. This challenge goal is a good fit for our project because there is an API that is directly related to the sport of Formula 1\. This API is called FastF1 API and has race data from 1950 onwards, as well as lap times from 1990 onwards, and telemetry data from 2018 onwards.   
-2. Machine Learning  
-   1. This challenge goal is a good fit for our project because one of our research questions is ‘who will win the next world driver’s championship’, and we are planning on doing this by training an interpretable machine learning model. This machine learning model will take in the data from the FastF1 API and come up with a prediction for who it thinks will be the world champion. Specifically, we will be trying to predict the 2026 world champion through available race results and pre-season testing as a baseline. Also, as a validation test we are planning to predict the outcome of the next race in order to verify our model’s accuracy. 
+Task list: <https://docs.google.com/spreadsheets/d/1zUgpSpIK_AiBIrSttxw661JSu8US9uLypAuj_rLHlhI/edit?gid=0#gid=0>

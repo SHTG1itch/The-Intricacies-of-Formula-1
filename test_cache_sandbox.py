@@ -358,6 +358,33 @@ class TestStateIO(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Tests for data preprocessing helpers
+# ---------------------------------------------------------------------------
+
+class TestRaceGapPreprocessing(unittest.TestCase):
+
+    def test_winner_gap_is_zero_even_with_total_race_time(self):
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertEqual(
+            gap_to_winner_seconds(1, "0 days 01:33:56.736000"),
+            0.0,
+        )
+
+    def test_non_winner_time_is_already_gap(self):
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertEqual(
+            gap_to_winner_seconds(2, "0 days 00:00:11.987000"),
+            11.987,
+        )
+
+    def test_missing_time_stays_missing_for_lapped_or_dnf_driver(self):
+        import math
+        import pandas as pd
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertTrue(math.isnan(gap_to_winner_seconds(18, pd.NaT)))
+
+
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -22,9 +22,14 @@ This reads from the FastF1 cache in `discovery_raw_data/` and produces 4 CSV fil
 ## Prerequisites
 
 1. **Cache the raw data first:** `python cache_fastf1_data.py`
-2. **Install dependencies:** `pip install fastf1 pandas numpy`
+2. **Install dependencies:** `python3 -m pip install -r requirements.txt`
 
 ## Subfolders
 
 - **`sketches/`** — Plot sketch images ([see table](sketches/README.md))
 - **`test_data/`** — Small test datasets for validating preprocessing
+
+## Notes
+
+- The preprocessing file is named `prepocess_data.py` because that was the original project filename; the README keeps the existing path so old links and commands continue to work.
+- `race_results.csv` stores `GapToWinner_s` as a positive gap in seconds. Winners are `0.0`; lapped finishers and DNFs may be blank when FastF1 does not provide a comparable time.
