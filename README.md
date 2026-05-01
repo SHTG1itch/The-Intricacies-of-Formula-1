@@ -14,10 +14,12 @@
 | `data_organized/` | Cleaned, reduced, and preprocessed data ready for plotting |
 | `data_organized/sketches/` | Plot sketch images with a [table linking each to a research question](data_organized/sketches/README.md) |
 | `data_organized/test_data/` | Small test datasets for validating preprocessing logic |
-| `sketches/` | Python scripts that generate the plot sketches, plus the generated PNG images |
-| `final_report/` | *(Phase 3)* Generated plots, `create_plots.py`, and the written research report (`final.md`) |
+| `sketches/` | Phase 2 sketch images and sketch planning notes |
+| `final_report/` | Final report, model scripts, generated plots, and plot-generation code |
 | `cache_fastf1_data.py` | Script to download and cache FastF1 session data for seasons 2018–2025 |
-| `plot_team_performance.py` | Helper script for team performance visualizations |
+| `requirements.txt` | Python dependencies needed to reproduce the final analysis |
+
+There are two sketch folders because they served different phases of the project: top-level `sketches/` stores the original Phase 2 planning images, while `data_organized/sketches/` stores the organized submission copies with a table mapping each sketch to a research question.
 
 ---
 
@@ -31,7 +33,7 @@
 
 2. **Install dependencies:**
    ```bash
-   pip install fastf1 pandas numpy matplotlib seaborn scipy
+   python3 -m pip install -r requirements.txt
    ```
 
 3. **Cache raw data** (downloads from FastF1 API — takes a while the first time):
@@ -44,13 +46,20 @@
    python data_organized/prepocess_data.py
    ```
 
-5. **Generate plot sketches** (mock data — no cache needed):
+5. **Build final ML features and model outputs** (requires cached data):
    ```bash
-   python sketches/rq1_driver_skill_vs_car.py
-   python sketches/rq2_cost_cap_impact.py
-   python sketches/rq3_cost_cap_functionality.py
-   python sketches/rq4_wdc_predictability.py
+   python final_report/feature_engineering.py
+   python final_report/mach_learning.py
+   python final_report/walk_forward_model.py
+   python final_report/predict_2025.py
    ```
+
+6. **Generate final report plots:**
+   ```bash
+   python final_report/create_plots.py
+   ```
+
+The generated report figures are saved in `final_report/plots/` and described in `final_report/README.md`.
 
 ---
 
@@ -60,6 +69,12 @@
 2. **With the recent addition of a cost cap (2021), have results been altered by the new fiscal limits?**
 3. **Did the cost cap function as the FIA intended?** *(Checked by comparing lap time spreads between the slowest and fastest cars pre- and post-2021.)*
 4. **At what percentage are we able to predict the winner of the next World Drivers' Championship? Is it due to skill, the car, or other factors?** *(Model accuracy can be validated by back-testing against the 2025 season.)*
+
+---
+
+## Attribution and Tools
+
+This project was built by Srivats Iyer and Aakash Bothra for Intermediate Data Programming. The analysis uses public Python libraries including FastF1, pandas, NumPy, SciPy, matplotlib, seaborn, scikit-learn, XGBoost, and joblib. AI tools were used as a support tool for debugging, documentation review, and code-structure feedback; final project decisions, interpretation, and submitted explanations are owned by the student team.
 
 ---
 

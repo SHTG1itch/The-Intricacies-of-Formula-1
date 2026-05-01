@@ -1,28 +1,27 @@
-,,,,,,,,
-Task,Owner,Type,Status,Initial Estimate,"Multiplier 
-(Expected Time)",Week #,Actual Time,Notes / Details / Description
-Design Doc - Phase 1,Srivats Iyer ,Milestone,Completed,,,6,,Milestones are parents of your tasks (they are a summary of all of the weeks planned tasks)
-Create milestones,Srivats Iyer,Discovery,Completed,0.50,0.75,6,2.00,Harder than I thought.. why?
-Initial dataset exploration,Srivats Iyer,Discovery,Completed,1.50,2.25,6,2.00,
-Make schedule,Aakash Bothra,Discovery,Completed,0.50,0.75,6,1.00,
-Begin Motivation part of Discovery DOC,Aakash Bothra,Discovery,Completed,0.50,0.75,6,,
-Gather F1 Race Data (Results,,Milestone,Not started,,,9,0.00,
-,Srivats Iyer,Core,,,,9,,
-,,Core,,,,9,,
-,,Prototype,,,,9,,
-,,Core,,,,9,,
-Investigate/Acquire Driver Background & Income Data,,Milestone,Not started,2.00,3.00,10,,
-,,Core,,,0.00,,,
-,,Core,,,0.00,,,
-,,Core,,,0.00,,,
-Clean and Preprocess Datasets,,Milestone,,,0.00,11,,
-,,,,,0.00,,,
-,,,,,0.00,,,
-,,,,,0.00,,,
-,,,,,0.00,,,
-Perform Exploratory Data Analysis (EDA),,Milestone,,,0.00,12,,
-Feature Engineering for Car/Driver Skill Metrics,,Milestone,,,0.00,13,,
-Develop Predictive Model for Race Win,,Milestone,,,0.00,14,,
-Develop Predictive Model for WDC Winner,,Milestone,,,0.00,15,,
-Model Evaluation and Interpretation,,Milestone,,,0.00,16,,
-Final Report Generation and Conclusions,,Milestone,,,0.00,17,,
+Task,Owner,Type,Status,Initial Estimate,Multiplier (Expected Time),Week #,Actual Time,Notes / Details / Description
+Design Doc - Phase 1,Srivats Iyer,Milestone,Completed,,,6,,Initial discovery document and project framing
+Create milestones,Srivats Iyer,Discovery,Completed,0.50,0.75,6,2.00,Created starting project milestones
+Initial dataset exploration,Srivats Iyer,Discovery,Completed,1.50,2.25,6,2.00,Explored FastF1 availability and project feasibility
+Make schedule,Aakash Bothra,Discovery,Completed,0.50,0.75,6,1.00,Created baseline schedule and shared task list
+Begin motivation section,Aakash Bothra,Discovery,Completed,0.50,0.75,6,,Drafted motivation for F1 data analysis
+Gather F1 race data,Both,Milestone,Completed,,,9,,FastF1 cache pipeline implemented
+Build resumable FastF1 cache,Aakash Bothra,Core,Completed,2.00,3.00,9,,cache_fastf1_data.py with retry and progress tracking
+Validate cache behavior,Srivats Iyer,Challenge,Completed,1.50,2.25,9,,Sandbox tests mock FastF1 API behavior
+Clean and preprocess datasets,Both,Milestone,Completed,,,11,,Organized CSVs in data_organized
+Build qualifying deltas,Srivats Iyer,Core,Completed,1.50,2.25,11,,Teammate gap dataset for RQ1
+Build race result gaps,Aakash Bothra,Core,Completed,1.50,2.25,11,,Race results and gap-to-winner dataset for RQ2
+Build lap-time spread data,Srivats Iyer,Core,Completed,1.50,2.25,11,,Median lap pace spread for RQ2.1
+Perform exploratory data analysis,Both,Milestone,Completed,,,12,,Plot sketches and final visual direction
+Create plot sketches,Both,Core,Completed,3.00,4.50,12,,Eight sketch plots mapped to research questions
+Gather peer/teacher feedback,Both,Documentation,Completed,1.00,1.50,12,,Used PR feedback to clarify plot narratives
+Feature engineering for car/driver metrics,Aakash Bothra,Milestone,Completed,,,13,,Built model feature table from pre-race data
+Add rolling form features,Aakash Bothra,Core,Completed,2.00,3.00,13,,Driver/team rolling averages without target leakage
+Add circuit and weather features,Srivats Iyer,Core,Completed,2.00,3.00,13,,Circuit history and session weather indicators
+Develop predictive model for race winners,Both,Milestone,Completed,,,14,,XGBoost/RandomForest/ExtraTrees ensemble
+Tune and validate models,Aakash Bothra,Challenge,Completed,3.00,4.50,14,,Leave-one-season-out validation and hyperparameter search
+Develop WDC and future prediction outputs,Both,Milestone,Completed,,,15,,2025 validation and 2026 directional projections
+Model evaluation and interpretation,Both,Milestone,Completed,,,16,,Feature importance and walk-forward evaluation
+Create final plots,Both,Milestone,Completed,,,17,,Final report figures generated in final_report/plots
+Write final research report,Both,Milestone,In progress,,,17,,final_report/final.md polished around plots and conclusions
+Polish reproducibility docs,Aakash Bothra,Documentation,In progress,2.00,3.00,17,,README, final_report README, requirements, devcontainer
+Address final PR feedback,Both,Documentation,In progress,2.00,3.00,17,,Clean template text, clarify AI/tool attribution, and explain model limits

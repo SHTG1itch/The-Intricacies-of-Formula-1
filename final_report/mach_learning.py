@@ -1,40 +1,24 @@
-# This is the basis for our machine learning algorithm to attempt to predict Formula 1 races.
-# We use three models and blend them together. Basically each model catches and see something that the others miss
-# especially around top-3 prediction which is what matters.
-# This is necessary because we are trying to predict the finishing order, top 3 and top 20 as well as a wdc prediction later.
-#
-#   1. XGBoost Regressor predicts finishing position as a continuous number
-#   2. XGBoost Ranker ranks the ndcg objective, focuses on getting the top right
-#   3. Random Forest attempts to create a binary win probability classifier
-#
-# On top of the base models we do three Bayesian things(Bayesian statistics serves as an important tool that I have worked with in the past):
-# Bayesian statistics really just relies on uncertainty. We have no idea what's going to happen.
-# Since we don't really know what is going to happen we think of everything as a degree of belief.
-# This differs from normal statistics where we treat probability as a long-run frequency
-# Bayesian just treats its parameters as random variables with probability distributions.
-# With this we can calculate the probability that a hypothesis is true.
-# These three Bayesian things are:
-#   a) Normal-Normal hierarchical model with James-Stein shrinkage for the circuit-history win prior.
-#      Since Hamilton has won at Silverstone 8 times, factor that in - but with proper shrinkage:
-#      a driver who's raced somewhere once gets almost no circuit prior, while 15 races gets a lot
-#      this replaced the old Beta-Binomial which treated all history equally regardless of sample size
-#   b) Bayesian temperature scaling (Platt scaling with MAP prior) to calibrate RF probabilities.
-#      Random forests are overconfident so we fit a temperature T on out-of-fold LOSO predictions
-#      T is fit with a log-normal MAP prior so it doesn't go crazy with small data
-#      and critically we do this BEFORE the prior blend, not after
-#   c) Inverse-variance Bayesian Model Averaging to set ensemble blend weights from LOSO data:
-#      now combines Dirichlet winner-accuracy weights (60%) + inverse-MAE weights (40%)
-#      instead of hardcoding 40/40/20(weightage of Reg/Rank/Forest), let the actual validation data decide
-# Here are some references that we used to create this:
-# ref for BMA: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
-# ref for James-Stein / Normal-Normal: https://en.wikipedia.org/wiki/James%E2%80%93Stein_estimator
-# ref for temperature scaling: https://arxiv.org/abs/1706.04599
-# ref: Bayesian stats overview: https://en.wikipedia.org/wiki/Bayesian_statistics
-#
-# XGBoost paper: https://arxiv.org/abs/1603.02754
-# Random Forests paper: https://link.springer.com/article/10.1023/A:1010933404324
-# XGBRanker tutorial: https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html
-# F1 reference prediction project we compare against: https://github.com/mar-antaya/2025_f1_predictions
+"""Train and evaluate the race-prediction models used in the final report.
+
+The goal is to predict each driver's finishing order before the race starts.
+No race-result fields from the target race are allowed in the input features.
+
+Model pieces:
+- XGBoost regressor: predicts numeric finishing position.
+- XGBoost ranker: focuses on ordering drivers within each race.
+- Random forest classifier: estimates win probability.
+- ExtraTrees regressor: adds a less-correlated tree model to the ensemble.
+
+The ensemble weights come from leave-one-season-out validation instead of a
+hand-picked blend. The report explains the final metrics and why exact race
+prediction has a ceiling because of safety cars, incidents, and failures.
+
+References:
+- XGBoost paper: https://arxiv.org/abs/1603.02754
+- Random Forests paper: https://link.springer.com/article/10.1023/A:1010933404324
+- XGBRanker docs: https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html
+- Temperature scaling: https://arxiv.org/abs/1706.04599
+"""
 
 
 import sys

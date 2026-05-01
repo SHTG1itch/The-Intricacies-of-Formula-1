@@ -1,0 +1,9 @@
+fastf1
+joblib
+matplotlib
+numpy
+pandas
+scikit-learn
+scipy
+seaborn
+xgboost
