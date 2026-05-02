@@ -27,8 +27,6 @@ Formula 1 is a sport where a tenth of a second separates competitors, hundreds o
 
 All data comes from the FastF1 Python library [1], which provides access to official FIA timing data, telemetry, and session results for 2018–2025, covering 2,977 driver-race entries across 149 rounds. One limitation shapes every result in this report: **the 2022 regulation change**. Formula 1 introduced entirely new aerodynamic rules that same year the cost cap took full effect, making it impossible to cleanly separate "teams converging due to budget limits" from "teams converging because all-new cars reset the order." This caveat is flagged wherever relevant. Minor gaps — six corrupted sessions from 2018–2019, missing qualifying times from wet sessions, and the 2020 season's Europe-only calendar — are handled by rolling-average imputation with a binary flag.
 
-The code was written for this IDP project using public Python libraries listed in the repository README. AI tools were used as support for debugging, reviewing explanations, and improving structure; the final analysis choices, interpretation, and project presentation are the authors' responsibility.
-
 ---
 
 ## Results
