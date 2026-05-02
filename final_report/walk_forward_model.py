@@ -1064,64 +1064,75 @@ def plot_accuracy_by_race_number(df_pred, loso_mean=0.551, outdir=PLOT_DIR):
 
 def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
     """
-    side-by-side bars showing LOSO vs walk-forward accuracy for each season.
+    side-by-side bars showing three-model accuracy progression per season:
+      LOSO  →  Walk-forward + PL  →  Oracle (theoretical ceiling)
 
-    three bars per season so you can see exactly how much each layer helps:
-      - LOSO ensemble (4-model + meta-model stacking, no within-season data at all)
-      - walk-forward base (same 4-model BMA but without the meta-model and without PL)
-      - walk-forward + PL (the full thing — base ensemble + bayesian season updating)
-
-    the WF base bar is the apples-to-apples comparison: it shows what the BMA alone
-    does without any stacking tricks. we can't run a meta-model here because that would
-    require nested LOSO-within-LOSO which creates data leakage (this was annoying to work out).
-    the PL bar then shows the additional gain from feeding in within-season race results.
+    the WF base bar was removed because it cluttered the chart without adding a clear
+    message for the reader — the key insight is LOSO < WF+PL < Oracle.
     """
     os.makedirs(outdir, exist_ok=True)
     per_year = compute_per_year_metrics(df_pred)
     years    = sorted(per_year.index)
 
     x     = np.arange(len(years))
-    width = 0.28
+    width = 0.26
 
-    # two panels: bars on the left, per-year gain on the right
+    # compute oracle accuracy per year (did WF OR base get this race right?)
+    df_races = df_pred.drop_duplicates(subset=["Year", "Round"]).copy()
+    df_races = df_races[df_races["actual_winner"].notna()]
+    oracle_vals = []
+    for yr in years:
+        sub = df_races[df_races["Year"] == yr]
+        n   = len(sub)
+        if n == 0:
+            oracle_vals.append(np.nan)
+            continue
+        n_oracle = (
+            (sub["correct_wf"] == True) | (sub["correct_base"] == True)
+        ).sum()
+        oracle_vals.append(n_oracle / n)
+
+    # two panels: bars on left, per-year gains on right
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(16, 6.5),
                                    gridspec_kw={"width_ratios": [2, 1]})
 
     loso_vals = [loso_by_year.get(y, np.nan) for y in years]
-    base_vals = [per_year.loc[y, "base_accuracy"] for y in years]
-    wf_vals   = [per_year.loc[y, "wf_accuracy"]   for y in years]
+    wf_vals   = [per_year.loc[y, "wf_accuracy"] for y in years]
 
-    bars_loso = ax.bar(x - width, loso_vals, width,
-                       label="LOSO — static pre-race model\n(no in-season data, full meta-stack)",
-                       color="#4393c3", alpha=0.85, edgecolor="white")
-    bars_base = ax.bar(x,         base_vals, width,
-                       label="WF base — same models, no Bayesian update\n(isolates PL contribution)",
-                       color="#bababa", alpha=0.85, edgecolor="white")
-    bars_wf   = ax.bar(x + width, wf_vals,   width,
-                       label="Walk-forward + PL — uses within-season results\n(the full model)",
-                       color="#d6604d", alpha=0.85, edgecolor="white")
+    c_loso   = "#4393c3"   # blue
+    c_wf     = "#d6604d"   # red-orange
+    c_oracle = "#1a9641"   # green
 
-    for bars in [bars_loso, bars_base, bars_wf]:
+    bars_loso   = ax.bar(x - width, loso_vals,   width,
+                         label="LOSO — static pre-race model\n(no in-season data)",
+                         color=c_loso,   alpha=0.85, edgecolor="white")
+    bars_wf     = ax.bar(x,          wf_vals,     width,
+                         label="Walk-forward + PL — Bayesian in-season update",
+                         color=c_wf,     alpha=0.85, edgecolor="white")
+    bars_oracle = ax.bar(x + width,  oracle_vals, width,
+                         label="Oracle — theoretical best (WF or LOSO correct)",
+                         color=c_oracle, alpha=0.85, edgecolor="white")
+
+    for bars in [bars_loso, bars_wf, bars_oracle]:
         for bar in bars:
             h = bar.get_height()
             if not np.isnan(h) and h > 0.02:
                 ax.text(bar.get_x() + bar.get_width() / 2, h + 0.007,
                         f"{h:.0%}", ha="center", va="bottom", fontsize=8, fontweight="bold")
 
-    # arrows pointing from the WF-base bar up to the WF+PL bar show the PL gain visually
-    for xi, bv, wv in zip(x, base_vals, wf_vals):
-        gain = wv - bv
+    # arrows from LOSO to WF showing the PL gain
+    for xi, lv, wv in zip(x, loso_vals, wf_vals):
+        gain = wv - (lv if not np.isnan(lv) else wv)
         if gain > 0.01:
-            ax.annotate("", xy=(xi + width, wv + 0.04), xytext=(xi, bv + 0.04),
+            ax.annotate("", xy=(xi, wv + 0.04), xytext=(xi - width, lv + 0.04),
                         arrowprops=dict(arrowstyle="->", color="#888", lw=1.2))
-            ax.text(xi + width / 2, max(wv, bv) + 0.05,
+            ax.text(xi - width / 2, max(wv, lv or 0) + 0.05,
                     f"+{gain:.0%}", ha="center", va="bottom",
                     fontsize=7.5, color="#555", style="italic")
 
     ax.axhline(0.65, color="#333", lw=1.2, ls="--", alpha=0.6,
                label="Academic benchmark (~65%)")
 
-    # little footnotes below each year explaining the interesting seasons
     year_notes = {
         2019: "HAM quali dominance\ncaptured by PL",
         2023: "VER separates R4\nPL very effective",
@@ -1136,15 +1147,16 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
                     bbox=dict(boxstyle="round,pad=0.2", facecolor="#f9f9f9",
                               edgecolor="#ccc", alpha=0.8))
 
-    valid_loso = [v for v in loso_vals if not np.isnan(v)]
-    mean_loso  = np.mean(valid_loso)
-    mean_base  = np.mean(base_vals)
-    mean_wf    = np.mean(wf_vals)
+    valid_loso   = [v for v in loso_vals   if not np.isnan(v)]
+    valid_oracle = [v for v in oracle_vals if not np.isnan(v)]
+    mean_loso   = np.mean(valid_loso)   if valid_loso   else np.nan
+    mean_wf     = np.mean(wf_vals)
+    mean_oracle = np.mean(valid_oracle) if valid_oracle else np.nan
     ax.text(0.99, 0.99,
             f"Mean accuracy:\n"
             f"  LOSO:    {mean_loso:.1%}\n"
-            f"  WF base: {mean_base:.1%}\n"
             f"  WF+PL:   {mean_wf:.1%}\n"
+            f"  Oracle:  {mean_oracle:.1%}\n"
             f"  PL gain: +{mean_wf - mean_loso:.1%}",
             transform=ax.transAxes, ha="right", va="top", fontsize=9,
             bbox=dict(boxstyle="round,pad=0.4", facecolor="lightyellow",
@@ -1154,41 +1166,47 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
     ax.set_xticklabels([str(y) for y in years])
     ax.set_xlabel("Holdout Season (year left out of training)", fontsize=11)
     ax.set_ylabel("Winner Prediction Accuracy", fontsize=11)
-    ax.set_title("LOSO vs Walk-Forward: Does In-Season Learning Help?\n"
-                 "Walk-forward adds Plackett-Luce Bayesian updating on the same pre-race ensemble",
+    ax.set_title("LOSO → Walk-Forward (+PL) → Oracle: Accuracy Hierarchy\n"
+                 "Oracle = theoretical upper bound; gap to WF shows complementary blind spots",
                  fontsize=11, fontweight="bold")
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
     ax.legend(fontsize=8.5, loc="upper left", framealpha=0.9)
     ax.grid(True, axis="y", alpha=0.25)
     ax.set_ylim(-0.25, 1.12)
 
-    # right panel: horizontal bars showing how much WF beat LOSO per year (red = gain, blue = loss)
-    pl_gains   = [wv - lv for wv, lv in zip(wf_vals, loso_vals)]
-    bar_colors = ["#d6604d" if g > 0 else "#4393c3" for g in pl_gains]
-    ax2.barh(x, pl_gains, color=bar_colors, alpha=0.85, edgecolor="white")
+    # right panel: WF gain and Oracle gain over LOSO shown as grouped horizontal bars
+    wf_gains     = [wv - (lv if not np.isnan(lv) else 0) for wv, lv in zip(wf_vals, loso_vals)]
+    oracle_gains = [ov - (lv if not np.isnan(lv) else 0) for ov, lv in zip(oracle_vals, loso_vals)]
+
+    bw2 = 0.35
+    ax2.barh(x - bw2 / 2, wf_gains,     bw2, color=c_wf,     alpha=0.85, edgecolor="white",
+             label="WF+PL vs LOSO")
+    ax2.barh(x + bw2 / 2, oracle_gains, bw2, color=c_oracle, alpha=0.85, edgecolor="white",
+             label="Oracle vs LOSO")
     ax2.axvline(0, color="#333", lw=1.2)
 
-    for xi, g in zip(x, pl_gains):
-        sign = "+" if g >= 0 else ""
-        ax2.text(g + (0.003 if g >= 0 else -0.003), xi,
-                 f"{sign}{g:.1%}", va="center",
-                 ha="left" if g >= 0 else "right",
-                 fontsize=9, fontweight="bold",
-                 color="#d6604d" if g >= 0 else "#4393c3")
+    for xi, gw, go in zip(x, wf_gains, oracle_gains):
+        for g, yoff, clr in [(gw, -bw2 / 2, c_wf), (go, bw2 / 2, c_oracle)]:
+            sign = "+" if g >= 0 else ""
+            ax2.text(g + (0.003 if g >= 0 else -0.003), xi + yoff,
+                     f"{sign}{g:.1%}", va="center",
+                     ha="left" if g >= 0 else "right",
+                     fontsize=8.5, fontweight="bold", color=clr)
 
     ax2.set_yticks(x)
     ax2.set_yticklabels([str(y) for y in years], fontsize=10)
-    ax2.set_xlabel("WF accuracy minus LOSO accuracy", fontsize=10)
-    ax2.set_title("Walk-Forward Gain\nover LOSO by Season", fontsize=11, fontweight="bold")
+    ax2.set_xlabel("Gain over LOSO", fontsize=10)
+    ax2.set_title("WF+PL and Oracle Gain\nover LOSO by Season", fontsize=11, fontweight="bold")
     ax2.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
+    ax2.legend(fontsize=8.5, loc="lower right", framealpha=0.9)
     ax2.grid(True, axis="x", alpha=0.25)
 
-    mean_gain = np.mean(pl_gains)
-    ax2.axvline(mean_gain, color="#888", lw=1.2, ls="--", alpha=0.7)
-    ax2.text(mean_gain + 0.001, x[-1] + 0.45,
-             f"mean\n+{mean_gain:.1%}", fontsize=8, color="#555", va="bottom")
+    mean_wf_gain = np.nanmean(wf_gains)
+    ax2.axvline(mean_wf_gain, color=c_wf, lw=1.2, ls="--", alpha=0.6)
+    ax2.text(mean_wf_gain + 0.001, x[-1] + 0.45,
+             f"WF mean\n{mean_wf_gain:+.1%}", fontsize=8, color=c_wf, va="bottom")
 
-    plt.suptitle("Why Walk-Forward Is Better Than Static LOSO Prediction",
+    plt.suptitle("Model Accuracy Hierarchy: LOSO → Walk-Forward → Oracle",
                  fontsize=13, fontweight="bold", y=1.01)
     plt.tight_layout()
     path = os.path.join(outdir, "wf_model_comparison.png")

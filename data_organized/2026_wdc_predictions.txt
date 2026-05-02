@@ -1,0 +1,48 @@
+==================================================================
+  2026 F1 WORLD CHAMPIONSHIP — PROJECTED FINAL STANDINGS
+==================================================================
+  Races completed : 1 of 24 (R1 anchor + 23 simulated)
+  Method          : 2025 driver form (recency-weighted) +
+                    team-adjustment for moves + Plackett-Luce
+                    race simulation (2000 season simulations)
+  Training data   : 2022–2025 seasons
+
+  IMPORTANT: 2026 brings the largest regulation change since 2014
+  (active aero + all-new hybrid power units from every manufacturer).
+  Historical team-performance rankings may not carry forward at all.
+  The model uses driver skill and circuit history as primary signals
+  which are more regulation-stable — but these are directional
+  projections, not confident predictions.
+
+──────────────────────────────────────────────────────────────────
+  PREDICTED WORLD CHAMPION:
+    Lando Norris  (McLaren)
+    Projected points: 424  (out of max 600)
+──────────────────────────────────────────────────────────────────
+
+  Rank  Driver                    Team                       Proj Pts
+  ────  ────────────────────────  ────────────────────────  ─────────
+     1  Lando Norris              McLaren                         424
+     2  Oscar Piastri             McLaren                         405
+     3  George Russell            Mercedes                        232
+     4  Charles Leclerc           Ferrari                         193
+     5  Max Verstappen            Red Bull Racing                 189
+     6  Lewis Hamilton            Ferrari                         158
+     7  Kimi Antonelli            Mercedes                        150
+     8  Carlos Sainz              Williams                         64
+     9  Valtteri Bottas           Cadillac                         63
+    10  Sergio Perez              Cadillac                         62
+    11  Isack Hadjar              Red Bull Racing                  55
+    12  Alexander Albon           Williams                         50
+    13  Oliver Bearman            Haas F1 Team                     47
+    14  Fernando Alonso           Aston Martin                     42
+    15  Arvid Lindblad            Racing Bulls                     40
+    16  Nico Hülkenberg           Audi                             40
+    17  Esteban Ocon              Haas F1 Team                     39
+    18  Lance Stroll              Aston Martin                     37
+    19  Liam Lawson               Racing Bulls                     36
+    20  Pierre Gasly              Alpine                           35
+    21  Gabriel Bortoleto         Audi                             34
+    22  Franco Colapinto          Alpine                           30
+
+==================================================================

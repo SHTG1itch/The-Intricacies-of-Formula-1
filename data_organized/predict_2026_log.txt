@@ -1,0 +1,495 @@
+============================================================
+  F1 2026 — Race Predictions & WDC Projection
+============================================================
+
+  NOTE: 2026 introduces the biggest regulation change since 2014:
+    - Active aerodynamics (fully movable bodywork system)
+    - Brand new hybrid power units from all manufacturers
+    - Significant structural rule changes to car dimensions
+
+  Historical team performance (2022-2025) may not carry forward at all.
+  This model's driver-skill and circuit-history features should partially
+  transfer, but car-level performance rankings are genuinely uncertain.
+  The Bayesian prior on win probability leans on driver circuit history
+  rather than pure team order, which adds some robustness - but there's
+  only so much you can do when the cars are completely different.
+  Treat 2026 outputs as directional, not predictive.
+
+[1/6] Building combined 2022-2025 training dataset...
+  ✓ 2022-2024 rows: 2976
+  ✓ 2025 completed rows: 479 (24 races)
+  ✓ Combined: 3455 rows, 8 seasons, 173 race weekends
+  → Saved combined training data: data_organized\2026_training_data.csv
+  ✓ After dropping NaN targets: 3455 rows ready for training
+
+[2/6] Loading or training 2026 models...
+  ✓ Loaded cached 2026 models from data_organized\models_2026/
+    Delete the models_2026/ directory to force a full retrain.
+  ✓ BMA weights: xgb=0.350, ranker=0.350, rf=0.150, et=0.150
+  ✓ Calibration temperature T=1.0000
+
+[3/6] Building 2026 pre-race features...
+  Building 2026 features from FastF1 cache...
+  (Processes warmup data 2019-2025 + 2026 sessions - takes several minutes)
+
+============================================================
+  Year: 2025  [WARMUP - not emitting rows]
+============================================================
+
+  R01 Australian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+
+  R02 Chinese Grand Prix
+    [skip] 2025 R02 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R02 FP3: Session type 'FP3' does not exist for this event
+    [skip] No driver list for R2
+
+  R03 Japanese Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R3
+
+  R04 Bahrain Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R4
+
+  R05 Saudi Arabian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R5
+
+  R06 Miami Grand Prix
+    [skip] 2025 R06 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R06 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R6
+
+  R07 Emilia Romagna Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R7
+
+  R08 Monaco Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R8
+
+  R09 Spanish Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R9
+
+  R10 Canadian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R10
+
+  R11 Austrian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+
+  R12 British Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R12
+
+  R13 Belgian Grand Prix
+    [skip] 2025 R13 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R13 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R13
+
+  R14 Hungarian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R14
+
+  R15 Dutch Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R15
+
+  R16 Italian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R16
+
+  R17 Azerbaijan Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R17
+
+  R18 Singapore Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R18
+
+  R19 United States Grand Prix
+    [skip] 2025 R19 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R19 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R19
+
+  R20 Mexico City Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R20
+
+  R21 São Paulo Grand Prix
+    [skip] 2025 R21 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R21 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R21
+
+  R22 Las Vegas Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R22
+
+  R23 Qatar Grand Prix
+    [skip] 2025 R23 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2025 R23 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R23
+
+  R24 Abu Dhabi Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R24
+
+============================================================
+  Year: 2026  
+============================================================
+
+  R01 Australian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R1
+
+  R02 Chinese Grand Prix
+    [skip] 2026 R02 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R02 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R2
+
+  R03 Japanese Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R3
+
+  R04 Miami Grand Prix
+    [skip] 2026 R04 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R04 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R4
+
+  R05 Canadian Grand Prix
+    [skip] 2026 R05 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R05 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R5
+
+  R06 Monaco Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R6
+
+  R07 Barcelona Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R7
+
+  R08 Austrian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R8
+
+  R09 British Grand Prix
+    [skip] 2026 R09 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R09 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R9
+
+  R10 Belgian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R10
+
+  R11 Hungarian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R11
+
+  R12 Dutch Grand Prix
+    [skip] 2026 R12 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R12 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R12
+
+  R13 Italian Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R13
+
+  R14 Spanish Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R14
+
+  R15 Azerbaijan Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R15
+
+  R16 Singapore Grand Prix
+    [skip] 2026 R16 FP2: Session type 'FP2' does not exist for this event
+    [skip] 2026 R16 FP3: Session type 'FP3' does not exist for this event
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R16
+
+  R17 United States Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R17
+
+  R18 Mexico City Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R18
+
+  R19 São Paulo Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R19
+
+  R20 Las Vegas Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R20
+
+  R21 Qatar Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R21
+
+  R22 Abu Dhabi Grand Prix
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] best_lap_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] sector_pace_deltas_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] lap_consistency: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] tyre_degradation_rate_fp2: The data you are trying to access has not been loaded yet. See `Session.load`
+    [warn] long_run_pace_delta_fp3: The data you are trying to access has not been loaded yet. See `Session.load`
+    [skip] No driver list for R22
+  → Saved 2026 features: data_organized\2026_features.csv
+Traceback (most recent call last):
+  File "C:\Users\iyerm\Documents\GitHub\idp-final-project-25-26-srivatsi-aakashb\final_report\predict_2026.py", line 983, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\iyerm\Documents\GitHub\idp-final-project-25-26-srivatsi-aakashb\final_report\predict_2026.py", line 891, in main
+    X_2026, df_2026 = build_2026_features(imputer)
+                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\iyerm\Documents\GitHub\idp-final-project-25-26-srivatsi-aakashb\final_report\predict_2026.py", line 394, in build_2026_features
+    raise RuntimeError(
+    ...<3 lines>...
+    )
+RuntimeError: 
+[!] No 2026 features built - cache is probably missing 2026 sessions.
+    Run cache_fastf1_data.py with YEARS=[2026] and try again.
+    Cache dir: discovery_raw_data/
