@@ -69,8 +69,8 @@ idp-final-project-25-26-srivatsi-aakashb/
     ├── predict_2026.py           # Step 5b — retrain and predict the 2026 season
     ├── walk_forward_model.py     # Step 5c — Plackett-Luce in-season updater
     ├── create_plots.py           # Step 6 — generates all report visualizations
-    ├── final.md                  # Written research report (~20 pages)
-    └── plots/                    # Generated PNG figures (18+ files)
+    ├── final.md                  # Written research report (27 figures, appendix)
+    └── plots/                    # Generated PNG figures (27 files)
 ```
 
 ---
@@ -289,7 +289,7 @@ python final_report/create_plots.py
 
 Reads all cleaned CSVs from `data_organized/` and outputs 18+ PNG files to `final_report/plots/`. Uses `matplotlib.use("Agg")` for headless (no display required) rendering.
 
-Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge (joy) plots, violin plots, radar charts, feature importance bar charts, and predicted-vs-actual scatter plots — all referenced by figure number in `final_report/final.md`.
+Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge (joy) plots, violin plots, radar charts, confusion matrices, feature importance bar charts, and predicted-vs-actual scatter plots — all 27 referenced by figure number in `final_report/final.md`.
 
 ---
 
