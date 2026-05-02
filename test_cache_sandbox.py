@@ -1,7 +1,7 @@
 """
 Sandbox tests for cache_fastf1_data.py
 
-All FastF1 API calls are mocked — no network requests are made and
+All FastF1 API calls are mocked - no network requests are made and
 discovery_raw_data/ is never touched.  Run with:
     python test_cache_sandbox.py
 """
@@ -36,8 +36,8 @@ class TestFetchSession(unittest.TestCase):
         raises (or returns normally) according to side_effects.
 
         side_effects items:
-          None                       — load() succeeds (returns None like real fastf1)
-          an exception instance      — load() raises that exception
+          None                       - load() succeeds (returns None like real fastf1)
+          an exception instance      - load() raises that exception
         """
         import cache_fastf1_data as m
 
@@ -81,7 +81,7 @@ class TestFetchSession(unittest.TestCase):
         self.assertEqual(status, "ok")
 
     def test_transient_error_exhausted(self):
-        # Fails on every transient attempt — should give up
+        # Fails on every transient attempt - should give up
         import cache_fastf1_data as m
         errors = [RuntimeError("bad")] * (len(m.RETRY_DELAYS) + 1)
         status, _ = self._run(errors)
@@ -176,7 +176,7 @@ class TestProcessRound(unittest.TestCase):
         # ok sessions
         for i in range(1, 4):
             self.assertIn(m.session_key(2024, 1, i), done, f"session {i} should be done")
-        # not_found — both 4 and 5 must be marked
+        # not_found - both 4 and 5 must be marked
         self.assertIn(m.session_key(2024, 1, 4), done, "session 4 not marked")
         self.assertIn(m.session_key(2024, 1, 5), done, "session 5 not marked")
 
@@ -338,7 +338,7 @@ class TestStateIO(unittest.TestCase):
         self.assertEqual(result, set())
 
     def test_save_is_atomic(self):
-        """save_state must write a .tmp file then rename it — no partial writes."""
+        """save_state must write a .tmp file then rename it - no partial writes."""
         import cache_fastf1_data as m
         with patch.object(m, "STATE_FILE", self.state_path):
             # Patch os.replace to verify the tmp file existed before the rename
@@ -355,6 +355,33 @@ class TestStateIO(unittest.TestCase):
         self.assertTrue(tmp_existed[0], ".tmp file did not exist before os.replace")
         # After save, the .tmp file must be gone (renamed to STATE_FILE)
         self.assertFalse(os.path.exists(self.state_path + ".tmp"))
+
+
+# ---------------------------------------------------------------------------
+# Tests for data preprocessing helpers
+# ---------------------------------------------------------------------------
+
+class TestRaceGapPreprocessing(unittest.TestCase):
+
+    def test_winner_gap_is_zero_even_with_total_race_time(self):
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertEqual(
+            gap_to_winner_seconds(1, "0 days 01:33:56.736000"),
+            0.0,
+        )
+
+    def test_non_winner_time_is_already_gap(self):
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertEqual(
+            gap_to_winner_seconds(2, "0 days 00:00:11.987000"),
+            11.987,
+        )
+
+    def test_missing_time_stays_missing_for_lapped_or_dnf_driver(self):
+        import math
+        import pandas as pd
+        from data_organized.prepocess_data import gap_to_winner_seconds
+        self.assertTrue(math.isnan(gap_to_winner_seconds(18, pd.NaT)))
 
 
 # ---------------------------------------------------------------------------

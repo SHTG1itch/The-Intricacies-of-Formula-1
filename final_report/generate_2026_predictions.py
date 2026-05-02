@@ -1,35 +1,14 @@
-# generate_2026_predictions.py  (UTF-8 source)
 # -*- coding: utf-8 -*-
-#
-# 2026 WDC projection — updated with actual 2026 race results (R1-R3).
-#
-# How the strength model works (3-layer blend):
-#
-#   Layer 1 — 2025 driver form (25% weight)
-#     Recency-weighted average finish from all 24 rounds of 2025.
-#     Captures each driver's baseline skill and reliability.
-#     Team-adjustment for drivers who changed constructors in 2026:
-#     their personal form is blended with the new team's 2025 car level.
-#
-#   Layer 2 — 2026 actual results (65% weight)
-#     Average actual finishing position from the 3 completed races.
-#     Three results already tell us a great deal: Mercedes (ANT 2 wins,
-#     RUS 1 win) is clearly dominant; McLaren (NOR/PIA) has underperformed
-#     versus 2025 expectations; Ferrari (LEC/HAM) is consistently 3rd-4th.
-#     65% weight because the regulation change makes 2025 form less reliable
-#     than real 2026 data, even from just 3 races.
-#
-#   Layer 3 — championship points pace (10% weight)
-#     A driver's current points / races converts to an implied avg finish.
-#     Useful as a small tie-breaker for drivers with similar raw averages.
-#
-# After strength is computed, the remaining 21 races are simulated with
-# Plackett-Luce noise (sigma=0.80) to capture F1's inherent unpredictability.
-# 2000 independent season simulations are averaged to get stable expected
-# championship totals; the actual completed race points are then added on top.
-#
-# Run from project root:
-#   python -X utf8 final_report/generate_2026_predictions.py
+"""Generate the text/CSV 2026 championship projection.
+
+The projection blends 2025 form, completed 2026 results, and current points
+pace, then simulates the remaining calendar with Plackett-Luce noise. It is a
+lighter-weight reporting script than predict_2026.py, meant for updating the
+plain-English standings output.
+
+Run from the project root:
+    python -X utf8 final_report/generate_2026_predictions.py
+"""
 
 import os
 import warnings
@@ -147,7 +126,7 @@ def load_2026_actuals():
         fastf1.Cache.enable_cache(CACHE_DIR)
         fastf1.Cache.offline_mode(enabled=False)
     except ImportError:
-        print("  [warn] FastF1 not available — falling back to R1 offline only")
+        print("  [warn] FastF1 not available - falling back to R1 offline only")
         return _offline_r1_fallback()
 
     completed_rounds = []
@@ -219,7 +198,7 @@ def build_driver_strength(form_2025, avg_finish_2026, pts_2026, n_completed):
       10% championship-pace implied    (points/race converted to implied position)
 
     The high 2026 weight reflects that the regulation change makes past seasons
-    less predictive — 3 actual 2026 races are worth more than a full 2025 season
+    less predictive - 3 actual 2026 races are worth more than a full 2025 season
     at this stage of the championship.
     """
     # team-level average from 2025 (for team-change blending)
@@ -395,7 +374,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
 
     lines = [
         "=" * 70,
-        "  2026 F1 WORLD CHAMPIONSHIP — UPDATED PROJECTED FINAL STANDINGS",
+        "  2026 F1 WORLD CHAMPIONSHIP - UPDATED PROJECTED FINAL STANDINGS",
         "=" * 70,
         f"  Races completed : {n_done} of {n_total}  "
         f"(R{min(completed_rounds)}-R{max(completed_rounds)} actual + {n_future} simulated)",
@@ -405,7 +384,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
         "",
         "  NOTE: 2026 regulations (active aero + new PUs) make historical",
         "  data less reliable. The 3 real races already outweigh all of 2025",
-        "  in this model. Treat as directional — not a confident prediction.",
+        "  in this model. Treat as directional - not a confident prediction.",
         "",
         "─" * 70,
         "  PREDICTED WORLD CHAMPION:",
@@ -456,7 +435,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
 
 def main():
     print("=" * 70)
-    print("  F1 2026 — Updated Season Projection  (3-race data + 2025 form)")
+    print("  F1 2026 - Updated Season Projection  (3-race data + 2025 form)")
     print("=" * 70)
 
     print("\n[1/6] Loading 2025 driver form (historical baseline)...")

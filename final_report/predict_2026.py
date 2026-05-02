@@ -1,52 +1,13 @@
-# Retrain the full ensemble on 2022-2025 data and predict 2026 races + WDC standings.
-#
-# The big difference between this and predict_2025.py is that we retrain from scratch
-# here instead of loading the models trained by mach_learning.py. Adding 2025 gives us
-# one more full season of data which genuinely helps, especially for drivers who swapped
-# teams in 2025 - the rolling form and circuit history features are much more informative
-# with an extra year of observations behind them.
-#
-# One thing we kept going back and forth on: should we load the 2022-2024 trained models
-# and just fine-tune on 2025, or fully retrain? We tried fine-tuning first. XGBoost
-# doesn't really support incremental learning the way neural nets do - you have to pass
-# all training data at once or the trees don't see the full distribution. So full retrain
-# it is, saved to a separate models_2026/ directory so we don't accidentally overwrite
-# the 2025 validation models.
-#
-# The 2026 regulation changes are a real headache for prediction.
-# New hybrid power units from all manufacturers means historical car performance rankings
-# could flip completely - we've seen this before at the 2014 regulation change when
-# Mercedes went from midfield to untouchable and Red Bull (who dominated 2010-2013)
-# immediately fell back. Our model doesn't know this could happen because it's learned
-# that "Red Bull fast = Red Bull wins" from historical data. The Bayesian prior on win
-# probability helps a bit because it's circuit-level driver history rather than pure
-# car performance, but honestly there's a limit to how much you can predict a rule reset.
-# We make the caveat prominent in the output for exactly this reason.
-#
-# Active aerodynamics (moveable bodywork system from 2026) is also completely unmodelled
-# because we have no training data for it. Teams that get the active aero philosophy right
-# early could have a massive advantage and our model would never see that coming.
-# ref: 2026 technical regulations overview: https://www.fia.com/regulation/category/110
-#
-# Architecture: same three-model ensemble as always
-#   1. XGBoost Regressor  - finishing position as a continuous value
-#      ref: https://arxiv.org/abs/1603.02754
-#   2. XGBoost Ranker     - learning-to-rank with rank:ndcg objective (top-heavy accuracy)
-#      ref: https://xgboost.readthedocs.io/en/stable/tutorials/learning_to_rank.html
-#   3. Random Forest      - binary win probability
-#      ref: https://link.springer.com/article/10.1023/A:1010933404324
-# Plus Bayesian adjustments:
-#   - Beta-Binomial prior on win probability from circuit driver history
-#     ref: https://en.wikipedia.org/wiki/Beta-binomial_distribution
-#   - Bayesian Model Averaging for ensemble weights from LOSO cross-validation
-#     ref: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
-#
-# Similar championship projection work: https://github.com/brendan-e-mckinney/F1-Machine-Learning-Project
-# FastF1 data source: https://github.com/theOehrly/Fast-F1
-#
-# Run from project root:
-#   python final_report/predict_2026.py
-# (feature_engineering.py and mach_learning.py must have been run first for 2022-2024 data)
+"""Retrain on recent seasons and project the 2026 F1 season.
+
+This script intentionally retrains the ensemble instead of trying to fine-tune
+old model files. Tree models need to see the full training distribution at once,
+and keeping the 2026 artifacts in models_2026/ avoids overwriting the validation
+models used elsewhere in the report.
+
+Run from the project root:
+    python final_report/predict_2026.py
+"""
 
 import os
 import sys
@@ -497,7 +458,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, "2026_wdc_predictions.txt")
 
-    # full driver name lookup — three-letter codes from the feature data map to full names
+    # full driver name lookup - three-letter codes from the feature data map to full names
     full_names = {
         "VER": "Max Verstappen",     "NOR": "Lando Norris",
         "LEC": "Charles Leclerc",    "PIA": "Oscar Piastri",
@@ -522,7 +483,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
 
     lines = [
         "=" * 62,
-        "  2026 F1 WORLD CHAMPIONSHIP — PREDICTED FINAL STANDINGS",
+        "  2026 F1 WORLD CHAMPIONSHIP - PREDICTED FINAL STANDINGS",
         "=" * 62,
         f"  Races predicted : {n_predicted} of {n_total}",
         f"  Model           : 3-model BMA ensemble (XGBoost Regressor +",
@@ -537,7 +498,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
         "",
         "─" * 62,
         f"  PREDICTED WORLD CHAMPION:",
-        f"    {champion_name} ({champion_team})  —  {champion_pts} projected points",
+        f"    {champion_name} ({champion_team})  -  {champion_pts} projected points",
         "─" * 62,
         "",
         f"  {'Rank':>4}  {'Driver':<22}  {'Team':<28}  {'Pred Pts':>9}",
@@ -717,7 +678,7 @@ def plot_season_predictions(pred_df, out_dir, max_races=24):
     fig, ax = plt.subplots(figsize=(max(12, n_races * 0.95), 5))
     fig.patch.set_facecolor(F1_DARK)
     ax.set_facecolor(F1_DARK)
-    fig.suptitle("2026 Season — Predicted Top-5 per Race",
+    fig.suptitle("2026 Season - Predicted Top-5 per Race",
                  fontsize=13, color=F1_WHITE, fontweight="bold")
 
     has_actuals = "actual_position" in pred_sub.columns
@@ -805,7 +766,7 @@ def plot_accuracy_timeline(metrics_df, out_dir):
     ax.set_ylim(-0.05, 1.1)
     ax.set_xlabel("Round", color=F1_WHITE, fontsize=10)
     ax.set_ylabel("Score", color=F1_WHITE, fontsize=10)
-    ax.set_title("2026 Prediction Accuracy — Completed Races",
+    ax.set_title("2026 Prediction Accuracy - Completed Races",
                  color=F1_WHITE, fontsize=12, fontweight="bold")
     ax.tick_params(colors=F1_WHITE)
     ax.legend(fontsize=9, facecolor=F1_DARK, edgecolor=F1_GREY, labelcolor=F1_WHITE)
@@ -828,7 +789,7 @@ def main():
     os.makedirs(DATA_DIR,  exist_ok=True)
 
     print("=" * 60)
-    print("  F1 2026 — Race Predictions & WDC Projection")
+    print("  F1 2026 - Race Predictions & WDC Projection")
     print("=" * 60)
 
     # print the regulation caveat up front so it's impossible to miss

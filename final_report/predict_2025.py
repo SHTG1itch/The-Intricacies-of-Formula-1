@@ -300,7 +300,7 @@ def plot_season_accuracy(metrics_df, out_dir):
     ax1.set_ylabel("Winner Correct", color=F1_WHITE, fontsize=10)
     ax1.tick_params(colors=F1_WHITE)
     ax1.legend(fontsize=9, facecolor=F1_DARK, edgecolor=F1_GREY, labelcolor=F1_WHITE)
-    ax1.set_title("2025 Season — Prediction Accuracy", color=F1_WHITE, fontsize=13, fontweight="bold")
+    ax1.set_title("2025 Season - Prediction Accuracy", color=F1_WHITE, fontsize=13, fontweight="bold")
 
     # bottom panel: Jaccard score 0-1 - how much of the top-10 did we correctly identify
     # a score of 0.5 means 5 of the 10 drivers we predicted matched the actual top-10
@@ -371,7 +371,7 @@ def plot_feature_importances(model_dir, out_dir):
     ax.set_yticklabels(imp_df.index, fontsize=9, color=F1_WHITE)
     ax.set_xlabel("Average Feature Importance (XGBoost + RF)", color=F1_WHITE, fontsize=10)
     ax.tick_params(colors=F1_WHITE)
-    ax.set_title("Feature Importances — Top 20", color=F1_WHITE, fontsize=12, fontweight="bold")
+    ax.set_title("Feature Importances - Top 20", color=F1_WHITE, fontsize=12, fontweight="bold")
 
     patches = [
         mpatches.Patch(color=F1_BLUE,  label="XGBoost-dominant"),
@@ -440,7 +440,7 @@ def plot_predicted_vs_actual(pred_df, out_dir):
 
     ax.set_xlabel("Actual Position", color=F1_WHITE, fontsize=11)
     ax.set_ylabel("Predicted Position", color=F1_WHITE, fontsize=11)
-    ax.set_title("Predicted vs Actual Position — 2025 Races",
+    ax.set_title("Predicted vs Actual Position - 2025 Races",
                  color=F1_WHITE, fontsize=12, fontweight="bold")
     ax.set_xlim(0.5, 20.5)
     ax.set_ylim(0.5, 20.5)
@@ -502,7 +502,7 @@ def plot_top10_heatmap(pred_df, out_dir):
     ax.set_xticklabels([f"P{p}" for p in range(1, 11)], color=F1_WHITE, fontsize=10)
     ax.set_yticks(range(len(top_drivers)))
     ax.set_yticklabels(top_drivers, color=F1_WHITE, fontsize=10)
-    ax.set_title("Predicted Position Heatmap — 2025 (top 15 drivers)",
+    ax.set_title("Predicted Position Heatmap - 2025 (top 15 drivers)",
                  color=F1_WHITE, fontsize=12, fontweight="bold")
 
     # annotate cells with the actual count where > 0 (0 cells stay blank, cleaner)
@@ -532,7 +532,7 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
 
     print("=" * 60)
-    print("  F1 2025 — Predictions & Validation")
+    print("  F1 2025 - Predictions & Validation")
     print("=" * 60)
 
     # step 1: get models
@@ -639,12 +639,12 @@ def main():
     # quick sanity check printout for the first few races
     # good to eyeball this before trusting the CSV output
     print("\n" + "─" * 60)
-    print("  Sample Predictions — First 3 Races")
+    print("  Sample Predictions - First 3 Races")
     print("─" * 60)
     for rnd in sorted(pred_df["Round"].unique())[:3]:
         race       = pred_df[pred_df["Round"] == rnd].sort_values("PredictedPosition")
         event_name = race.iloc[0]["EventName"]
-        print(f"\n  Round {rnd:02d} — {event_name}")
+        print(f"\n  Round {rnd:02d} - {event_name}")
         print(f"  {'Pos':>4}  {'Driver':<6}  {'Team':<30}  {'Win%':>5}  {'Actual':>6}")
         print(f"  {'────':>4}  {'──────':<6}  {'──────────────────────────────':<30}  {'─────':>5}  {'──────':>6}")
         for _, row in race.head(10).iterrows():

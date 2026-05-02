@@ -1,40 +1,24 @@
-# This is the basis for our machine learning algorithm to attempt to predict Formula 1 races.
-# We use three models and blend them together. Basically each model catches and see something that the others miss
-# especially around top-3 prediction which is what matters.
-# This is necessary because we are trying to predict the finishing order, top 3 and top 20 as well as a wdc prediction later.
-#
-#   1. XGBoost Regressor predicts finishing position as a continuous number
-#   2. XGBoost Ranker ranks the ndcg objective, focuses on getting the top right
-#   3. Random Forest attempts to create a binary win probability classifier
-#
-# On top of the base models we do three Bayesian things(Bayesian statistics serves as an important tool that I have worked with in the past):
-# Bayesian statistics really just relies on uncertainty. We have no idea what's going to happen.
-# Since we don't really know what is going to happen we think of everything as a degree of belief.
-# This differs from normal statistics where we treat probability as a long-run frequency
-# Bayesian just treats its parameters as random variables with probability distributions.
-# With this we can calculate the probability that a hypothesis is true.
-# These three Bayesian things are:
-#   a) Normal-Normal hierarchical model with James-Stein shrinkage for the circuit-history win prior.
-#      Since Hamilton has won at Silverstone 8 times, factor that in - but with proper shrinkage:
-#      a driver who's raced somewhere once gets almost no circuit prior, while 15 races gets a lot
-#      this replaced the old Beta-Binomial which treated all history equally regardless of sample size
-#   b) Bayesian temperature scaling (Platt scaling with MAP prior) to calibrate RF probabilities.
-#      Random forests are overconfident so we fit a temperature T on out-of-fold LOSO predictions
-#      T is fit with a log-normal MAP prior so it doesn't go crazy with small data
-#      and critically we do this BEFORE the prior blend, not after
-#   c) Inverse-variance Bayesian Model Averaging to set ensemble blend weights from LOSO data:
-#      now combines Dirichlet winner-accuracy weights (60%) + inverse-MAE weights (40%)
-#      instead of hardcoding 40/40/20(weightage of Reg/Rank/Forest), let the actual validation data decide
-# Here are some references that we used to create this:
-# ref for BMA: https://en.wikipedia.org/wiki/Ensemble_learning#Bayesian_model_averaging
-# ref for James-Stein / Normal-Normal: https://en.wikipedia.org/wiki/James%E2%80%93Stein_estimator
-# ref for temperature scaling: https://arxiv.org/abs/1706.04599
-# ref: Bayesian stats overview: https://en.wikipedia.org/wiki/Bayesian_statistics
-#
-# XGBoost paper: https://arxiv.org/abs/1603.02754
-# Random Forests paper: https://link.springer.com/article/10.1023/A:1010933404324
-# XGBRanker tutorial: https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html
-# F1 reference prediction project we compare against: https://github.com/mar-antaya/2025_f1_predictions
+"""Train and evaluate the race-prediction models used in the final report.
+
+The goal is to predict each driver's finishing order before the race starts.
+No race-result fields from the target race are allowed in the input features.
+
+Model pieces:
+- XGBoost regressor: predicts numeric finishing position.
+- XGBoost ranker: focuses on ordering drivers within each race.
+- Random forest classifier: estimates win probability.
+- ExtraTrees regressor: adds a less-correlated tree model to the ensemble.
+
+The ensemble weights come from leave-one-season-out validation instead of a
+hand-picked blend. The report explains the final metrics and why exact race
+prediction has a ceiling because of safety cars, incidents, and failures.
+
+References:
+- XGBoost paper: https://arxiv.org/abs/1603.02754
+- Random Forests paper: https://link.springer.com/article/10.1023/A:1010933404324
+- XGBRanker docs: https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html
+- Temperature scaling: https://arxiv.org/abs/1706.04599
+"""
 
 
 import sys
@@ -193,7 +177,7 @@ FEATURE_COLS = [
 ]  # 54 total: original 47 + 7 new features targeting specific weaknesses in 2019/2024 holdout
   # fp2_deg_rate / fp2_deg_rate_obs computed and saved to CSV but excluded until coverage improves across seasons
 
-# F1 points — used for championship projection in predict_2025 and predict_2026
+# F1 points - used for championship projection in predict_2025 and predict_2026
 # Maps race standings to points granted
 POINTS_MAP = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
 
@@ -263,7 +247,7 @@ def load_and_prepare(filepath, fit_imputer=None):
 # 1. Normal-Normal conjugate hierarchical model (James-Stein shrinkage) for win probability prior
 #    - Treats each driver's circuit-specific avg finish as a noisy observation of their latent ability
 #    - Posterior mean shrinks toward the global mid-field mean (mu_0=10) with shrinkage factor B
-#      B = n*tau^2 / (n*tau^2 + sigma_obs^2)  — strong shrinkage when history is thin
+#      B = n*tau^2 / (n*tau^2 + sigma_obs^2)  - strong shrinkage when history is thin
 #    - ref: Gelman et al. BDA3 ch. 5 (https://stat.columbia.edu/~gelman/book/)
 #    - ref: James-Stein estimator (https://doi.org/10.1007/BF02888369)
 #
@@ -444,7 +428,7 @@ def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0,
     alpha_post        = alpha_prior + observed
     dirichlet_weights = alpha_post / alpha_post.sum()
 
-    # inverse-MAE weights — fall back to equal if MAE not provided
+    # inverse-MAE weights - fall back to equal if MAE not provided
     if model_mae is not None:
         mae_arr = np.array([
             model_mae.get("xgb",    np.nan),
@@ -1419,7 +1403,7 @@ def print_feature_importances(xgb_model, rf_win_model, feature_names):
 
 def main():
     print("=" * 55)
-    print("  F1 Race Prediction — Model Training & Evaluation")
+    print("  F1 Race Prediction - Model Training & Evaluation")
     print("=" * 55)
 
     if not os.path.exists(TRAIN_FILE):
@@ -1596,7 +1580,7 @@ def main():
         # print the first 3 predicted races so we can eyeball if the output looks sane
         for rnd in pred_df["Round"].unique()[:3]:
             race = pred_df[pred_df["Round"] == rnd].head(10)
-            print(f"\n  2025 R{rnd:02d} {race.iloc[0]['EventName']} — Predicted Top 10:")
+            print(f"\n  2025 R{rnd:02d} {race.iloc[0]['EventName']} - Predicted Top 10:")
             print(f"    {'Pos':>3}  {'Driver':<6}  {'Team':<30}  {'Win%':>5}")
             print(f"    {'───':>3}  {'──────':<6}  {'──────────────────────────────':<30}  {'─────':>5}")
             for _, row in race.iterrows():
@@ -1608,7 +1592,7 @@ def main():
     # write the full evaluation summary to a text file for the report
     eval_path = os.path.join(OUT_DIR, "model_evaluation.txt")
     with open(eval_path, "w") as f:
-        f.write("F1 Race Prediction — Model Evaluation Summary\n")
+        f.write("F1 Race Prediction - Model Evaluation Summary\n")
         f.write("=" * 55 + "\n\n")
         f.write("Leave-One-Season-Out CV:\n")
         f.write(val_results.to_string(index=False))
