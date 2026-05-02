@@ -342,10 +342,6 @@ Figure 22 shows the well/poorly structure directly: scatter is tight near P1–P
 
 The FastF1 Python library served as the primary data source at scale. The caching pipeline (`cache_fastf1_data.py`) fetches five session types per race weekend (FP1, FP2, FP3, Qualifying, Race) across eight seasons, managing the API's 200 requests/hour rate limit via a multi-threaded worker pool with exponential backoff and a JSON state file for resumable progress — 600+ API requests total, with hundreds of gigabytes of telemetry cached in a local SQLite database. The feature engineering pipeline (`feature_engineering.py`) produces 54 ML-ready features with strict temporal ordering enforced through `compute_rolling_features(race_index)`: no rolling statistic ever uses data from a future race. The preprocessing pipeline (`data_organized/preprocess_data.py`) is reproducible from the cached database when schedule metadata is available, and it now keeps existing CSVs instead of overwriting them if a local cache cannot load any rows. Full feature list and engineering notes are in Appendix D.
 
----
-## AI Attribution
-We utilized artificial intelligence slightly in our final project. The usage consisted of assistance with overlaps in the plots (some of which are still present), and some guidance on our ideas. Ultimately, we were very ambitious and it helped us stay on track and proceed in a way that would prevent us from going down a rabbit hole.
-
 ## References
 
 [1] Philipp Schaefer et al., "FastF1: A Python library for accessing F1 data," https://docs.fastf1.dev/, 2024.
