@@ -1,48 +1,69 @@
-==================================================================
-  2026 F1 WORLD CHAMPIONSHIP — PROJECTED FINAL STANDINGS
-==================================================================
-  Races completed : 1 of 24 (R1 anchor + 23 simulated)
-  Method          : 2025 driver form (recency-weighted) +
-                    team-adjustment for moves + Plackett-Luce
-                    race simulation (2000 season simulations)
-  Training data   : 2022–2025 seasons
+======================================================================
+  2026 F1 WORLD CHAMPIONSHIP — UPDATED PROJECTED FINAL STANDINGS
+======================================================================
+  Races completed : 3 of 24  (R1-R3 actual + 21 simulated)
+  Simulation      : 2000 Monte-Carlo season runs (Plackett-Luce, sigma=0.80)
+  Strength model  : 65% 2026 actual form  |  25% 2025 historical  |  10% pts pace
 
-  IMPORTANT: 2026 brings the largest regulation change since 2014
-  (active aero + all-new hybrid power units from every manufacturer).
-  Historical team-performance rankings may not carry forward at all.
-  The model uses driver skill and circuit history as primary signals
-  which are more regulation-stable — but these are directional
-  projections, not confident predictions.
+  NOTE: 2026 regulations (active aero + new PUs) make historical
+  data less reliable. The 3 real races already outweigh all of 2025
+  in this model. Treat as directional — not a confident prediction.
 
-──────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────
   PREDICTED WORLD CHAMPION:
-    Lando Norris  (McLaren)
-    Projected points: 424  (out of max 600)
-──────────────────────────────────────────────────────────────────
+    Kimi Antonelli  (Mercedes)
+    68 actual pts  +  ~325 projected  =  393 total
+──────────────────────────────────────────────────────────────────────
 
-  Rank  Driver                    Team                       Proj Pts
-  ────  ────────────────────────  ────────────────────────  ─────────
-     1  Lando Norris              McLaren                         424
-     2  Oscar Piastri             McLaren                         405
-     3  George Russell            Mercedes                        232
-     4  Charles Leclerc           Ferrari                         193
-     5  Max Verstappen            Red Bull Racing                 189
-     6  Lewis Hamilton            Ferrari                         158
-     7  Kimi Antonelli            Mercedes                        150
-     8  Carlos Sainz              Williams                         64
-     9  Valtteri Bottas           Cadillac                         63
-    10  Sergio Perez              Cadillac                         62
-    11  Isack Hadjar              Red Bull Racing                  55
-    12  Alexander Albon           Williams                         50
-    13  Oliver Bearman            Haas F1 Team                     47
-    14  Fernando Alonso           Aston Martin                     42
-    15  Arvid Lindblad            Racing Bulls                     40
-    16  Nico Hülkenberg           Audi                             40
-    17  Esteban Ocon              Haas F1 Team                     39
-    18  Lance Stroll              Aston Martin                     37
-    19  Liam Lawson               Racing Bulls                     36
-    20  Pierre Gasly              Alpine                           35
-    21  Gabriel Bortoleto         Audi                             34
-    22  Franco Colapinto          Alpine                           30
+   Rk  Driver                  Team                     Actual   ~Future    Total
+   ──  ──────────────────────  ──────────────────────  ───────  ────────  ───────
+    1  Kimi Antonelli          Mercedes                     68       325      393
+    2  George Russell          Mercedes                     55       305      360
+    3  Charles Leclerc         Ferrari                      42       241      283
+    4  Lewis Hamilton          Ferrari                      35       197      232
+    5  Lando Norris            McLaren                      20       116      136
+    6  Max Verstappen          Red Bull Racing              12       100      112
+    7  Pierre Gasly            Alpine                       15        84       99
+    8  Oscar Piastri           McLaren                      18        77       95
+    9  Liam Lawson             Racing Bulls                  8        70       78
+   10  Oliver Bearman          Haas F1 Team                 16        61       77
+   11  Arvid Lindblad          Racing Bulls                  4        58       62
+   12  Esteban Ocon            Haas F1 Team                  1        58       59
+   13  Carlos Sainz            Williams                      2        57       59
+   14  Isack Hadjar            Red Bull Racing               4        54       58
+   15  Franco Colapinto        Alpine                        1        47       48
+   16  Gabriel Bortoleto       Audi                          2        43       45
+   17  Nico Hülkenberg         Audi                          0        44       44
+   18  Sergio Perez            Cadillac                      0        43       43
+   19  Valtteri Bottas         Cadillac                      0        40       40
+   20  Alexander Albon         Williams                      0        35       35
+   21  Fernando Alonso         Aston Martin                  0        35       35
+   22  Lance Stroll            Aston Martin                  0        31       31
 
-==================================================================
+──────────────────────────────────────────────────────────────────────
+  Driver strength scores used for simulation (lower = better car+driver):
+  Driver   2025 form   2026 actual   Pts pace   Blended
+  ANT           6.82          1.33       2.21      2.79   Kimi Antonelli
+  RUS           4.43          2.33       4.47      3.07   George Russell
+  LEC           5.15          3.33       6.72      4.13   Charles Leclerc
+  HAM           6.12          4.33       7.93      5.14   Lewis Hamilton
+  NOR           1.69         10.00      10.53      7.98   Lando Norris
+  VER           4.85         10.00      11.92      8.90   Max Verstappen
+  GAS          15.27          7.67      11.40      9.94   Pierre Gasly
+  PIA           1.78         14.00      10.88     10.63   Oscar Piastri
+  LAW          14.85          9.67      12.61     11.26   Liam Lawson
+  BEA          13.99         11.33      11.23     11.99   Oliver Bearman
+  LIN          14.85         11.33      13.31     12.41   Arvid Lindblad
+  OCO          14.24         11.67      13.83     12.53   Esteban Ocon
+  SAI          11.01         13.00      13.65     12.57   Carlos Sainz
+  HAD          12.26         13.33      13.31     13.06   Isack Hadjar
+  COL          16.41         13.33      13.83     14.15   Franco Colapinto
+  HUL          14.00         14.67      14.00     14.43   Nico Hülkenberg
+  PER          11.00         16.00      14.00     14.55   Sergio Perez
+  BOR          15.90         14.33      13.65     14.66   Gabriel Bortoleto
+  BOT          11.00         17.00      14.00     15.20   Valtteri Bottas
+  ALB          12.60         18.00      14.00     16.25   Alexander Albon
+  ALO          13.52         17.67      14.00     16.26   Fernando Alonso
+  STR          14.79         18.67      14.00     17.23   Lance Stroll
+
+======================================================================

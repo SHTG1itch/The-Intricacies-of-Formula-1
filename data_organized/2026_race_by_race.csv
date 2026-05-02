@@ -1,529 +1,529 @@
-Round,EventName,Circuit,Driver,FullName,Team,position,points
-1,Australian Grand Prix,Albert Park,RUS,George Russell,Mercedes,1,25
-1,Australian Grand Prix,Albert Park,ANT,Kimi Antonelli,Mercedes,2,18
-1,Australian Grand Prix,Albert Park,LEC,Charles Leclerc,Ferrari,3,15
-1,Australian Grand Prix,Albert Park,HAM,Lewis Hamilton,Ferrari,4,12
-1,Australian Grand Prix,Albert Park,NOR,Lando Norris,McLaren,5,10
-1,Australian Grand Prix,Albert Park,VER,Max Verstappen,Red Bull Racing,6,8
-1,Australian Grand Prix,Albert Park,BEA,Oliver Bearman,Haas F1 Team,7,6
-1,Australian Grand Prix,Albert Park,LIN,Arvid Lindblad,Racing Bulls,8,4
-1,Australian Grand Prix,Albert Park,BOR,Gabriel Bortoleto,Audi,9,2
-1,Australian Grand Prix,Albert Park,GAS,Pierre Gasly,Alpine,10,1
-1,Australian Grand Prix,Albert Park,OCO,Esteban Ocon,Haas F1 Team,11,0
-1,Australian Grand Prix,Albert Park,ALB,Alexander Albon,Williams,12,0
-1,Australian Grand Prix,Albert Park,LAW,Liam Lawson,Racing Bulls,13,0
-1,Australian Grand Prix,Albert Park,COL,Franco Colapinto,Alpine,14,0
-1,Australian Grand Prix,Albert Park,SAI,Carlos Sainz,Williams,15,0
-1,Australian Grand Prix,Albert Park,PER,Sergio Perez,Cadillac,16,0
-1,Australian Grand Prix,Albert Park,STR,Lance Stroll,Aston Martin,17,0
-1,Australian Grand Prix,Albert Park,ALO,Fernando Alonso,Aston Martin,18,0
-1,Australian Grand Prix,Albert Park,BOT,Valtteri Bottas,Cadillac,19,0
-1,Australian Grand Prix,Albert Park,HAD,Isack Hadjar,Red Bull Racing,20,0
-1,Australian Grand Prix,Albert Park,PIA,Oscar Piastri,McLaren,21,0
-1,Australian Grand Prix,Albert Park,HUL,Nico Hülkenberg,Audi,22,0
-2,Chinese Grand Prix,Shanghai,PIA,Oscar Piastri,McLaren,1,25
-2,Chinese Grand Prix,Shanghai,HAM,Lewis Hamilton,Ferrari,2,18
-2,Chinese Grand Prix,Shanghai,NOR,Lando Norris,McLaren,3,15
-2,Chinese Grand Prix,Shanghai,LIN,Arvid Lindblad,Racing Bulls,4,12
-2,Chinese Grand Prix,Shanghai,BOT,Valtteri Bottas,Cadillac,5,10
-2,Chinese Grand Prix,Shanghai,ANT,Kimi Antonelli,Mercedes,6,8
-2,Chinese Grand Prix,Shanghai,BEA,Oliver Bearman,Haas F1 Team,7,6
-2,Chinese Grand Prix,Shanghai,STR,Lance Stroll,Aston Martin,8,4
-2,Chinese Grand Prix,Shanghai,ALB,Alexander Albon,Williams,9,2
-2,Chinese Grand Prix,Shanghai,GAS,Pierre Gasly,Alpine,10,1
-2,Chinese Grand Prix,Shanghai,LEC,Charles Leclerc,Ferrari,11,0
-2,Chinese Grand Prix,Shanghai,OCO,Esteban Ocon,Haas F1 Team,12,0
-2,Chinese Grand Prix,Shanghai,SAI,Carlos Sainz,Williams,13,0
-2,Chinese Grand Prix,Shanghai,PER,Sergio Perez,Cadillac,14,0
-2,Chinese Grand Prix,Shanghai,BOR,Gabriel Bortoleto,Audi,15,0
-2,Chinese Grand Prix,Shanghai,HAD,Isack Hadjar,Red Bull Racing,16,0
-2,Chinese Grand Prix,Shanghai,RUS,George Russell,Mercedes,17,0
-2,Chinese Grand Prix,Shanghai,VER,Max Verstappen,Red Bull Racing,18,0
-2,Chinese Grand Prix,Shanghai,LAW,Liam Lawson,Racing Bulls,19,0
-2,Chinese Grand Prix,Shanghai,ALO,Fernando Alonso,Aston Martin,20,0
-2,Chinese Grand Prix,Shanghai,HUL,Nico Hülkenberg,Audi,21,0
-2,Chinese Grand Prix,Shanghai,COL,Franco Colapinto,Alpine,22,0
-3,Japanese Grand Prix,Suzuka,NOR,Lando Norris,McLaren,1,25
-3,Japanese Grand Prix,Suzuka,PIA,Oscar Piastri,McLaren,2,18
-3,Japanese Grand Prix,Suzuka,HAM,Lewis Hamilton,Ferrari,3,15
-3,Japanese Grand Prix,Suzuka,VER,Max Verstappen,Red Bull Racing,4,12
-3,Japanese Grand Prix,Suzuka,ALO,Fernando Alonso,Aston Martin,5,10
-3,Japanese Grand Prix,Suzuka,LAW,Liam Lawson,Racing Bulls,6,8
-3,Japanese Grand Prix,Suzuka,GAS,Pierre Gasly,Alpine,7,6
-3,Japanese Grand Prix,Suzuka,BEA,Oliver Bearman,Haas F1 Team,8,4
-3,Japanese Grand Prix,Suzuka,RUS,George Russell,Mercedes,9,2
-3,Japanese Grand Prix,Suzuka,BOT,Valtteri Bottas,Cadillac,10,1
-3,Japanese Grand Prix,Suzuka,HAD,Isack Hadjar,Red Bull Racing,11,0
-3,Japanese Grand Prix,Suzuka,LEC,Charles Leclerc,Ferrari,12,0
-3,Japanese Grand Prix,Suzuka,STR,Lance Stroll,Aston Martin,13,0
-3,Japanese Grand Prix,Suzuka,LIN,Arvid Lindblad,Racing Bulls,14,0
-3,Japanese Grand Prix,Suzuka,HUL,Nico Hülkenberg,Audi,15,0
-3,Japanese Grand Prix,Suzuka,SAI,Carlos Sainz,Williams,16,0
-3,Japanese Grand Prix,Suzuka,ALB,Alexander Albon,Williams,17,0
-3,Japanese Grand Prix,Suzuka,ANT,Kimi Antonelli,Mercedes,18,0
-3,Japanese Grand Prix,Suzuka,PER,Sergio Perez,Cadillac,19,0
-3,Japanese Grand Prix,Suzuka,OCO,Esteban Ocon,Haas F1 Team,20,0
-3,Japanese Grand Prix,Suzuka,COL,Franco Colapinto,Alpine,21,0
-3,Japanese Grand Prix,Suzuka,BOR,Gabriel Bortoleto,Audi,22,0
-4,Miami Grand Prix,Miami,PIA,Oscar Piastri,McLaren,1,25
-4,Miami Grand Prix,Miami,HAM,Lewis Hamilton,Ferrari,2,18
-4,Miami Grand Prix,Miami,LEC,Charles Leclerc,Ferrari,3,15
-4,Miami Grand Prix,Miami,NOR,Lando Norris,McLaren,4,12
-4,Miami Grand Prix,Miami,ANT,Kimi Antonelli,Mercedes,5,10
-4,Miami Grand Prix,Miami,BEA,Oliver Bearman,Haas F1 Team,6,8
-4,Miami Grand Prix,Miami,VER,Max Verstappen,Red Bull Racing,7,6
-4,Miami Grand Prix,Miami,STR,Lance Stroll,Aston Martin,8,4
-4,Miami Grand Prix,Miami,ALB,Alexander Albon,Williams,9,2
-4,Miami Grand Prix,Miami,HUL,Nico Hülkenberg,Audi,10,1
-4,Miami Grand Prix,Miami,RUS,George Russell,Mercedes,11,0
-4,Miami Grand Prix,Miami,SAI,Carlos Sainz,Williams,12,0
-4,Miami Grand Prix,Miami,PER,Sergio Perez,Cadillac,13,0
-4,Miami Grand Prix,Miami,BOT,Valtteri Bottas,Cadillac,14,0
-4,Miami Grand Prix,Miami,ALO,Fernando Alonso,Aston Martin,15,0
-4,Miami Grand Prix,Miami,OCO,Esteban Ocon,Haas F1 Team,16,0
-4,Miami Grand Prix,Miami,GAS,Pierre Gasly,Alpine,17,0
-4,Miami Grand Prix,Miami,LIN,Arvid Lindblad,Racing Bulls,18,0
-4,Miami Grand Prix,Miami,LAW,Liam Lawson,Racing Bulls,19,0
-4,Miami Grand Prix,Miami,HAD,Isack Hadjar,Red Bull Racing,20,0
-4,Miami Grand Prix,Miami,BOR,Gabriel Bortoleto,Audi,21,0
-4,Miami Grand Prix,Miami,COL,Franco Colapinto,Alpine,22,0
-5,Bahrain Grand Prix,Sakhir,NOR,Lando Norris,McLaren,1,25
-5,Bahrain Grand Prix,Sakhir,LAW,Liam Lawson,Racing Bulls,2,18
-5,Bahrain Grand Prix,Sakhir,LIN,Arvid Lindblad,Racing Bulls,3,15
-5,Bahrain Grand Prix,Sakhir,HAD,Isack Hadjar,Red Bull Racing,4,12
-5,Bahrain Grand Prix,Sakhir,PIA,Oscar Piastri,McLaren,5,10
-5,Bahrain Grand Prix,Sakhir,VER,Max Verstappen,Red Bull Racing,6,8
-5,Bahrain Grand Prix,Sakhir,STR,Lance Stroll,Aston Martin,7,6
-5,Bahrain Grand Prix,Sakhir,LEC,Charles Leclerc,Ferrari,8,4
-5,Bahrain Grand Prix,Sakhir,ANT,Kimi Antonelli,Mercedes,9,2
-5,Bahrain Grand Prix,Sakhir,ALB,Alexander Albon,Williams,10,1
-5,Bahrain Grand Prix,Sakhir,COL,Franco Colapinto,Alpine,11,0
-5,Bahrain Grand Prix,Sakhir,PER,Sergio Perez,Cadillac,12,0
-5,Bahrain Grand Prix,Sakhir,OCO,Esteban Ocon,Haas F1 Team,13,0
-5,Bahrain Grand Prix,Sakhir,GAS,Pierre Gasly,Alpine,14,0
-5,Bahrain Grand Prix,Sakhir,BOR,Gabriel Bortoleto,Audi,15,0
-5,Bahrain Grand Prix,Sakhir,ALO,Fernando Alonso,Aston Martin,16,0
-5,Bahrain Grand Prix,Sakhir,HAM,Lewis Hamilton,Ferrari,17,0
-5,Bahrain Grand Prix,Sakhir,SAI,Carlos Sainz,Williams,18,0
-5,Bahrain Grand Prix,Sakhir,BOT,Valtteri Bottas,Cadillac,19,0
-5,Bahrain Grand Prix,Sakhir,RUS,George Russell,Mercedes,20,0
-5,Bahrain Grand Prix,Sakhir,HUL,Nico Hülkenberg,Audi,21,0
-5,Bahrain Grand Prix,Sakhir,BEA,Oliver Bearman,Haas F1 Team,22,0
-6,Saudi Arabian Grand Prix,Jeddah,COL,Franco Colapinto,Alpine,1,25
-6,Saudi Arabian Grand Prix,Jeddah,HAM,Lewis Hamilton,Ferrari,2,18
-6,Saudi Arabian Grand Prix,Jeddah,LEC,Charles Leclerc,Ferrari,3,15
-6,Saudi Arabian Grand Prix,Jeddah,NOR,Lando Norris,McLaren,4,12
-6,Saudi Arabian Grand Prix,Jeddah,BOR,Gabriel Bortoleto,Audi,5,10
-6,Saudi Arabian Grand Prix,Jeddah,PIA,Oscar Piastri,McLaren,6,8
-6,Saudi Arabian Grand Prix,Jeddah,LAW,Liam Lawson,Racing Bulls,7,6
-6,Saudi Arabian Grand Prix,Jeddah,VER,Max Verstappen,Red Bull Racing,8,4
-6,Saudi Arabian Grand Prix,Jeddah,HAD,Isack Hadjar,Red Bull Racing,9,2
-6,Saudi Arabian Grand Prix,Jeddah,ALB,Alexander Albon,Williams,10,1
-6,Saudi Arabian Grand Prix,Jeddah,BOT,Valtteri Bottas,Cadillac,11,0
-6,Saudi Arabian Grand Prix,Jeddah,ANT,Kimi Antonelli,Mercedes,12,0
-6,Saudi Arabian Grand Prix,Jeddah,RUS,George Russell,Mercedes,13,0
-6,Saudi Arabian Grand Prix,Jeddah,PER,Sergio Perez,Cadillac,14,0
-6,Saudi Arabian Grand Prix,Jeddah,HUL,Nico Hülkenberg,Audi,15,0
-6,Saudi Arabian Grand Prix,Jeddah,BEA,Oliver Bearman,Haas F1 Team,16,0
-6,Saudi Arabian Grand Prix,Jeddah,GAS,Pierre Gasly,Alpine,17,0
-6,Saudi Arabian Grand Prix,Jeddah,STR,Lance Stroll,Aston Martin,18,0
-6,Saudi Arabian Grand Prix,Jeddah,SAI,Carlos Sainz,Williams,19,0
-6,Saudi Arabian Grand Prix,Jeddah,OCO,Esteban Ocon,Haas F1 Team,20,0
-6,Saudi Arabian Grand Prix,Jeddah,ALO,Fernando Alonso,Aston Martin,21,0
-6,Saudi Arabian Grand Prix,Jeddah,LIN,Arvid Lindblad,Racing Bulls,22,0
-7,Canadian Grand Prix,Montreal,LEC,Charles Leclerc,Ferrari,1,25
-7,Canadian Grand Prix,Montreal,NOR,Lando Norris,McLaren,2,18
-7,Canadian Grand Prix,Montreal,ALB,Alexander Albon,Williams,3,15
-7,Canadian Grand Prix,Montreal,VER,Max Verstappen,Red Bull Racing,4,12
-7,Canadian Grand Prix,Montreal,SAI,Carlos Sainz,Williams,5,10
-7,Canadian Grand Prix,Montreal,PER,Sergio Perez,Cadillac,6,8
-7,Canadian Grand Prix,Montreal,RUS,George Russell,Mercedes,7,6
-7,Canadian Grand Prix,Montreal,GAS,Pierre Gasly,Alpine,8,4
-7,Canadian Grand Prix,Montreal,PIA,Oscar Piastri,McLaren,9,2
-7,Canadian Grand Prix,Montreal,HAD,Isack Hadjar,Red Bull Racing,10,1
-7,Canadian Grand Prix,Montreal,HAM,Lewis Hamilton,Ferrari,11,0
-7,Canadian Grand Prix,Montreal,ANT,Kimi Antonelli,Mercedes,12,0
-7,Canadian Grand Prix,Montreal,HUL,Nico Hülkenberg,Audi,13,0
-7,Canadian Grand Prix,Montreal,BOT,Valtteri Bottas,Cadillac,14,0
-7,Canadian Grand Prix,Montreal,STR,Lance Stroll,Aston Martin,15,0
-7,Canadian Grand Prix,Montreal,ALO,Fernando Alonso,Aston Martin,16,0
-7,Canadian Grand Prix,Montreal,BEA,Oliver Bearman,Haas F1 Team,17,0
-7,Canadian Grand Prix,Montreal,LAW,Liam Lawson,Racing Bulls,18,0
-7,Canadian Grand Prix,Montreal,COL,Franco Colapinto,Alpine,19,0
-7,Canadian Grand Prix,Montreal,OCO,Esteban Ocon,Haas F1 Team,20,0
-7,Canadian Grand Prix,Montreal,LIN,Arvid Lindblad,Racing Bulls,21,0
-7,Canadian Grand Prix,Montreal,BOR,Gabriel Bortoleto,Audi,22,0
-8,Monaco Grand Prix,Monaco,LEC,Charles Leclerc,Ferrari,1,25
-8,Monaco Grand Prix,Monaco,VER,Max Verstappen,Red Bull Racing,2,18
-8,Monaco Grand Prix,Monaco,RUS,George Russell,Mercedes,3,15
-8,Monaco Grand Prix,Monaco,NOR,Lando Norris,McLaren,4,12
-8,Monaco Grand Prix,Monaco,PIA,Oscar Piastri,McLaren,5,10
-8,Monaco Grand Prix,Monaco,LAW,Liam Lawson,Racing Bulls,6,8
-8,Monaco Grand Prix,Monaco,GAS,Pierre Gasly,Alpine,7,6
-8,Monaco Grand Prix,Monaco,HAD,Isack Hadjar,Red Bull Racing,8,4
-8,Monaco Grand Prix,Monaco,BEA,Oliver Bearman,Haas F1 Team,9,2
-8,Monaco Grand Prix,Monaco,BOR,Gabriel Bortoleto,Audi,10,1
-8,Monaco Grand Prix,Monaco,PER,Sergio Perez,Cadillac,11,0
-8,Monaco Grand Prix,Monaco,ANT,Kimi Antonelli,Mercedes,12,0
-8,Monaco Grand Prix,Monaco,HAM,Lewis Hamilton,Ferrari,13,0
-8,Monaco Grand Prix,Monaco,SAI,Carlos Sainz,Williams,14,0
-8,Monaco Grand Prix,Monaco,ALO,Fernando Alonso,Aston Martin,15,0
-8,Monaco Grand Prix,Monaco,LIN,Arvid Lindblad,Racing Bulls,16,0
-8,Monaco Grand Prix,Monaco,HUL,Nico Hülkenberg,Audi,17,0
-8,Monaco Grand Prix,Monaco,BOT,Valtteri Bottas,Cadillac,18,0
-8,Monaco Grand Prix,Monaco,STR,Lance Stroll,Aston Martin,19,0
-8,Monaco Grand Prix,Monaco,OCO,Esteban Ocon,Haas F1 Team,20,0
-8,Monaco Grand Prix,Monaco,ALB,Alexander Albon,Williams,21,0
-8,Monaco Grand Prix,Monaco,COL,Franco Colapinto,Alpine,22,0
-9,Barcelona Grand Prix,Catalonia,NOR,Lando Norris,McLaren,1,25
-9,Barcelona Grand Prix,Catalonia,PIA,Oscar Piastri,McLaren,2,18
-9,Barcelona Grand Prix,Catalonia,ANT,Kimi Antonelli,Mercedes,3,15
-9,Barcelona Grand Prix,Catalonia,VER,Max Verstappen,Red Bull Racing,4,12
-9,Barcelona Grand Prix,Catalonia,HAD,Isack Hadjar,Red Bull Racing,5,10
-9,Barcelona Grand Prix,Catalonia,GAS,Pierre Gasly,Alpine,6,8
-9,Barcelona Grand Prix,Catalonia,RUS,George Russell,Mercedes,7,6
-9,Barcelona Grand Prix,Catalonia,HUL,Nico Hülkenberg,Audi,8,4
-9,Barcelona Grand Prix,Catalonia,HAM,Lewis Hamilton,Ferrari,9,2
-9,Barcelona Grand Prix,Catalonia,LAW,Liam Lawson,Racing Bulls,10,1
-9,Barcelona Grand Prix,Catalonia,PER,Sergio Perez,Cadillac,11,0
-9,Barcelona Grand Prix,Catalonia,LEC,Charles Leclerc,Ferrari,12,0
-9,Barcelona Grand Prix,Catalonia,BOR,Gabriel Bortoleto,Audi,13,0
-9,Barcelona Grand Prix,Catalonia,BEA,Oliver Bearman,Haas F1 Team,14,0
-9,Barcelona Grand Prix,Catalonia,BOT,Valtteri Bottas,Cadillac,15,0
-9,Barcelona Grand Prix,Catalonia,ALB,Alexander Albon,Williams,16,0
-9,Barcelona Grand Prix,Catalonia,STR,Lance Stroll,Aston Martin,17,0
-9,Barcelona Grand Prix,Catalonia,OCO,Esteban Ocon,Haas F1 Team,18,0
-9,Barcelona Grand Prix,Catalonia,SAI,Carlos Sainz,Williams,19,0
-9,Barcelona Grand Prix,Catalonia,ALO,Fernando Alonso,Aston Martin,20,0
-9,Barcelona Grand Prix,Catalonia,COL,Franco Colapinto,Alpine,21,0
-9,Barcelona Grand Prix,Catalonia,LIN,Arvid Lindblad,Racing Bulls,22,0
-10,Austrian Grand Prix,Spielberg,NOR,Lando Norris,McLaren,1,25
-10,Austrian Grand Prix,Spielberg,PIA,Oscar Piastri,McLaren,2,18
-10,Austrian Grand Prix,Spielberg,HAM,Lewis Hamilton,Ferrari,3,15
-10,Austrian Grand Prix,Spielberg,ANT,Kimi Antonelli,Mercedes,4,12
-10,Austrian Grand Prix,Spielberg,GAS,Pierre Gasly,Alpine,5,10
-10,Austrian Grand Prix,Spielberg,VER,Max Verstappen,Red Bull Racing,6,8
-10,Austrian Grand Prix,Spielberg,LAW,Liam Lawson,Racing Bulls,7,6
-10,Austrian Grand Prix,Spielberg,PER,Sergio Perez,Cadillac,8,4
-10,Austrian Grand Prix,Spielberg,COL,Franco Colapinto,Alpine,9,2
-10,Austrian Grand Prix,Spielberg,LEC,Charles Leclerc,Ferrari,10,1
-10,Austrian Grand Prix,Spielberg,ALO,Fernando Alonso,Aston Martin,11,0
-10,Austrian Grand Prix,Spielberg,BOR,Gabriel Bortoleto,Audi,12,0
-10,Austrian Grand Prix,Spielberg,BOT,Valtteri Bottas,Cadillac,13,0
-10,Austrian Grand Prix,Spielberg,SAI,Carlos Sainz,Williams,14,0
-10,Austrian Grand Prix,Spielberg,HAD,Isack Hadjar,Red Bull Racing,15,0
-10,Austrian Grand Prix,Spielberg,LIN,Arvid Lindblad,Racing Bulls,16,0
-10,Austrian Grand Prix,Spielberg,HUL,Nico Hülkenberg,Audi,17,0
-10,Austrian Grand Prix,Spielberg,ALB,Alexander Albon,Williams,18,0
-10,Austrian Grand Prix,Spielberg,RUS,George Russell,Mercedes,19,0
-10,Austrian Grand Prix,Spielberg,OCO,Esteban Ocon,Haas F1 Team,20,0
-10,Austrian Grand Prix,Spielberg,BEA,Oliver Bearman,Haas F1 Team,21,0
-10,Austrian Grand Prix,Spielberg,STR,Lance Stroll,Aston Martin,22,0
-11,British Grand Prix,Silverstone,NOR,Lando Norris,McLaren,1,25
-11,British Grand Prix,Silverstone,OCO,Esteban Ocon,Haas F1 Team,2,18
-11,British Grand Prix,Silverstone,VER,Max Verstappen,Red Bull Racing,3,15
-11,British Grand Prix,Silverstone,PIA,Oscar Piastri,McLaren,4,12
-11,British Grand Prix,Silverstone,HAM,Lewis Hamilton,Ferrari,5,10
-11,British Grand Prix,Silverstone,ANT,Kimi Antonelli,Mercedes,6,8
-11,British Grand Prix,Silverstone,RUS,George Russell,Mercedes,7,6
-11,British Grand Prix,Silverstone,ALO,Fernando Alonso,Aston Martin,8,4
-11,British Grand Prix,Silverstone,BOT,Valtteri Bottas,Cadillac,9,2
-11,British Grand Prix,Silverstone,LEC,Charles Leclerc,Ferrari,10,1
-11,British Grand Prix,Silverstone,GAS,Pierre Gasly,Alpine,11,0
-11,British Grand Prix,Silverstone,LAW,Liam Lawson,Racing Bulls,12,0
-11,British Grand Prix,Silverstone,BEA,Oliver Bearman,Haas F1 Team,13,0
-11,British Grand Prix,Silverstone,SAI,Carlos Sainz,Williams,14,0
-11,British Grand Prix,Silverstone,PER,Sergio Perez,Cadillac,15,0
-11,British Grand Prix,Silverstone,ALB,Alexander Albon,Williams,16,0
-11,British Grand Prix,Silverstone,LIN,Arvid Lindblad,Racing Bulls,17,0
-11,British Grand Prix,Silverstone,HUL,Nico Hülkenberg,Audi,18,0
-11,British Grand Prix,Silverstone,HAD,Isack Hadjar,Red Bull Racing,19,0
-11,British Grand Prix,Silverstone,STR,Lance Stroll,Aston Martin,20,0
-11,British Grand Prix,Silverstone,COL,Franco Colapinto,Alpine,21,0
-11,British Grand Prix,Silverstone,BOR,Gabriel Bortoleto,Audi,22,0
-12,Belgian Grand Prix,Spa-Francorchamps,NOR,Lando Norris,McLaren,1,25
-12,Belgian Grand Prix,Spa-Francorchamps,PIA,Oscar Piastri,McLaren,2,18
-12,Belgian Grand Prix,Spa-Francorchamps,OCO,Esteban Ocon,Haas F1 Team,3,15
-12,Belgian Grand Prix,Spa-Francorchamps,HUL,Nico Hülkenberg,Audi,4,12
-12,Belgian Grand Prix,Spa-Francorchamps,ANT,Kimi Antonelli,Mercedes,5,10
-12,Belgian Grand Prix,Spa-Francorchamps,VER,Max Verstappen,Red Bull Racing,6,8
-12,Belgian Grand Prix,Spa-Francorchamps,LIN,Arvid Lindblad,Racing Bulls,7,6
-12,Belgian Grand Prix,Spa-Francorchamps,LEC,Charles Leclerc,Ferrari,8,4
-12,Belgian Grand Prix,Spa-Francorchamps,STR,Lance Stroll,Aston Martin,9,2
-12,Belgian Grand Prix,Spa-Francorchamps,LAW,Liam Lawson,Racing Bulls,10,1
-12,Belgian Grand Prix,Spa-Francorchamps,PER,Sergio Perez,Cadillac,11,0
-12,Belgian Grand Prix,Spa-Francorchamps,ALO,Fernando Alonso,Aston Martin,12,0
-12,Belgian Grand Prix,Spa-Francorchamps,ALB,Alexander Albon,Williams,13,0
-12,Belgian Grand Prix,Spa-Francorchamps,BEA,Oliver Bearman,Haas F1 Team,14,0
-12,Belgian Grand Prix,Spa-Francorchamps,BOT,Valtteri Bottas,Cadillac,15,0
-12,Belgian Grand Prix,Spa-Francorchamps,SAI,Carlos Sainz,Williams,16,0
-12,Belgian Grand Prix,Spa-Francorchamps,GAS,Pierre Gasly,Alpine,17,0
-12,Belgian Grand Prix,Spa-Francorchamps,RUS,George Russell,Mercedes,18,0
-12,Belgian Grand Prix,Spa-Francorchamps,HAD,Isack Hadjar,Red Bull Racing,19,0
-12,Belgian Grand Prix,Spa-Francorchamps,COL,Franco Colapinto,Alpine,20,0
-12,Belgian Grand Prix,Spa-Francorchamps,HAM,Lewis Hamilton,Ferrari,21,0
-12,Belgian Grand Prix,Spa-Francorchamps,BOR,Gabriel Bortoleto,Audi,22,0
-13,Hungarian Grand Prix,Budapest,NOR,Lando Norris,McLaren,1,25
-13,Hungarian Grand Prix,Budapest,RUS,George Russell,Mercedes,2,18
-13,Hungarian Grand Prix,Budapest,ANT,Kimi Antonelli,Mercedes,3,15
-13,Hungarian Grand Prix,Budapest,PIA,Oscar Piastri,McLaren,4,12
-13,Hungarian Grand Prix,Budapest,LEC,Charles Leclerc,Ferrari,5,10
-13,Hungarian Grand Prix,Budapest,VER,Max Verstappen,Red Bull Racing,6,8
-13,Hungarian Grand Prix,Budapest,LAW,Liam Lawson,Racing Bulls,7,6
-13,Hungarian Grand Prix,Budapest,COL,Franco Colapinto,Alpine,8,4
-13,Hungarian Grand Prix,Budapest,BOT,Valtteri Bottas,Cadillac,9,2
-13,Hungarian Grand Prix,Budapest,BEA,Oliver Bearman,Haas F1 Team,10,1
-13,Hungarian Grand Prix,Budapest,STR,Lance Stroll,Aston Martin,11,0
-13,Hungarian Grand Prix,Budapest,OCO,Esteban Ocon,Haas F1 Team,12,0
-13,Hungarian Grand Prix,Budapest,ALO,Fernando Alonso,Aston Martin,13,0
-13,Hungarian Grand Prix,Budapest,PER,Sergio Perez,Cadillac,14,0
-13,Hungarian Grand Prix,Budapest,BOR,Gabriel Bortoleto,Audi,15,0
-13,Hungarian Grand Prix,Budapest,HAD,Isack Hadjar,Red Bull Racing,16,0
-13,Hungarian Grand Prix,Budapest,HAM,Lewis Hamilton,Ferrari,17,0
-13,Hungarian Grand Prix,Budapest,ALB,Alexander Albon,Williams,18,0
-13,Hungarian Grand Prix,Budapest,LIN,Arvid Lindblad,Racing Bulls,19,0
-13,Hungarian Grand Prix,Budapest,GAS,Pierre Gasly,Alpine,20,0
-13,Hungarian Grand Prix,Budapest,HUL,Nico Hülkenberg,Audi,21,0
-13,Hungarian Grand Prix,Budapest,SAI,Carlos Sainz,Williams,22,0
-14,Dutch Grand Prix,Zandvoort,NOR,Lando Norris,McLaren,1,25
-14,Dutch Grand Prix,Zandvoort,RUS,George Russell,Mercedes,2,18
-14,Dutch Grand Prix,Zandvoort,SAI,Carlos Sainz,Williams,3,15
-14,Dutch Grand Prix,Zandvoort,LEC,Charles Leclerc,Ferrari,4,12
-14,Dutch Grand Prix,Zandvoort,GAS,Pierre Gasly,Alpine,5,10
-14,Dutch Grand Prix,Zandvoort,PIA,Oscar Piastri,McLaren,6,8
-14,Dutch Grand Prix,Zandvoort,ANT,Kimi Antonelli,Mercedes,7,6
-14,Dutch Grand Prix,Zandvoort,VER,Max Verstappen,Red Bull Racing,8,4
-14,Dutch Grand Prix,Zandvoort,HAD,Isack Hadjar,Red Bull Racing,9,2
-14,Dutch Grand Prix,Zandvoort,PER,Sergio Perez,Cadillac,10,1
-14,Dutch Grand Prix,Zandvoort,BOR,Gabriel Bortoleto,Audi,11,0
-14,Dutch Grand Prix,Zandvoort,ALB,Alexander Albon,Williams,12,0
-14,Dutch Grand Prix,Zandvoort,OCO,Esteban Ocon,Haas F1 Team,13,0
-14,Dutch Grand Prix,Zandvoort,BOT,Valtteri Bottas,Cadillac,14,0
-14,Dutch Grand Prix,Zandvoort,ALO,Fernando Alonso,Aston Martin,15,0
-14,Dutch Grand Prix,Zandvoort,LIN,Arvid Lindblad,Racing Bulls,16,0
-14,Dutch Grand Prix,Zandvoort,STR,Lance Stroll,Aston Martin,17,0
-14,Dutch Grand Prix,Zandvoort,HAM,Lewis Hamilton,Ferrari,18,0
-14,Dutch Grand Prix,Zandvoort,COL,Franco Colapinto,Alpine,19,0
-14,Dutch Grand Prix,Zandvoort,LAW,Liam Lawson,Racing Bulls,20,0
-14,Dutch Grand Prix,Zandvoort,BEA,Oliver Bearman,Haas F1 Team,21,0
-14,Dutch Grand Prix,Zandvoort,HUL,Nico Hülkenberg,Audi,22,0
-15,Italian Grand Prix,Monza,NOR,Lando Norris,McLaren,1,25
-15,Italian Grand Prix,Monza,PIA,Oscar Piastri,McLaren,2,18
-15,Italian Grand Prix,Monza,LEC,Charles Leclerc,Ferrari,3,15
-15,Italian Grand Prix,Monza,HAD,Isack Hadjar,Red Bull Racing,4,12
-15,Italian Grand Prix,Monza,OCO,Esteban Ocon,Haas F1 Team,5,10
-15,Italian Grand Prix,Monza,ANT,Kimi Antonelli,Mercedes,6,8
-15,Italian Grand Prix,Monza,BOT,Valtteri Bottas,Cadillac,7,6
-15,Italian Grand Prix,Monza,RUS,George Russell,Mercedes,8,4
-15,Italian Grand Prix,Monza,ALO,Fernando Alonso,Aston Martin,9,2
-15,Italian Grand Prix,Monza,SAI,Carlos Sainz,Williams,10,1
-15,Italian Grand Prix,Monza,BEA,Oliver Bearman,Haas F1 Team,11,0
-15,Italian Grand Prix,Monza,HUL,Nico Hülkenberg,Audi,12,0
-15,Italian Grand Prix,Monza,LIN,Arvid Lindblad,Racing Bulls,13,0
-15,Italian Grand Prix,Monza,BOR,Gabriel Bortoleto,Audi,14,0
-15,Italian Grand Prix,Monza,LAW,Liam Lawson,Racing Bulls,15,0
-15,Italian Grand Prix,Monza,VER,Max Verstappen,Red Bull Racing,16,0
-15,Italian Grand Prix,Monza,PER,Sergio Perez,Cadillac,17,0
-15,Italian Grand Prix,Monza,COL,Franco Colapinto,Alpine,18,0
-15,Italian Grand Prix,Monza,HAM,Lewis Hamilton,Ferrari,19,0
-15,Italian Grand Prix,Monza,ALB,Alexander Albon,Williams,20,0
-15,Italian Grand Prix,Monza,STR,Lance Stroll,Aston Martin,21,0
-15,Italian Grand Prix,Monza,GAS,Pierre Gasly,Alpine,22,0
-16,Spanish Grand Prix,Valencia,VER,Max Verstappen,Red Bull Racing,1,25
-16,Spanish Grand Prix,Valencia,NOR,Lando Norris,McLaren,2,18
-16,Spanish Grand Prix,Valencia,COL,Franco Colapinto,Alpine,3,15
-16,Spanish Grand Prix,Valencia,PIA,Oscar Piastri,McLaren,4,12
-16,Spanish Grand Prix,Valencia,HAM,Lewis Hamilton,Ferrari,5,10
-16,Spanish Grand Prix,Valencia,BOT,Valtteri Bottas,Cadillac,6,8
-16,Spanish Grand Prix,Valencia,LEC,Charles Leclerc,Ferrari,7,6
-16,Spanish Grand Prix,Valencia,BEA,Oliver Bearman,Haas F1 Team,8,4
-16,Spanish Grand Prix,Valencia,ANT,Kimi Antonelli,Mercedes,9,2
-16,Spanish Grand Prix,Valencia,HUL,Nico Hülkenberg,Audi,10,1
-16,Spanish Grand Prix,Valencia,RUS,George Russell,Mercedes,11,0
-16,Spanish Grand Prix,Valencia,OCO,Esteban Ocon,Haas F1 Team,12,0
-16,Spanish Grand Prix,Valencia,STR,Lance Stroll,Aston Martin,13,0
-16,Spanish Grand Prix,Valencia,ALO,Fernando Alonso,Aston Martin,14,0
-16,Spanish Grand Prix,Valencia,ALB,Alexander Albon,Williams,15,0
-16,Spanish Grand Prix,Valencia,HAD,Isack Hadjar,Red Bull Racing,16,0
-16,Spanish Grand Prix,Valencia,BOR,Gabriel Bortoleto,Audi,17,0
-16,Spanish Grand Prix,Valencia,LAW,Liam Lawson,Racing Bulls,18,0
-16,Spanish Grand Prix,Valencia,SAI,Carlos Sainz,Williams,19,0
-16,Spanish Grand Prix,Valencia,PER,Sergio Perez,Cadillac,20,0
-16,Spanish Grand Prix,Valencia,LIN,Arvid Lindblad,Racing Bulls,21,0
-16,Spanish Grand Prix,Valencia,GAS,Pierre Gasly,Alpine,22,0
-17,Azerbaijan Grand Prix,Baku,NOR,Lando Norris,McLaren,1,25
-17,Azerbaijan Grand Prix,Baku,PIA,Oscar Piastri,McLaren,2,18
-17,Azerbaijan Grand Prix,Baku,BOT,Valtteri Bottas,Cadillac,3,15
-17,Azerbaijan Grand Prix,Baku,HAD,Isack Hadjar,Red Bull Racing,4,12
-17,Azerbaijan Grand Prix,Baku,HUL,Nico Hülkenberg,Audi,5,10
-17,Azerbaijan Grand Prix,Baku,HAM,Lewis Hamilton,Ferrari,6,8
-17,Azerbaijan Grand Prix,Baku,RUS,George Russell,Mercedes,7,6
-17,Azerbaijan Grand Prix,Baku,BOR,Gabriel Bortoleto,Audi,8,4
-17,Azerbaijan Grand Prix,Baku,VER,Max Verstappen,Red Bull Racing,9,2
-17,Azerbaijan Grand Prix,Baku,LEC,Charles Leclerc,Ferrari,10,1
-17,Azerbaijan Grand Prix,Baku,SAI,Carlos Sainz,Williams,11,0
-17,Azerbaijan Grand Prix,Baku,STR,Lance Stroll,Aston Martin,12,0
-17,Azerbaijan Grand Prix,Baku,LAW,Liam Lawson,Racing Bulls,13,0
-17,Azerbaijan Grand Prix,Baku,OCO,Esteban Ocon,Haas F1 Team,14,0
-17,Azerbaijan Grand Prix,Baku,BEA,Oliver Bearman,Haas F1 Team,15,0
-17,Azerbaijan Grand Prix,Baku,COL,Franco Colapinto,Alpine,16,0
-17,Azerbaijan Grand Prix,Baku,GAS,Pierre Gasly,Alpine,17,0
-17,Azerbaijan Grand Prix,Baku,ALO,Fernando Alonso,Aston Martin,18,0
-17,Azerbaijan Grand Prix,Baku,ANT,Kimi Antonelli,Mercedes,19,0
-17,Azerbaijan Grand Prix,Baku,LIN,Arvid Lindblad,Racing Bulls,20,0
-17,Azerbaijan Grand Prix,Baku,PER,Sergio Perez,Cadillac,21,0
-17,Azerbaijan Grand Prix,Baku,ALB,Alexander Albon,Williams,22,0
-18,Singapore Grand Prix,Singapore,LEC,Charles Leclerc,Ferrari,1,25
-18,Singapore Grand Prix,Singapore,HAM,Lewis Hamilton,Ferrari,2,18
-18,Singapore Grand Prix,Singapore,NOR,Lando Norris,McLaren,3,15
-18,Singapore Grand Prix,Singapore,LAW,Liam Lawson,Racing Bulls,4,12
-18,Singapore Grand Prix,Singapore,ANT,Kimi Antonelli,Mercedes,5,10
-18,Singapore Grand Prix,Singapore,ALO,Fernando Alonso,Aston Martin,6,8
-18,Singapore Grand Prix,Singapore,VER,Max Verstappen,Red Bull Racing,7,6
-18,Singapore Grand Prix,Singapore,PIA,Oscar Piastri,McLaren,8,4
-18,Singapore Grand Prix,Singapore,COL,Franco Colapinto,Alpine,9,2
-18,Singapore Grand Prix,Singapore,BOT,Valtteri Bottas,Cadillac,10,1
-18,Singapore Grand Prix,Singapore,BEA,Oliver Bearman,Haas F1 Team,11,0
-18,Singapore Grand Prix,Singapore,LIN,Arvid Lindblad,Racing Bulls,12,0
-18,Singapore Grand Prix,Singapore,ALB,Alexander Albon,Williams,13,0
-18,Singapore Grand Prix,Singapore,HAD,Isack Hadjar,Red Bull Racing,14,0
-18,Singapore Grand Prix,Singapore,PER,Sergio Perez,Cadillac,15,0
-18,Singapore Grand Prix,Singapore,STR,Lance Stroll,Aston Martin,16,0
-18,Singapore Grand Prix,Singapore,RUS,George Russell,Mercedes,17,0
-18,Singapore Grand Prix,Singapore,SAI,Carlos Sainz,Williams,18,0
-18,Singapore Grand Prix,Singapore,GAS,Pierre Gasly,Alpine,19,0
-18,Singapore Grand Prix,Singapore,OCO,Esteban Ocon,Haas F1 Team,20,0
-18,Singapore Grand Prix,Singapore,BOR,Gabriel Bortoleto,Audi,21,0
-18,Singapore Grand Prix,Singapore,HUL,Nico Hülkenberg,Audi,22,0
-19,United States Grand Prix,Austin,PIA,Oscar Piastri,McLaren,1,25
-19,United States Grand Prix,Austin,NOR,Lando Norris,McLaren,2,18
-19,United States Grand Prix,Austin,RUS,George Russell,Mercedes,3,15
-19,United States Grand Prix,Austin,SAI,Carlos Sainz,Williams,4,12
-19,United States Grand Prix,Austin,VER,Max Verstappen,Red Bull Racing,5,10
-19,United States Grand Prix,Austin,BOT,Valtteri Bottas,Cadillac,6,8
-19,United States Grand Prix,Austin,HUL,Nico Hülkenberg,Audi,7,6
-19,United States Grand Prix,Austin,BOR,Gabriel Bortoleto,Audi,8,4
-19,United States Grand Prix,Austin,ALB,Alexander Albon,Williams,9,2
-19,United States Grand Prix,Austin,ANT,Kimi Antonelli,Mercedes,10,1
-19,United States Grand Prix,Austin,LEC,Charles Leclerc,Ferrari,11,0
-19,United States Grand Prix,Austin,OCO,Esteban Ocon,Haas F1 Team,12,0
-19,United States Grand Prix,Austin,BEA,Oliver Bearman,Haas F1 Team,13,0
-19,United States Grand Prix,Austin,GAS,Pierre Gasly,Alpine,14,0
-19,United States Grand Prix,Austin,STR,Lance Stroll,Aston Martin,15,0
-19,United States Grand Prix,Austin,HAM,Lewis Hamilton,Ferrari,16,0
-19,United States Grand Prix,Austin,ALO,Fernando Alonso,Aston Martin,17,0
-19,United States Grand Prix,Austin,PER,Sergio Perez,Cadillac,18,0
-19,United States Grand Prix,Austin,LAW,Liam Lawson,Racing Bulls,19,0
-19,United States Grand Prix,Austin,LIN,Arvid Lindblad,Racing Bulls,20,0
-19,United States Grand Prix,Austin,COL,Franco Colapinto,Alpine,21,0
-19,United States Grand Prix,Austin,HAD,Isack Hadjar,Red Bull Racing,22,0
-20,Mexico City Grand Prix,Mexico City,PIA,Oscar Piastri,McLaren,1,25
-20,Mexico City Grand Prix,Mexico City,NOR,Lando Norris,McLaren,2,18
-20,Mexico City Grand Prix,Mexico City,ALO,Fernando Alonso,Aston Martin,3,15
-20,Mexico City Grand Prix,Mexico City,HAM,Lewis Hamilton,Ferrari,4,12
-20,Mexico City Grand Prix,Mexico City,BOR,Gabriel Bortoleto,Audi,5,10
-20,Mexico City Grand Prix,Mexico City,HUL,Nico Hülkenberg,Audi,6,8
-20,Mexico City Grand Prix,Mexico City,RUS,George Russell,Mercedes,7,6
-20,Mexico City Grand Prix,Mexico City,LAW,Liam Lawson,Racing Bulls,8,4
-20,Mexico City Grand Prix,Mexico City,BEA,Oliver Bearman,Haas F1 Team,9,2
-20,Mexico City Grand Prix,Mexico City,LEC,Charles Leclerc,Ferrari,10,1
-20,Mexico City Grand Prix,Mexico City,LIN,Arvid Lindblad,Racing Bulls,11,0
-20,Mexico City Grand Prix,Mexico City,HAD,Isack Hadjar,Red Bull Racing,12,0
-20,Mexico City Grand Prix,Mexico City,STR,Lance Stroll,Aston Martin,13,0
-20,Mexico City Grand Prix,Mexico City,ALB,Alexander Albon,Williams,14,0
-20,Mexico City Grand Prix,Mexico City,SAI,Carlos Sainz,Williams,15,0
-20,Mexico City Grand Prix,Mexico City,OCO,Esteban Ocon,Haas F1 Team,16,0
-20,Mexico City Grand Prix,Mexico City,ANT,Kimi Antonelli,Mercedes,17,0
-20,Mexico City Grand Prix,Mexico City,VER,Max Verstappen,Red Bull Racing,18,0
-20,Mexico City Grand Prix,Mexico City,COL,Franco Colapinto,Alpine,19,0
-20,Mexico City Grand Prix,Mexico City,BOT,Valtteri Bottas,Cadillac,20,0
-20,Mexico City Grand Prix,Mexico City,GAS,Pierre Gasly,Alpine,21,0
-20,Mexico City Grand Prix,Mexico City,PER,Sergio Perez,Cadillac,22,0
-21,São Paulo Grand Prix,Interlagos,PIA,Oscar Piastri,McLaren,1,25
-21,São Paulo Grand Prix,Interlagos,NOR,Lando Norris,McLaren,2,18
-21,São Paulo Grand Prix,Interlagos,HAM,Lewis Hamilton,Ferrari,3,15
-21,São Paulo Grand Prix,Interlagos,ANT,Kimi Antonelli,Mercedes,4,12
-21,São Paulo Grand Prix,Interlagos,RUS,George Russell,Mercedes,5,10
-21,São Paulo Grand Prix,Interlagos,VER,Max Verstappen,Red Bull Racing,6,8
-21,São Paulo Grand Prix,Interlagos,LAW,Liam Lawson,Racing Bulls,7,6
-21,São Paulo Grand Prix,Interlagos,SAI,Carlos Sainz,Williams,8,4
-21,São Paulo Grand Prix,Interlagos,HAD,Isack Hadjar,Red Bull Racing,9,2
-21,São Paulo Grand Prix,Interlagos,HUL,Nico Hülkenberg,Audi,10,1
-21,São Paulo Grand Prix,Interlagos,LIN,Arvid Lindblad,Racing Bulls,11,0
-21,São Paulo Grand Prix,Interlagos,PER,Sergio Perez,Cadillac,12,0
-21,São Paulo Grand Prix,Interlagos,BEA,Oliver Bearman,Haas F1 Team,13,0
-21,São Paulo Grand Prix,Interlagos,STR,Lance Stroll,Aston Martin,14,0
-21,São Paulo Grand Prix,Interlagos,ALB,Alexander Albon,Williams,15,0
-21,São Paulo Grand Prix,Interlagos,BOT,Valtteri Bottas,Cadillac,16,0
-21,São Paulo Grand Prix,Interlagos,LEC,Charles Leclerc,Ferrari,17,0
-21,São Paulo Grand Prix,Interlagos,BOR,Gabriel Bortoleto,Audi,18,0
-21,São Paulo Grand Prix,Interlagos,GAS,Pierre Gasly,Alpine,19,0
-21,São Paulo Grand Prix,Interlagos,ALO,Fernando Alonso,Aston Martin,20,0
-21,São Paulo Grand Prix,Interlagos,OCO,Esteban Ocon,Haas F1 Team,21,0
-21,São Paulo Grand Prix,Interlagos,COL,Franco Colapinto,Alpine,22,0
-22,Las Vegas Grand Prix,Las Vegas,ANT,Kimi Antonelli,Mercedes,1,25
-22,Las Vegas Grand Prix,Las Vegas,NOR,Lando Norris,McLaren,2,18
-22,Las Vegas Grand Prix,Las Vegas,PIA,Oscar Piastri,McLaren,3,15
-22,Las Vegas Grand Prix,Las Vegas,LEC,Charles Leclerc,Ferrari,4,12
-22,Las Vegas Grand Prix,Las Vegas,RUS,George Russell,Mercedes,5,10
-22,Las Vegas Grand Prix,Las Vegas,BOT,Valtteri Bottas,Cadillac,6,8
-22,Las Vegas Grand Prix,Las Vegas,SAI,Carlos Sainz,Williams,7,6
-22,Las Vegas Grand Prix,Las Vegas,BEA,Oliver Bearman,Haas F1 Team,8,4
-22,Las Vegas Grand Prix,Las Vegas,HUL,Nico Hülkenberg,Audi,9,2
-22,Las Vegas Grand Prix,Las Vegas,STR,Lance Stroll,Aston Martin,10,1
-22,Las Vegas Grand Prix,Las Vegas,COL,Franco Colapinto,Alpine,11,0
-22,Las Vegas Grand Prix,Las Vegas,VER,Max Verstappen,Red Bull Racing,12,0
-22,Las Vegas Grand Prix,Las Vegas,GAS,Pierre Gasly,Alpine,13,0
-22,Las Vegas Grand Prix,Las Vegas,ALO,Fernando Alonso,Aston Martin,14,0
-22,Las Vegas Grand Prix,Las Vegas,LAW,Liam Lawson,Racing Bulls,15,0
-22,Las Vegas Grand Prix,Las Vegas,HAD,Isack Hadjar,Red Bull Racing,16,0
-22,Las Vegas Grand Prix,Las Vegas,OCO,Esteban Ocon,Haas F1 Team,17,0
-22,Las Vegas Grand Prix,Las Vegas,HAM,Lewis Hamilton,Ferrari,18,0
-22,Las Vegas Grand Prix,Las Vegas,BOR,Gabriel Bortoleto,Audi,19,0
-22,Las Vegas Grand Prix,Las Vegas,ALB,Alexander Albon,Williams,20,0
-22,Las Vegas Grand Prix,Las Vegas,PER,Sergio Perez,Cadillac,21,0
-22,Las Vegas Grand Prix,Las Vegas,LIN,Arvid Lindblad,Racing Bulls,22,0
-23,Qatar Grand Prix,Lusail,NOR,Lando Norris,McLaren,1,25
-23,Qatar Grand Prix,Lusail,PIA,Oscar Piastri,McLaren,2,18
-23,Qatar Grand Prix,Lusail,RUS,George Russell,Mercedes,3,15
-23,Qatar Grand Prix,Lusail,HUL,Nico Hülkenberg,Audi,4,12
-23,Qatar Grand Prix,Lusail,LEC,Charles Leclerc,Ferrari,5,10
-23,Qatar Grand Prix,Lusail,HAM,Lewis Hamilton,Ferrari,6,8
-23,Qatar Grand Prix,Lusail,BOT,Valtteri Bottas,Cadillac,7,6
-23,Qatar Grand Prix,Lusail,ALB,Alexander Albon,Williams,8,4
-23,Qatar Grand Prix,Lusail,BEA,Oliver Bearman,Haas F1 Team,9,2
-23,Qatar Grand Prix,Lusail,ANT,Kimi Antonelli,Mercedes,10,1
-23,Qatar Grand Prix,Lusail,VER,Max Verstappen,Red Bull Racing,11,0
-23,Qatar Grand Prix,Lusail,LAW,Liam Lawson,Racing Bulls,12,0
-23,Qatar Grand Prix,Lusail,PER,Sergio Perez,Cadillac,13,0
-23,Qatar Grand Prix,Lusail,ALO,Fernando Alonso,Aston Martin,14,0
-23,Qatar Grand Prix,Lusail,BOR,Gabriel Bortoleto,Audi,15,0
-23,Qatar Grand Prix,Lusail,STR,Lance Stroll,Aston Martin,16,0
-23,Qatar Grand Prix,Lusail,HAD,Isack Hadjar,Red Bull Racing,17,0
-23,Qatar Grand Prix,Lusail,COL,Franco Colapinto,Alpine,18,0
-23,Qatar Grand Prix,Lusail,OCO,Esteban Ocon,Haas F1 Team,19,0
-23,Qatar Grand Prix,Lusail,GAS,Pierre Gasly,Alpine,20,0
-23,Qatar Grand Prix,Lusail,SAI,Carlos Sainz,Williams,21,0
-23,Qatar Grand Prix,Lusail,LIN,Arvid Lindblad,Racing Bulls,22,0
-24,Abu Dhabi Grand Prix,Yas Marina,NOR,Lando Norris,McLaren,1,25
-24,Abu Dhabi Grand Prix,Yas Marina,PIA,Oscar Piastri,McLaren,2,18
-24,Abu Dhabi Grand Prix,Yas Marina,ALO,Fernando Alonso,Aston Martin,3,15
-24,Abu Dhabi Grand Prix,Yas Marina,PER,Sergio Perez,Cadillac,4,12
-24,Abu Dhabi Grand Prix,Yas Marina,RUS,George Russell,Mercedes,5,10
-24,Abu Dhabi Grand Prix,Yas Marina,ANT,Kimi Antonelli,Mercedes,6,8
-24,Abu Dhabi Grand Prix,Yas Marina,BEA,Oliver Bearman,Haas F1 Team,7,6
-24,Abu Dhabi Grand Prix,Yas Marina,LEC,Charles Leclerc,Ferrari,8,4
-24,Abu Dhabi Grand Prix,Yas Marina,BOT,Valtteri Bottas,Cadillac,9,2
-24,Abu Dhabi Grand Prix,Yas Marina,LIN,Arvid Lindblad,Racing Bulls,10,1
-24,Abu Dhabi Grand Prix,Yas Marina,STR,Lance Stroll,Aston Martin,11,0
-24,Abu Dhabi Grand Prix,Yas Marina,BOR,Gabriel Bortoleto,Audi,12,0
-24,Abu Dhabi Grand Prix,Yas Marina,SAI,Carlos Sainz,Williams,13,0
-24,Abu Dhabi Grand Prix,Yas Marina,OCO,Esteban Ocon,Haas F1 Team,14,0
-24,Abu Dhabi Grand Prix,Yas Marina,COL,Franco Colapinto,Alpine,15,0
-24,Abu Dhabi Grand Prix,Yas Marina,LAW,Liam Lawson,Racing Bulls,16,0
-24,Abu Dhabi Grand Prix,Yas Marina,HAM,Lewis Hamilton,Ferrari,17,0
-24,Abu Dhabi Grand Prix,Yas Marina,VER,Max Verstappen,Red Bull Racing,18,0
-24,Abu Dhabi Grand Prix,Yas Marina,ALB,Alexander Albon,Williams,19,0
-24,Abu Dhabi Grand Prix,Yas Marina,HAD,Isack Hadjar,Red Bull Racing,20,0
-24,Abu Dhabi Grand Prix,Yas Marina,HUL,Nico Hülkenberg,Audi,21,0
-24,Abu Dhabi Grand Prix,Yas Marina,GAS,Pierre Gasly,Alpine,22,0
+Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual
+1,Australian Grand Prix,Albert Park,RUS,George Russell,Mercedes,1,25,True
+1,Australian Grand Prix,Albert Park,ANT,Kimi Antonelli,Mercedes,2,18,True
+1,Australian Grand Prix,Albert Park,LEC,Charles Leclerc,Ferrari,3,15,True
+1,Australian Grand Prix,Albert Park,HAM,Lewis Hamilton,Ferrari,4,12,True
+1,Australian Grand Prix,Albert Park,NOR,Lando Norris,McLaren,5,10,True
+1,Australian Grand Prix,Albert Park,VER,Max Verstappen,Red Bull Racing,6,8,True
+1,Australian Grand Prix,Albert Park,BEA,Oliver Bearman,Haas F1 Team,7,6,True
+1,Australian Grand Prix,Albert Park,LIN,Arvid Lindblad,Racing Bulls,8,4,True
+1,Australian Grand Prix,Albert Park,BOR,Gabriel Bortoleto,Audi,9,2,True
+1,Australian Grand Prix,Albert Park,GAS,Pierre Gasly,Alpine,10,1,True
+1,Australian Grand Prix,Albert Park,OCO,Esteban Ocon,Haas F1 Team,11,0,True
+1,Australian Grand Prix,Albert Park,ALB,Alexander Albon,Williams,12,0,True
+1,Australian Grand Prix,Albert Park,LAW,Liam Lawson,Racing Bulls,13,0,True
+1,Australian Grand Prix,Albert Park,COL,Franco Colapinto,Alpine,14,0,True
+1,Australian Grand Prix,Albert Park,SAI,Carlos Sainz,Williams,15,0,True
+1,Australian Grand Prix,Albert Park,PER,Sergio Perez,Cadillac,16,0,True
+1,Australian Grand Prix,Albert Park,STR,Lance Stroll,Aston Martin,17,0,True
+1,Australian Grand Prix,Albert Park,ALO,Fernando Alonso,Aston Martin,18,0,True
+1,Australian Grand Prix,Albert Park,BOT,Valtteri Bottas,Cadillac,19,0,True
+1,Australian Grand Prix,Albert Park,HAD,Isack Hadjar,Red Bull Racing,20,0,True
+1,Australian Grand Prix,Albert Park,PIA,Oscar Piastri,McLaren,21,0,True
+1,Australian Grand Prix,Albert Park,HUL,Nico Hülkenberg,Audi,22,0,True
+2,Chinese Grand Prix,Shanghai,ANT,Kimi Antonelli,Mercedes,1,25,True
+2,Chinese Grand Prix,Shanghai,RUS,George Russell,Mercedes,2,18,True
+2,Chinese Grand Prix,Shanghai,HAM,Lewis Hamilton,Ferrari,3,15,True
+2,Chinese Grand Prix,Shanghai,LEC,Charles Leclerc,Ferrari,4,12,True
+2,Chinese Grand Prix,Shanghai,BEA,Oliver Bearman,Haas F1 Team,5,10,True
+2,Chinese Grand Prix,Shanghai,GAS,Pierre Gasly,Alpine,6,8,True
+2,Chinese Grand Prix,Shanghai,LAW,Liam Lawson,Racing Bulls,7,6,True
+2,Chinese Grand Prix,Shanghai,HAD,Isack Hadjar,Red Bull Racing,8,4,True
+2,Chinese Grand Prix,Shanghai,SAI,Carlos Sainz,Williams,9,2,True
+2,Chinese Grand Prix,Shanghai,COL,Franco Colapinto,Alpine,10,1,True
+2,Chinese Grand Prix,Shanghai,HUL,Nico Hülkenberg,Audi,11,0,True
+2,Chinese Grand Prix,Shanghai,LIN,Arvid Lindblad,Racing Bulls,12,0,True
+2,Chinese Grand Prix,Shanghai,BOT,Valtteri Bottas,Cadillac,13,0,True
+2,Chinese Grand Prix,Shanghai,OCO,Esteban Ocon,Haas F1 Team,14,0,True
+2,Chinese Grand Prix,Shanghai,PER,Sergio Perez,Cadillac,15,0,True
+2,Chinese Grand Prix,Shanghai,VER,Max Verstappen,Red Bull Racing,16,0,True
+2,Chinese Grand Prix,Shanghai,ALO,Fernando Alonso,Aston Martin,17,0,True
+2,Chinese Grand Prix,Shanghai,STR,Lance Stroll,Aston Martin,18,0,True
+2,Chinese Grand Prix,Shanghai,PIA,Oscar Piastri,McLaren,19,0,True
+2,Chinese Grand Prix,Shanghai,NOR,Lando Norris,McLaren,20,0,True
+2,Chinese Grand Prix,Shanghai,BOR,Gabriel Bortoleto,Audi,21,0,True
+2,Chinese Grand Prix,Shanghai,ALB,Alexander Albon,Williams,22,0,True
+3,Japanese Grand Prix,Suzuka,ANT,Kimi Antonelli,Mercedes,1,25,True
+3,Japanese Grand Prix,Suzuka,PIA,Oscar Piastri,McLaren,2,18,True
+3,Japanese Grand Prix,Suzuka,LEC,Charles Leclerc,Ferrari,3,15,True
+3,Japanese Grand Prix,Suzuka,RUS,George Russell,Mercedes,4,12,True
+3,Japanese Grand Prix,Suzuka,NOR,Lando Norris,McLaren,5,10,True
+3,Japanese Grand Prix,Suzuka,HAM,Lewis Hamilton,Ferrari,6,8,True
+3,Japanese Grand Prix,Suzuka,GAS,Pierre Gasly,Alpine,7,6,True
+3,Japanese Grand Prix,Suzuka,VER,Max Verstappen,Red Bull Racing,8,4,True
+3,Japanese Grand Prix,Suzuka,LAW,Liam Lawson,Racing Bulls,9,2,True
+3,Japanese Grand Prix,Suzuka,OCO,Esteban Ocon,Haas F1 Team,10,1,True
+3,Japanese Grand Prix,Suzuka,HUL,Nico Hülkenberg,Audi,11,0,True
+3,Japanese Grand Prix,Suzuka,HAD,Isack Hadjar,Red Bull Racing,12,0,True
+3,Japanese Grand Prix,Suzuka,BOR,Gabriel Bortoleto,Audi,13,0,True
+3,Japanese Grand Prix,Suzuka,LIN,Arvid Lindblad,Racing Bulls,14,0,True
+3,Japanese Grand Prix,Suzuka,SAI,Carlos Sainz,Williams,15,0,True
+3,Japanese Grand Prix,Suzuka,COL,Franco Colapinto,Alpine,16,0,True
+3,Japanese Grand Prix,Suzuka,PER,Sergio Perez,Cadillac,17,0,True
+3,Japanese Grand Prix,Suzuka,ALO,Fernando Alonso,Aston Martin,18,0,True
+3,Japanese Grand Prix,Suzuka,BOT,Valtteri Bottas,Cadillac,19,0,True
+3,Japanese Grand Prix,Suzuka,ALB,Alexander Albon,Williams,20,0,True
+3,Japanese Grand Prix,Suzuka,STR,Lance Stroll,Aston Martin,21,0,True
+3,Japanese Grand Prix,Suzuka,BEA,Oliver Bearman,Haas F1 Team,22,0,True
+4,Miami Grand Prix,Miami,HAM,Lewis Hamilton,Ferrari,1,25,False
+4,Miami Grand Prix,Miami,ANT,Kimi Antonelli,Mercedes,2,18,False
+4,Miami Grand Prix,Miami,PIA,Oscar Piastri,McLaren,3,15,False
+4,Miami Grand Prix,Miami,GAS,Pierre Gasly,Alpine,4,12,False
+4,Miami Grand Prix,Miami,COL,Franco Colapinto,Alpine,5,10,False
+4,Miami Grand Prix,Miami,LEC,Charles Leclerc,Ferrari,6,8,False
+4,Miami Grand Prix,Miami,VER,Max Verstappen,Red Bull Racing,7,6,False
+4,Miami Grand Prix,Miami,LAW,Liam Lawson,Racing Bulls,8,4,False
+4,Miami Grand Prix,Miami,NOR,Lando Norris,McLaren,9,2,False
+4,Miami Grand Prix,Miami,RUS,George Russell,Mercedes,10,1,False
+4,Miami Grand Prix,Miami,PER,Sergio Perez,Cadillac,11,0,False
+4,Miami Grand Prix,Miami,LIN,Arvid Lindblad,Racing Bulls,12,0,False
+4,Miami Grand Prix,Miami,HAD,Isack Hadjar,Red Bull Racing,13,0,False
+4,Miami Grand Prix,Miami,OCO,Esteban Ocon,Haas F1 Team,14,0,False
+4,Miami Grand Prix,Miami,SAI,Carlos Sainz,Williams,15,0,False
+4,Miami Grand Prix,Miami,STR,Lance Stroll,Aston Martin,16,0,False
+4,Miami Grand Prix,Miami,ALB,Alexander Albon,Williams,17,0,False
+4,Miami Grand Prix,Miami,BEA,Oliver Bearman,Haas F1 Team,18,0,False
+4,Miami Grand Prix,Miami,BOT,Valtteri Bottas,Cadillac,19,0,False
+4,Miami Grand Prix,Miami,BOR,Gabriel Bortoleto,Audi,20,0,False
+4,Miami Grand Prix,Miami,ALO,Fernando Alonso,Aston Martin,21,0,False
+4,Miami Grand Prix,Miami,HUL,Nico Hülkenberg,Audi,22,0,False
+5,Bahrain Grand Prix,Sakhir,ANT,Kimi Antonelli,Mercedes,1,25,False
+5,Bahrain Grand Prix,Sakhir,OCO,Esteban Ocon,Haas F1 Team,2,18,False
+5,Bahrain Grand Prix,Sakhir,HAM,Lewis Hamilton,Ferrari,3,15,False
+5,Bahrain Grand Prix,Sakhir,BEA,Oliver Bearman,Haas F1 Team,4,12,False
+5,Bahrain Grand Prix,Sakhir,ALO,Fernando Alonso,Aston Martin,5,10,False
+5,Bahrain Grand Prix,Sakhir,VER,Max Verstappen,Red Bull Racing,6,8,False
+5,Bahrain Grand Prix,Sakhir,RUS,George Russell,Mercedes,7,6,False
+5,Bahrain Grand Prix,Sakhir,PER,Sergio Perez,Cadillac,8,4,False
+5,Bahrain Grand Prix,Sakhir,PIA,Oscar Piastri,McLaren,9,2,False
+5,Bahrain Grand Prix,Sakhir,LIN,Arvid Lindblad,Racing Bulls,10,1,False
+5,Bahrain Grand Prix,Sakhir,LAW,Liam Lawson,Racing Bulls,11,0,False
+5,Bahrain Grand Prix,Sakhir,SAI,Carlos Sainz,Williams,12,0,False
+5,Bahrain Grand Prix,Sakhir,HUL,Nico Hülkenberg,Audi,13,0,False
+5,Bahrain Grand Prix,Sakhir,LEC,Charles Leclerc,Ferrari,14,0,False
+5,Bahrain Grand Prix,Sakhir,GAS,Pierre Gasly,Alpine,15,0,False
+5,Bahrain Grand Prix,Sakhir,NOR,Lando Norris,McLaren,16,0,False
+5,Bahrain Grand Prix,Sakhir,ALB,Alexander Albon,Williams,17,0,False
+5,Bahrain Grand Prix,Sakhir,COL,Franco Colapinto,Alpine,18,0,False
+5,Bahrain Grand Prix,Sakhir,BOT,Valtteri Bottas,Cadillac,19,0,False
+5,Bahrain Grand Prix,Sakhir,STR,Lance Stroll,Aston Martin,20,0,False
+5,Bahrain Grand Prix,Sakhir,HAD,Isack Hadjar,Red Bull Racing,21,0,False
+5,Bahrain Grand Prix,Sakhir,BOR,Gabriel Bortoleto,Audi,22,0,False
+6,Saudi Arabian Grand Prix,Jeddah,GAS,Pierre Gasly,Alpine,1,25,False
+6,Saudi Arabian Grand Prix,Jeddah,HAM,Lewis Hamilton,Ferrari,2,18,False
+6,Saudi Arabian Grand Prix,Jeddah,ANT,Kimi Antonelli,Mercedes,3,15,False
+6,Saudi Arabian Grand Prix,Jeddah,NOR,Lando Norris,McLaren,4,12,False
+6,Saudi Arabian Grand Prix,Jeddah,LAW,Liam Lawson,Racing Bulls,5,10,False
+6,Saudi Arabian Grand Prix,Jeddah,PIA,Oscar Piastri,McLaren,6,8,False
+6,Saudi Arabian Grand Prix,Jeddah,RUS,George Russell,Mercedes,7,6,False
+6,Saudi Arabian Grand Prix,Jeddah,PER,Sergio Perez,Cadillac,8,4,False
+6,Saudi Arabian Grand Prix,Jeddah,LEC,Charles Leclerc,Ferrari,9,2,False
+6,Saudi Arabian Grand Prix,Jeddah,BEA,Oliver Bearman,Haas F1 Team,10,1,False
+6,Saudi Arabian Grand Prix,Jeddah,HAD,Isack Hadjar,Red Bull Racing,11,0,False
+6,Saudi Arabian Grand Prix,Jeddah,COL,Franco Colapinto,Alpine,12,0,False
+6,Saudi Arabian Grand Prix,Jeddah,BOR,Gabriel Bortoleto,Audi,13,0,False
+6,Saudi Arabian Grand Prix,Jeddah,OCO,Esteban Ocon,Haas F1 Team,14,0,False
+6,Saudi Arabian Grand Prix,Jeddah,HUL,Nico Hülkenberg,Audi,15,0,False
+6,Saudi Arabian Grand Prix,Jeddah,SAI,Carlos Sainz,Williams,16,0,False
+6,Saudi Arabian Grand Prix,Jeddah,VER,Max Verstappen,Red Bull Racing,17,0,False
+6,Saudi Arabian Grand Prix,Jeddah,BOT,Valtteri Bottas,Cadillac,18,0,False
+6,Saudi Arabian Grand Prix,Jeddah,ALB,Alexander Albon,Williams,19,0,False
+6,Saudi Arabian Grand Prix,Jeddah,STR,Lance Stroll,Aston Martin,20,0,False
+6,Saudi Arabian Grand Prix,Jeddah,ALO,Fernando Alonso,Aston Martin,21,0,False
+6,Saudi Arabian Grand Prix,Jeddah,LIN,Arvid Lindblad,Racing Bulls,22,0,False
+7,Canadian Grand Prix,Montreal,RUS,George Russell,Mercedes,1,25,False
+7,Canadian Grand Prix,Montreal,HAM,Lewis Hamilton,Ferrari,2,18,False
+7,Canadian Grand Prix,Montreal,HAD,Isack Hadjar,Red Bull Racing,3,15,False
+7,Canadian Grand Prix,Montreal,LAW,Liam Lawson,Racing Bulls,4,12,False
+7,Canadian Grand Prix,Montreal,SAI,Carlos Sainz,Williams,5,10,False
+7,Canadian Grand Prix,Montreal,OCO,Esteban Ocon,Haas F1 Team,6,8,False
+7,Canadian Grand Prix,Montreal,GAS,Pierre Gasly,Alpine,7,6,False
+7,Canadian Grand Prix,Montreal,ANT,Kimi Antonelli,Mercedes,8,4,False
+7,Canadian Grand Prix,Montreal,BOT,Valtteri Bottas,Cadillac,9,2,False
+7,Canadian Grand Prix,Montreal,PIA,Oscar Piastri,McLaren,10,1,False
+7,Canadian Grand Prix,Montreal,LEC,Charles Leclerc,Ferrari,11,0,False
+7,Canadian Grand Prix,Montreal,LIN,Arvid Lindblad,Racing Bulls,12,0,False
+7,Canadian Grand Prix,Montreal,VER,Max Verstappen,Red Bull Racing,13,0,False
+7,Canadian Grand Prix,Montreal,PER,Sergio Perez,Cadillac,14,0,False
+7,Canadian Grand Prix,Montreal,HUL,Nico Hülkenberg,Audi,15,0,False
+7,Canadian Grand Prix,Montreal,ALO,Fernando Alonso,Aston Martin,16,0,False
+7,Canadian Grand Prix,Montreal,BOR,Gabriel Bortoleto,Audi,17,0,False
+7,Canadian Grand Prix,Montreal,NOR,Lando Norris,McLaren,18,0,False
+7,Canadian Grand Prix,Montreal,STR,Lance Stroll,Aston Martin,19,0,False
+7,Canadian Grand Prix,Montreal,COL,Franco Colapinto,Alpine,20,0,False
+7,Canadian Grand Prix,Montreal,ALB,Alexander Albon,Williams,21,0,False
+7,Canadian Grand Prix,Montreal,BEA,Oliver Bearman,Haas F1 Team,22,0,False
+8,Monaco Grand Prix,Monaco,RUS,George Russell,Mercedes,1,25,False
+8,Monaco Grand Prix,Monaco,HAM,Lewis Hamilton,Ferrari,2,18,False
+8,Monaco Grand Prix,Monaco,BOR,Gabriel Bortoleto,Audi,3,15,False
+8,Monaco Grand Prix,Monaco,BEA,Oliver Bearman,Haas F1 Team,4,12,False
+8,Monaco Grand Prix,Monaco,LEC,Charles Leclerc,Ferrari,5,10,False
+8,Monaco Grand Prix,Monaco,BOT,Valtteri Bottas,Cadillac,6,8,False
+8,Monaco Grand Prix,Monaco,LIN,Arvid Lindblad,Racing Bulls,7,6,False
+8,Monaco Grand Prix,Monaco,HUL,Nico Hülkenberg,Audi,8,4,False
+8,Monaco Grand Prix,Monaco,COL,Franco Colapinto,Alpine,9,2,False
+8,Monaco Grand Prix,Monaco,PIA,Oscar Piastri,McLaren,10,1,False
+8,Monaco Grand Prix,Monaco,VER,Max Verstappen,Red Bull Racing,11,0,False
+8,Monaco Grand Prix,Monaco,GAS,Pierre Gasly,Alpine,12,0,False
+8,Monaco Grand Prix,Monaco,ANT,Kimi Antonelli,Mercedes,13,0,False
+8,Monaco Grand Prix,Monaco,OCO,Esteban Ocon,Haas F1 Team,14,0,False
+8,Monaco Grand Prix,Monaco,HAD,Isack Hadjar,Red Bull Racing,15,0,False
+8,Monaco Grand Prix,Monaco,NOR,Lando Norris,McLaren,16,0,False
+8,Monaco Grand Prix,Monaco,LAW,Liam Lawson,Racing Bulls,17,0,False
+8,Monaco Grand Prix,Monaco,PER,Sergio Perez,Cadillac,18,0,False
+8,Monaco Grand Prix,Monaco,SAI,Carlos Sainz,Williams,19,0,False
+8,Monaco Grand Prix,Monaco,ALB,Alexander Albon,Williams,20,0,False
+8,Monaco Grand Prix,Monaco,STR,Lance Stroll,Aston Martin,21,0,False
+8,Monaco Grand Prix,Monaco,ALO,Fernando Alonso,Aston Martin,22,0,False
+9,Barcelona Grand Prix,Catalonia,RUS,George Russell,Mercedes,1,25,False
+9,Barcelona Grand Prix,Catalonia,ANT,Kimi Antonelli,Mercedes,2,18,False
+9,Barcelona Grand Prix,Catalonia,LEC,Charles Leclerc,Ferrari,3,15,False
+9,Barcelona Grand Prix,Catalonia,PIA,Oscar Piastri,McLaren,4,12,False
+9,Barcelona Grand Prix,Catalonia,HAM,Lewis Hamilton,Ferrari,5,10,False
+9,Barcelona Grand Prix,Catalonia,OCO,Esteban Ocon,Haas F1 Team,6,8,False
+9,Barcelona Grand Prix,Catalonia,LIN,Arvid Lindblad,Racing Bulls,7,6,False
+9,Barcelona Grand Prix,Catalonia,VER,Max Verstappen,Red Bull Racing,8,4,False
+9,Barcelona Grand Prix,Catalonia,BOT,Valtteri Bottas,Cadillac,9,2,False
+9,Barcelona Grand Prix,Catalonia,PER,Sergio Perez,Cadillac,10,1,False
+9,Barcelona Grand Prix,Catalonia,NOR,Lando Norris,McLaren,11,0,False
+9,Barcelona Grand Prix,Catalonia,SAI,Carlos Sainz,Williams,12,0,False
+9,Barcelona Grand Prix,Catalonia,HAD,Isack Hadjar,Red Bull Racing,13,0,False
+9,Barcelona Grand Prix,Catalonia,COL,Franco Colapinto,Alpine,14,0,False
+9,Barcelona Grand Prix,Catalonia,ALB,Alexander Albon,Williams,15,0,False
+9,Barcelona Grand Prix,Catalonia,HUL,Nico Hülkenberg,Audi,16,0,False
+9,Barcelona Grand Prix,Catalonia,ALO,Fernando Alonso,Aston Martin,17,0,False
+9,Barcelona Grand Prix,Catalonia,BEA,Oliver Bearman,Haas F1 Team,18,0,False
+9,Barcelona Grand Prix,Catalonia,GAS,Pierre Gasly,Alpine,19,0,False
+9,Barcelona Grand Prix,Catalonia,STR,Lance Stroll,Aston Martin,20,0,False
+9,Barcelona Grand Prix,Catalonia,LAW,Liam Lawson,Racing Bulls,21,0,False
+9,Barcelona Grand Prix,Catalonia,BOR,Gabriel Bortoleto,Audi,22,0,False
+10,Austrian Grand Prix,Spielberg,LAW,Liam Lawson,Racing Bulls,1,25,False
+10,Austrian Grand Prix,Spielberg,RUS,George Russell,Mercedes,2,18,False
+10,Austrian Grand Prix,Spielberg,ANT,Kimi Antonelli,Mercedes,3,15,False
+10,Austrian Grand Prix,Spielberg,NOR,Lando Norris,McLaren,4,12,False
+10,Austrian Grand Prix,Spielberg,LEC,Charles Leclerc,Ferrari,5,10,False
+10,Austrian Grand Prix,Spielberg,COL,Franco Colapinto,Alpine,6,8,False
+10,Austrian Grand Prix,Spielberg,VER,Max Verstappen,Red Bull Racing,7,6,False
+10,Austrian Grand Prix,Spielberg,STR,Lance Stroll,Aston Martin,8,4,False
+10,Austrian Grand Prix,Spielberg,OCO,Esteban Ocon,Haas F1 Team,9,2,False
+10,Austrian Grand Prix,Spielberg,BEA,Oliver Bearman,Haas F1 Team,10,1,False
+10,Austrian Grand Prix,Spielberg,BOT,Valtteri Bottas,Cadillac,11,0,False
+10,Austrian Grand Prix,Spielberg,HAM,Lewis Hamilton,Ferrari,12,0,False
+10,Austrian Grand Prix,Spielberg,BOR,Gabriel Bortoleto,Audi,13,0,False
+10,Austrian Grand Prix,Spielberg,GAS,Pierre Gasly,Alpine,14,0,False
+10,Austrian Grand Prix,Spielberg,PER,Sergio Perez,Cadillac,15,0,False
+10,Austrian Grand Prix,Spielberg,ALO,Fernando Alonso,Aston Martin,16,0,False
+10,Austrian Grand Prix,Spielberg,HAD,Isack Hadjar,Red Bull Racing,17,0,False
+10,Austrian Grand Prix,Spielberg,PIA,Oscar Piastri,McLaren,18,0,False
+10,Austrian Grand Prix,Spielberg,HUL,Nico Hülkenberg,Audi,19,0,False
+10,Austrian Grand Prix,Spielberg,LIN,Arvid Lindblad,Racing Bulls,20,0,False
+10,Austrian Grand Prix,Spielberg,ALB,Alexander Albon,Williams,21,0,False
+10,Austrian Grand Prix,Spielberg,SAI,Carlos Sainz,Williams,22,0,False
+11,British Grand Prix,Silverstone,RUS,George Russell,Mercedes,1,25,False
+11,British Grand Prix,Silverstone,LEC,Charles Leclerc,Ferrari,2,18,False
+11,British Grand Prix,Silverstone,HAM,Lewis Hamilton,Ferrari,3,15,False
+11,British Grand Prix,Silverstone,NOR,Lando Norris,McLaren,4,12,False
+11,British Grand Prix,Silverstone,HUL,Nico Hülkenberg,Audi,5,10,False
+11,British Grand Prix,Silverstone,ALO,Fernando Alonso,Aston Martin,6,8,False
+11,British Grand Prix,Silverstone,STR,Lance Stroll,Aston Martin,7,6,False
+11,British Grand Prix,Silverstone,VER,Max Verstappen,Red Bull Racing,8,4,False
+11,British Grand Prix,Silverstone,GAS,Pierre Gasly,Alpine,9,2,False
+11,British Grand Prix,Silverstone,PER,Sergio Perez,Cadillac,10,1,False
+11,British Grand Prix,Silverstone,ANT,Kimi Antonelli,Mercedes,11,0,False
+11,British Grand Prix,Silverstone,ALB,Alexander Albon,Williams,12,0,False
+11,British Grand Prix,Silverstone,HAD,Isack Hadjar,Red Bull Racing,13,0,False
+11,British Grand Prix,Silverstone,BOR,Gabriel Bortoleto,Audi,14,0,False
+11,British Grand Prix,Silverstone,LIN,Arvid Lindblad,Racing Bulls,15,0,False
+11,British Grand Prix,Silverstone,SAI,Carlos Sainz,Williams,16,0,False
+11,British Grand Prix,Silverstone,LAW,Liam Lawson,Racing Bulls,17,0,False
+11,British Grand Prix,Silverstone,BEA,Oliver Bearman,Haas F1 Team,18,0,False
+11,British Grand Prix,Silverstone,OCO,Esteban Ocon,Haas F1 Team,19,0,False
+11,British Grand Prix,Silverstone,PIA,Oscar Piastri,McLaren,20,0,False
+11,British Grand Prix,Silverstone,BOT,Valtteri Bottas,Cadillac,21,0,False
+11,British Grand Prix,Silverstone,COL,Franco Colapinto,Alpine,22,0,False
+12,Belgian Grand Prix,Spa,LEC,Charles Leclerc,Ferrari,1,25,False
+12,Belgian Grand Prix,Spa,ANT,Kimi Antonelli,Mercedes,2,18,False
+12,Belgian Grand Prix,Spa,VER,Max Verstappen,Red Bull Racing,3,15,False
+12,Belgian Grand Prix,Spa,COL,Franco Colapinto,Alpine,4,12,False
+12,Belgian Grand Prix,Spa,RUS,George Russell,Mercedes,5,10,False
+12,Belgian Grand Prix,Spa,PER,Sergio Perez,Cadillac,6,8,False
+12,Belgian Grand Prix,Spa,STR,Lance Stroll,Aston Martin,7,6,False
+12,Belgian Grand Prix,Spa,LIN,Arvid Lindblad,Racing Bulls,8,4,False
+12,Belgian Grand Prix,Spa,OCO,Esteban Ocon,Haas F1 Team,9,2,False
+12,Belgian Grand Prix,Spa,PIA,Oscar Piastri,McLaren,10,1,False
+12,Belgian Grand Prix,Spa,HUL,Nico Hülkenberg,Audi,11,0,False
+12,Belgian Grand Prix,Spa,NOR,Lando Norris,McLaren,12,0,False
+12,Belgian Grand Prix,Spa,HAD,Isack Hadjar,Red Bull Racing,13,0,False
+12,Belgian Grand Prix,Spa,ALO,Fernando Alonso,Aston Martin,14,0,False
+12,Belgian Grand Prix,Spa,LAW,Liam Lawson,Racing Bulls,15,0,False
+12,Belgian Grand Prix,Spa,BOT,Valtteri Bottas,Cadillac,16,0,False
+12,Belgian Grand Prix,Spa,SAI,Carlos Sainz,Williams,17,0,False
+12,Belgian Grand Prix,Spa,GAS,Pierre Gasly,Alpine,18,0,False
+12,Belgian Grand Prix,Spa,BEA,Oliver Bearman,Haas F1 Team,19,0,False
+12,Belgian Grand Prix,Spa,BOR,Gabriel Bortoleto,Audi,20,0,False
+12,Belgian Grand Prix,Spa,ALB,Alexander Albon,Williams,21,0,False
+12,Belgian Grand Prix,Spa,HAM,Lewis Hamilton,Ferrari,22,0,False
+13,Hungarian Grand Prix,Budapest,LEC,Charles Leclerc,Ferrari,1,25,False
+13,Hungarian Grand Prix,Budapest,LAW,Liam Lawson,Racing Bulls,2,18,False
+13,Hungarian Grand Prix,Budapest,ANT,Kimi Antonelli,Mercedes,3,15,False
+13,Hungarian Grand Prix,Budapest,RUS,George Russell,Mercedes,4,12,False
+13,Hungarian Grand Prix,Budapest,ALB,Alexander Albon,Williams,5,10,False
+13,Hungarian Grand Prix,Budapest,PER,Sergio Perez,Cadillac,6,8,False
+13,Hungarian Grand Prix,Budapest,PIA,Oscar Piastri,McLaren,7,6,False
+13,Hungarian Grand Prix,Budapest,NOR,Lando Norris,McLaren,8,4,False
+13,Hungarian Grand Prix,Budapest,HUL,Nico Hülkenberg,Audi,9,2,False
+13,Hungarian Grand Prix,Budapest,LIN,Arvid Lindblad,Racing Bulls,10,1,False
+13,Hungarian Grand Prix,Budapest,OCO,Esteban Ocon,Haas F1 Team,11,0,False
+13,Hungarian Grand Prix,Budapest,HAM,Lewis Hamilton,Ferrari,12,0,False
+13,Hungarian Grand Prix,Budapest,VER,Max Verstappen,Red Bull Racing,13,0,False
+13,Hungarian Grand Prix,Budapest,BEA,Oliver Bearman,Haas F1 Team,14,0,False
+13,Hungarian Grand Prix,Budapest,HAD,Isack Hadjar,Red Bull Racing,15,0,False
+13,Hungarian Grand Prix,Budapest,GAS,Pierre Gasly,Alpine,16,0,False
+13,Hungarian Grand Prix,Budapest,ALO,Fernando Alonso,Aston Martin,17,0,False
+13,Hungarian Grand Prix,Budapest,BOT,Valtteri Bottas,Cadillac,18,0,False
+13,Hungarian Grand Prix,Budapest,STR,Lance Stroll,Aston Martin,19,0,False
+13,Hungarian Grand Prix,Budapest,SAI,Carlos Sainz,Williams,20,0,False
+13,Hungarian Grand Prix,Budapest,BOR,Gabriel Bortoleto,Audi,21,0,False
+13,Hungarian Grand Prix,Budapest,COL,Franco Colapinto,Alpine,22,0,False
+14,Dutch Grand Prix,Zandvoort,LIN,Arvid Lindblad,Racing Bulls,1,25,False
+14,Dutch Grand Prix,Zandvoort,VER,Max Verstappen,Red Bull Racing,2,18,False
+14,Dutch Grand Prix,Zandvoort,HUL,Nico Hülkenberg,Audi,3,15,False
+14,Dutch Grand Prix,Zandvoort,PIA,Oscar Piastri,McLaren,4,12,False
+14,Dutch Grand Prix,Zandvoort,LAW,Liam Lawson,Racing Bulls,5,10,False
+14,Dutch Grand Prix,Zandvoort,ANT,Kimi Antonelli,Mercedes,6,8,False
+14,Dutch Grand Prix,Zandvoort,BOR,Gabriel Bortoleto,Audi,7,6,False
+14,Dutch Grand Prix,Zandvoort,BOT,Valtteri Bottas,Cadillac,8,4,False
+14,Dutch Grand Prix,Zandvoort,RUS,George Russell,Mercedes,9,2,False
+14,Dutch Grand Prix,Zandvoort,HAM,Lewis Hamilton,Ferrari,10,1,False
+14,Dutch Grand Prix,Zandvoort,COL,Franco Colapinto,Alpine,11,0,False
+14,Dutch Grand Prix,Zandvoort,OCO,Esteban Ocon,Haas F1 Team,12,0,False
+14,Dutch Grand Prix,Zandvoort,SAI,Carlos Sainz,Williams,13,0,False
+14,Dutch Grand Prix,Zandvoort,LEC,Charles Leclerc,Ferrari,14,0,False
+14,Dutch Grand Prix,Zandvoort,PER,Sergio Perez,Cadillac,15,0,False
+14,Dutch Grand Prix,Zandvoort,ALO,Fernando Alonso,Aston Martin,16,0,False
+14,Dutch Grand Prix,Zandvoort,STR,Lance Stroll,Aston Martin,17,0,False
+14,Dutch Grand Prix,Zandvoort,BEA,Oliver Bearman,Haas F1 Team,18,0,False
+14,Dutch Grand Prix,Zandvoort,NOR,Lando Norris,McLaren,19,0,False
+14,Dutch Grand Prix,Zandvoort,HAD,Isack Hadjar,Red Bull Racing,20,0,False
+14,Dutch Grand Prix,Zandvoort,GAS,Pierre Gasly,Alpine,21,0,False
+14,Dutch Grand Prix,Zandvoort,ALB,Alexander Albon,Williams,22,0,False
+15,Italian Grand Prix,Monza,ANT,Kimi Antonelli,Mercedes,1,25,False
+15,Italian Grand Prix,Monza,LEC,Charles Leclerc,Ferrari,2,18,False
+15,Italian Grand Prix,Monza,RUS,George Russell,Mercedes,3,15,False
+15,Italian Grand Prix,Monza,HAD,Isack Hadjar,Red Bull Racing,4,12,False
+15,Italian Grand Prix,Monza,HUL,Nico Hülkenberg,Audi,5,10,False
+15,Italian Grand Prix,Monza,LIN,Arvid Lindblad,Racing Bulls,6,8,False
+15,Italian Grand Prix,Monza,GAS,Pierre Gasly,Alpine,7,6,False
+15,Italian Grand Prix,Monza,LAW,Liam Lawson,Racing Bulls,8,4,False
+15,Italian Grand Prix,Monza,HAM,Lewis Hamilton,Ferrari,9,2,False
+15,Italian Grand Prix,Monza,BEA,Oliver Bearman,Haas F1 Team,10,1,False
+15,Italian Grand Prix,Monza,PIA,Oscar Piastri,McLaren,11,0,False
+15,Italian Grand Prix,Monza,BOT,Valtteri Bottas,Cadillac,12,0,False
+15,Italian Grand Prix,Monza,ALO,Fernando Alonso,Aston Martin,13,0,False
+15,Italian Grand Prix,Monza,PER,Sergio Perez,Cadillac,14,0,False
+15,Italian Grand Prix,Monza,STR,Lance Stroll,Aston Martin,15,0,False
+15,Italian Grand Prix,Monza,OCO,Esteban Ocon,Haas F1 Team,16,0,False
+15,Italian Grand Prix,Monza,NOR,Lando Norris,McLaren,17,0,False
+15,Italian Grand Prix,Monza,BOR,Gabriel Bortoleto,Audi,18,0,False
+15,Italian Grand Prix,Monza,VER,Max Verstappen,Red Bull Racing,19,0,False
+15,Italian Grand Prix,Monza,ALB,Alexander Albon,Williams,20,0,False
+15,Italian Grand Prix,Monza,SAI,Carlos Sainz,Williams,21,0,False
+15,Italian Grand Prix,Monza,COL,Franco Colapinto,Alpine,22,0,False
+16,Spanish Grand Prix,Valencia,RUS,George Russell,Mercedes,1,25,False
+16,Spanish Grand Prix,Valencia,LEC,Charles Leclerc,Ferrari,2,18,False
+16,Spanish Grand Prix,Valencia,ANT,Kimi Antonelli,Mercedes,3,15,False
+16,Spanish Grand Prix,Valencia,HAM,Lewis Hamilton,Ferrari,4,12,False
+16,Spanish Grand Prix,Valencia,ALO,Fernando Alonso,Aston Martin,5,10,False
+16,Spanish Grand Prix,Valencia,SAI,Carlos Sainz,Williams,6,8,False
+16,Spanish Grand Prix,Valencia,PIA,Oscar Piastri,McLaren,7,6,False
+16,Spanish Grand Prix,Valencia,HAD,Isack Hadjar,Red Bull Racing,8,4,False
+16,Spanish Grand Prix,Valencia,GAS,Pierre Gasly,Alpine,9,2,False
+16,Spanish Grand Prix,Valencia,BOR,Gabriel Bortoleto,Audi,10,1,False
+16,Spanish Grand Prix,Valencia,PER,Sergio Perez,Cadillac,11,0,False
+16,Spanish Grand Prix,Valencia,HUL,Nico Hülkenberg,Audi,12,0,False
+16,Spanish Grand Prix,Valencia,LAW,Liam Lawson,Racing Bulls,13,0,False
+16,Spanish Grand Prix,Valencia,BEA,Oliver Bearman,Haas F1 Team,14,0,False
+16,Spanish Grand Prix,Valencia,VER,Max Verstappen,Red Bull Racing,15,0,False
+16,Spanish Grand Prix,Valencia,STR,Lance Stroll,Aston Martin,16,0,False
+16,Spanish Grand Prix,Valencia,LIN,Arvid Lindblad,Racing Bulls,17,0,False
+16,Spanish Grand Prix,Valencia,COL,Franco Colapinto,Alpine,18,0,False
+16,Spanish Grand Prix,Valencia,OCO,Esteban Ocon,Haas F1 Team,19,0,False
+16,Spanish Grand Prix,Valencia,BOT,Valtteri Bottas,Cadillac,20,0,False
+16,Spanish Grand Prix,Valencia,NOR,Lando Norris,McLaren,21,0,False
+16,Spanish Grand Prix,Valencia,ALB,Alexander Albon,Williams,22,0,False
+17,Azerbaijan Grand Prix,Baku,ANT,Kimi Antonelli,Mercedes,1,25,False
+17,Azerbaijan Grand Prix,Baku,GAS,Pierre Gasly,Alpine,2,18,False
+17,Azerbaijan Grand Prix,Baku,RUS,George Russell,Mercedes,3,15,False
+17,Azerbaijan Grand Prix,Baku,HAM,Lewis Hamilton,Ferrari,4,12,False
+17,Azerbaijan Grand Prix,Baku,NOR,Lando Norris,McLaren,5,10,False
+17,Azerbaijan Grand Prix,Baku,HAD,Isack Hadjar,Red Bull Racing,6,8,False
+17,Azerbaijan Grand Prix,Baku,OCO,Esteban Ocon,Haas F1 Team,7,6,False
+17,Azerbaijan Grand Prix,Baku,LIN,Arvid Lindblad,Racing Bulls,8,4,False
+17,Azerbaijan Grand Prix,Baku,LEC,Charles Leclerc,Ferrari,9,2,False
+17,Azerbaijan Grand Prix,Baku,SAI,Carlos Sainz,Williams,10,1,False
+17,Azerbaijan Grand Prix,Baku,PER,Sergio Perez,Cadillac,11,0,False
+17,Azerbaijan Grand Prix,Baku,LAW,Liam Lawson,Racing Bulls,12,0,False
+17,Azerbaijan Grand Prix,Baku,ALO,Fernando Alonso,Aston Martin,13,0,False
+17,Azerbaijan Grand Prix,Baku,BOR,Gabriel Bortoleto,Audi,14,0,False
+17,Azerbaijan Grand Prix,Baku,HUL,Nico Hülkenberg,Audi,15,0,False
+17,Azerbaijan Grand Prix,Baku,BOT,Valtteri Bottas,Cadillac,16,0,False
+17,Azerbaijan Grand Prix,Baku,COL,Franco Colapinto,Alpine,17,0,False
+17,Azerbaijan Grand Prix,Baku,STR,Lance Stroll,Aston Martin,18,0,False
+17,Azerbaijan Grand Prix,Baku,BEA,Oliver Bearman,Haas F1 Team,19,0,False
+17,Azerbaijan Grand Prix,Baku,VER,Max Verstappen,Red Bull Racing,20,0,False
+17,Azerbaijan Grand Prix,Baku,ALB,Alexander Albon,Williams,21,0,False
+17,Azerbaijan Grand Prix,Baku,PIA,Oscar Piastri,McLaren,22,0,False
+18,Singapore Grand Prix,Singapore,PIA,Oscar Piastri,McLaren,1,25,False
+18,Singapore Grand Prix,Singapore,ANT,Kimi Antonelli,Mercedes,2,18,False
+18,Singapore Grand Prix,Singapore,LIN,Arvid Lindblad,Racing Bulls,3,15,False
+18,Singapore Grand Prix,Singapore,NOR,Lando Norris,McLaren,4,12,False
+18,Singapore Grand Prix,Singapore,BOR,Gabriel Bortoleto,Audi,5,10,False
+18,Singapore Grand Prix,Singapore,BEA,Oliver Bearman,Haas F1 Team,6,8,False
+18,Singapore Grand Prix,Singapore,HAM,Lewis Hamilton,Ferrari,7,6,False
+18,Singapore Grand Prix,Singapore,VER,Max Verstappen,Red Bull Racing,8,4,False
+18,Singapore Grand Prix,Singapore,ALB,Alexander Albon,Williams,9,2,False
+18,Singapore Grand Prix,Singapore,COL,Franco Colapinto,Alpine,10,1,False
+18,Singapore Grand Prix,Singapore,SAI,Carlos Sainz,Williams,11,0,False
+18,Singapore Grand Prix,Singapore,LEC,Charles Leclerc,Ferrari,12,0,False
+18,Singapore Grand Prix,Singapore,HUL,Nico Hülkenberg,Audi,13,0,False
+18,Singapore Grand Prix,Singapore,LAW,Liam Lawson,Racing Bulls,14,0,False
+18,Singapore Grand Prix,Singapore,RUS,George Russell,Mercedes,15,0,False
+18,Singapore Grand Prix,Singapore,STR,Lance Stroll,Aston Martin,16,0,False
+18,Singapore Grand Prix,Singapore,HAD,Isack Hadjar,Red Bull Racing,17,0,False
+18,Singapore Grand Prix,Singapore,PER,Sergio Perez,Cadillac,18,0,False
+18,Singapore Grand Prix,Singapore,GAS,Pierre Gasly,Alpine,19,0,False
+18,Singapore Grand Prix,Singapore,BOT,Valtteri Bottas,Cadillac,20,0,False
+18,Singapore Grand Prix,Singapore,ALO,Fernando Alonso,Aston Martin,21,0,False
+18,Singapore Grand Prix,Singapore,OCO,Esteban Ocon,Haas F1 Team,22,0,False
+19,United States Grand Prix,Austin,LEC,Charles Leclerc,Ferrari,1,25,False
+19,United States Grand Prix,Austin,ANT,Kimi Antonelli,Mercedes,2,18,False
+19,United States Grand Prix,Austin,BOT,Valtteri Bottas,Cadillac,3,15,False
+19,United States Grand Prix,Austin,RUS,George Russell,Mercedes,4,12,False
+19,United States Grand Prix,Austin,GAS,Pierre Gasly,Alpine,5,10,False
+19,United States Grand Prix,Austin,LAW,Liam Lawson,Racing Bulls,6,8,False
+19,United States Grand Prix,Austin,VER,Max Verstappen,Red Bull Racing,7,6,False
+19,United States Grand Prix,Austin,HAM,Lewis Hamilton,Ferrari,8,4,False
+19,United States Grand Prix,Austin,HAD,Isack Hadjar,Red Bull Racing,9,2,False
+19,United States Grand Prix,Austin,LIN,Arvid Lindblad,Racing Bulls,10,1,False
+19,United States Grand Prix,Austin,NOR,Lando Norris,McLaren,11,0,False
+19,United States Grand Prix,Austin,SAI,Carlos Sainz,Williams,12,0,False
+19,United States Grand Prix,Austin,BEA,Oliver Bearman,Haas F1 Team,13,0,False
+19,United States Grand Prix,Austin,PIA,Oscar Piastri,McLaren,14,0,False
+19,United States Grand Prix,Austin,PER,Sergio Perez,Cadillac,15,0,False
+19,United States Grand Prix,Austin,ALO,Fernando Alonso,Aston Martin,16,0,False
+19,United States Grand Prix,Austin,OCO,Esteban Ocon,Haas F1 Team,17,0,False
+19,United States Grand Prix,Austin,ALB,Alexander Albon,Williams,18,0,False
+19,United States Grand Prix,Austin,BOR,Gabriel Bortoleto,Audi,19,0,False
+19,United States Grand Prix,Austin,COL,Franco Colapinto,Alpine,20,0,False
+19,United States Grand Prix,Austin,STR,Lance Stroll,Aston Martin,21,0,False
+19,United States Grand Prix,Austin,HUL,Nico Hülkenberg,Audi,22,0,False
+20,Mexico City Grand Prix,Mexico City,RUS,George Russell,Mercedes,1,25,False
+20,Mexico City Grand Prix,Mexico City,BEA,Oliver Bearman,Haas F1 Team,2,18,False
+20,Mexico City Grand Prix,Mexico City,ANT,Kimi Antonelli,Mercedes,3,15,False
+20,Mexico City Grand Prix,Mexico City,VER,Max Verstappen,Red Bull Racing,4,12,False
+20,Mexico City Grand Prix,Mexico City,HAM,Lewis Hamilton,Ferrari,5,10,False
+20,Mexico City Grand Prix,Mexico City,LEC,Charles Leclerc,Ferrari,6,8,False
+20,Mexico City Grand Prix,Mexico City,LIN,Arvid Lindblad,Racing Bulls,7,6,False
+20,Mexico City Grand Prix,Mexico City,PER,Sergio Perez,Cadillac,8,4,False
+20,Mexico City Grand Prix,Mexico City,SAI,Carlos Sainz,Williams,9,2,False
+20,Mexico City Grand Prix,Mexico City,BOR,Gabriel Bortoleto,Audi,10,1,False
+20,Mexico City Grand Prix,Mexico City,LAW,Liam Lawson,Racing Bulls,11,0,False
+20,Mexico City Grand Prix,Mexico City,GAS,Pierre Gasly,Alpine,12,0,False
+20,Mexico City Grand Prix,Mexico City,BOT,Valtteri Bottas,Cadillac,13,0,False
+20,Mexico City Grand Prix,Mexico City,OCO,Esteban Ocon,Haas F1 Team,14,0,False
+20,Mexico City Grand Prix,Mexico City,NOR,Lando Norris,McLaren,15,0,False
+20,Mexico City Grand Prix,Mexico City,ALB,Alexander Albon,Williams,16,0,False
+20,Mexico City Grand Prix,Mexico City,COL,Franco Colapinto,Alpine,17,0,False
+20,Mexico City Grand Prix,Mexico City,HAD,Isack Hadjar,Red Bull Racing,18,0,False
+20,Mexico City Grand Prix,Mexico City,PIA,Oscar Piastri,McLaren,19,0,False
+20,Mexico City Grand Prix,Mexico City,ALO,Fernando Alonso,Aston Martin,20,0,False
+20,Mexico City Grand Prix,Mexico City,STR,Lance Stroll,Aston Martin,21,0,False
+20,Mexico City Grand Prix,Mexico City,HUL,Nico Hülkenberg,Audi,22,0,False
+21,São Paulo Grand Prix,Interlagos,ANT,Kimi Antonelli,Mercedes,1,25,False
+21,São Paulo Grand Prix,Interlagos,HAM,Lewis Hamilton,Ferrari,2,18,False
+21,São Paulo Grand Prix,Interlagos,LEC,Charles Leclerc,Ferrari,3,15,False
+21,São Paulo Grand Prix,Interlagos,STR,Lance Stroll,Aston Martin,4,12,False
+21,São Paulo Grand Prix,Interlagos,VER,Max Verstappen,Red Bull Racing,5,10,False
+21,São Paulo Grand Prix,Interlagos,RUS,George Russell,Mercedes,6,8,False
+21,São Paulo Grand Prix,Interlagos,SAI,Carlos Sainz,Williams,7,6,False
+21,São Paulo Grand Prix,Interlagos,HUL,Nico Hülkenberg,Audi,8,4,False
+21,São Paulo Grand Prix,Interlagos,HAD,Isack Hadjar,Red Bull Racing,9,2,False
+21,São Paulo Grand Prix,Interlagos,LIN,Arvid Lindblad,Racing Bulls,10,1,False
+21,São Paulo Grand Prix,Interlagos,COL,Franco Colapinto,Alpine,11,0,False
+21,São Paulo Grand Prix,Interlagos,PIA,Oscar Piastri,McLaren,12,0,False
+21,São Paulo Grand Prix,Interlagos,NOR,Lando Norris,McLaren,13,0,False
+21,São Paulo Grand Prix,Interlagos,BEA,Oliver Bearman,Haas F1 Team,14,0,False
+21,São Paulo Grand Prix,Interlagos,BOT,Valtteri Bottas,Cadillac,15,0,False
+21,São Paulo Grand Prix,Interlagos,ALB,Alexander Albon,Williams,16,0,False
+21,São Paulo Grand Prix,Interlagos,LAW,Liam Lawson,Racing Bulls,17,0,False
+21,São Paulo Grand Prix,Interlagos,ALO,Fernando Alonso,Aston Martin,18,0,False
+21,São Paulo Grand Prix,Interlagos,PER,Sergio Perez,Cadillac,19,0,False
+21,São Paulo Grand Prix,Interlagos,OCO,Esteban Ocon,Haas F1 Team,20,0,False
+21,São Paulo Grand Prix,Interlagos,BOR,Gabriel Bortoleto,Audi,21,0,False
+21,São Paulo Grand Prix,Interlagos,GAS,Pierre Gasly,Alpine,22,0,False
+22,Las Vegas Grand Prix,Las Vegas,HAM,Lewis Hamilton,Ferrari,1,25,False
+22,Las Vegas Grand Prix,Las Vegas,RUS,George Russell,Mercedes,2,18,False
+22,Las Vegas Grand Prix,Las Vegas,NOR,Lando Norris,McLaren,3,15,False
+22,Las Vegas Grand Prix,Las Vegas,PER,Sergio Perez,Cadillac,4,12,False
+22,Las Vegas Grand Prix,Las Vegas,COL,Franco Colapinto,Alpine,5,10,False
+22,Las Vegas Grand Prix,Las Vegas,GAS,Pierre Gasly,Alpine,6,8,False
+22,Las Vegas Grand Prix,Las Vegas,ANT,Kimi Antonelli,Mercedes,7,6,False
+22,Las Vegas Grand Prix,Las Vegas,PIA,Oscar Piastri,McLaren,8,4,False
+22,Las Vegas Grand Prix,Las Vegas,STR,Lance Stroll,Aston Martin,9,2,False
+22,Las Vegas Grand Prix,Las Vegas,LEC,Charles Leclerc,Ferrari,10,1,False
+22,Las Vegas Grand Prix,Las Vegas,OCO,Esteban Ocon,Haas F1 Team,11,0,False
+22,Las Vegas Grand Prix,Las Vegas,BOT,Valtteri Bottas,Cadillac,12,0,False
+22,Las Vegas Grand Prix,Las Vegas,HUL,Nico Hülkenberg,Audi,13,0,False
+22,Las Vegas Grand Prix,Las Vegas,VER,Max Verstappen,Red Bull Racing,14,0,False
+22,Las Vegas Grand Prix,Las Vegas,LIN,Arvid Lindblad,Racing Bulls,15,0,False
+22,Las Vegas Grand Prix,Las Vegas,LAW,Liam Lawson,Racing Bulls,16,0,False
+22,Las Vegas Grand Prix,Las Vegas,HAD,Isack Hadjar,Red Bull Racing,17,0,False
+22,Las Vegas Grand Prix,Las Vegas,ALO,Fernando Alonso,Aston Martin,18,0,False
+22,Las Vegas Grand Prix,Las Vegas,SAI,Carlos Sainz,Williams,19,0,False
+22,Las Vegas Grand Prix,Las Vegas,BEA,Oliver Bearman,Haas F1 Team,20,0,False
+22,Las Vegas Grand Prix,Las Vegas,BOR,Gabriel Bortoleto,Audi,21,0,False
+22,Las Vegas Grand Prix,Las Vegas,ALB,Alexander Albon,Williams,22,0,False
+23,Qatar Grand Prix,Lusail,HAM,Lewis Hamilton,Ferrari,1,25,False
+23,Qatar Grand Prix,Lusail,BOT,Valtteri Bottas,Cadillac,2,18,False
+23,Qatar Grand Prix,Lusail,ANT,Kimi Antonelli,Mercedes,3,15,False
+23,Qatar Grand Prix,Lusail,LEC,Charles Leclerc,Ferrari,4,12,False
+23,Qatar Grand Prix,Lusail,OCO,Esteban Ocon,Haas F1 Team,5,10,False
+23,Qatar Grand Prix,Lusail,HAD,Isack Hadjar,Red Bull Racing,6,8,False
+23,Qatar Grand Prix,Lusail,NOR,Lando Norris,McLaren,7,6,False
+23,Qatar Grand Prix,Lusail,BEA,Oliver Bearman,Haas F1 Team,8,4,False
+23,Qatar Grand Prix,Lusail,LAW,Liam Lawson,Racing Bulls,9,2,False
+23,Qatar Grand Prix,Lusail,RUS,George Russell,Mercedes,10,1,False
+23,Qatar Grand Prix,Lusail,LIN,Arvid Lindblad,Racing Bulls,11,0,False
+23,Qatar Grand Prix,Lusail,ALO,Fernando Alonso,Aston Martin,12,0,False
+23,Qatar Grand Prix,Lusail,VER,Max Verstappen,Red Bull Racing,13,0,False
+23,Qatar Grand Prix,Lusail,STR,Lance Stroll,Aston Martin,14,0,False
+23,Qatar Grand Prix,Lusail,SAI,Carlos Sainz,Williams,15,0,False
+23,Qatar Grand Prix,Lusail,ALB,Alexander Albon,Williams,16,0,False
+23,Qatar Grand Prix,Lusail,HUL,Nico Hülkenberg,Audi,17,0,False
+23,Qatar Grand Prix,Lusail,COL,Franco Colapinto,Alpine,18,0,False
+23,Qatar Grand Prix,Lusail,PER,Sergio Perez,Cadillac,19,0,False
+23,Qatar Grand Prix,Lusail,BOR,Gabriel Bortoleto,Audi,20,0,False
+23,Qatar Grand Prix,Lusail,PIA,Oscar Piastri,McLaren,21,0,False
+23,Qatar Grand Prix,Lusail,GAS,Pierre Gasly,Alpine,22,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,ANT,Kimi Antonelli,Mercedes,1,25,False
+24,Abu Dhabi Grand Prix,Yas Marina,LEC,Charles Leclerc,Ferrari,2,18,False
+24,Abu Dhabi Grand Prix,Yas Marina,STR,Lance Stroll,Aston Martin,3,15,False
+24,Abu Dhabi Grand Prix,Yas Marina,RUS,George Russell,Mercedes,4,12,False
+24,Abu Dhabi Grand Prix,Yas Marina,LAW,Liam Lawson,Racing Bulls,5,10,False
+24,Abu Dhabi Grand Prix,Yas Marina,BOR,Gabriel Bortoleto,Audi,6,8,False
+24,Abu Dhabi Grand Prix,Yas Marina,ALB,Alexander Albon,Williams,7,6,False
+24,Abu Dhabi Grand Prix,Yas Marina,BOT,Valtteri Bottas,Cadillac,8,4,False
+24,Abu Dhabi Grand Prix,Yas Marina,OCO,Esteban Ocon,Haas F1 Team,9,2,False
+24,Abu Dhabi Grand Prix,Yas Marina,NOR,Lando Norris,McLaren,10,1,False
+24,Abu Dhabi Grand Prix,Yas Marina,PIA,Oscar Piastri,McLaren,11,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,HAM,Lewis Hamilton,Ferrari,12,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,COL,Franco Colapinto,Alpine,13,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,SAI,Carlos Sainz,Williams,14,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,VER,Max Verstappen,Red Bull Racing,15,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,BEA,Oliver Bearman,Haas F1 Team,16,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,PER,Sergio Perez,Cadillac,17,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,HAD,Isack Hadjar,Red Bull Racing,18,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,HUL,Nico Hülkenberg,Audi,19,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,ALO,Fernando Alonso,Aston Martin,20,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,LIN,Arvid Lindblad,Racing Bulls,21,0,False
+24,Abu Dhabi Grand Prix,Yas Marina,GAS,Pierre Gasly,Alpine,22,0,False
