@@ -491,6 +491,84 @@ def project_wdc(pred_df):
     return pts
 
 
+def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
+    # write a plain-text summary of the 2026 WDC predictions so it can be
+    # included in the report without needing to open a CSV or plot
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, "2026_wdc_predictions.txt")
+
+    # full driver name lookup — three-letter codes from the feature data map to full names
+    full_names = {
+        "VER": "Max Verstappen",     "NOR": "Lando Norris",
+        "LEC": "Charles Leclerc",    "PIA": "Oscar Piastri",
+        "SAI": "Carlos Sainz",       "RUS": "George Russell",
+        "HAM": "Lewis Hamilton",     "ALO": "Fernando Alonso",
+        "STR": "Lance Stroll",       "GAS": "Pierre Gasly",
+        "OCO": "Esteban Ocon",       "TSU": "Yuki Tsunoda",
+        "ALB": "Alexander Albon",    "BOT": "Valtteri Bottas",
+        "ZHO": "Guanyu Zhou",        "MAG": "Kevin Magnussen",
+        "HUL": "Nico Hülkenberg",    "LAW": "Liam Lawson",
+        "BEA": "Oliver Bearman",     "ANT": "Kimi Antonelli",
+        "HAD": "Isack Hadjar",       "DOO": "Jack Doohan",
+        "SAR": "Logan Sargeant",     "COL": "Franco Colapinto",
+        "PER": "Sergio Perez",       "RIC": "Daniel Ricciardo",
+    }
+
+    champion_row = wdc_df.iloc[0]
+    champion_abbr = champion_row["Driver"]
+    champion_name = full_names.get(champion_abbr, champion_abbr)
+    champion_team = str(champion_row.get("Team", ""))
+    champion_pts  = int(champion_row["predicted_points"])
+
+    lines = [
+        "=" * 62,
+        "  2026 F1 WORLD CHAMPIONSHIP — PREDICTED FINAL STANDINGS",
+        "=" * 62,
+        f"  Races predicted : {n_predicted} of {n_total}",
+        f"  Model           : 3-model BMA ensemble (XGBoost Regressor +",
+        f"                    XGBoost Ranker + Random Forest + ExtraTrees)",
+        f"  Training data   : 2022–2025 seasons",
+        "",
+        "  NOTE: 2026 introduces the largest regulation change since 2014",
+        "  (active aerodynamics + all-new hybrid power units). Historical",
+        "  team performance rankings may not carry forward. These",
+        "  predictions reflect driver-skill and circuit-history signals;",
+        "  treat them as directional, not definitive.",
+        "",
+        "─" * 62,
+        f"  PREDICTED WORLD CHAMPION:",
+        f"    {champion_name} ({champion_team})  —  {champion_pts} projected points",
+        "─" * 62,
+        "",
+        f"  {'Rank':>4}  {'Driver':<22}  {'Team':<28}  {'Pred Pts':>9}",
+        f"  {'────':>4}  {'──────────────────────':22}  {'────────────────────────────':28}  {'─────────':>9}",
+    ]
+
+    for _, row in wdc_df.iterrows():
+        abbr      = row["Driver"]
+        full      = full_names.get(abbr, abbr)
+        team      = str(row.get("Team", ""))[:28]
+        pts       = int(row["predicted_points"])
+        rank      = int(row["predicted_rank"])
+        act_note  = ""
+        if "actual_points_sofar" in row and pd.notna(row.get("actual_points_sofar")):
+            act_note = f"  (actual so far: {int(row['actual_points_sofar'])} pts)"
+        lines.append(
+            f"  {rank:>4}  {full:<22}  {team:<28}  {pts:>9}{act_note}"
+        )
+
+    lines += [
+        "",
+        "=" * 62,
+    ]
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"  → WDC predictions text: {path}")
+    return path
+
+
 def print_wdc_projection(wdc_df, n_predicted, n_total):
     # console printout of the standings table - good for a quick sanity check
     print(f"\n  2026 WDC Projection  ({n_predicted}/{n_total} races predicted)")
@@ -886,6 +964,7 @@ def main():
         pass  # if schedule fetch fails just use what we have
 
     print_wdc_projection(wdc_df, n_races_predicted, n_total)
+    txt_path = write_wdc_predictions_txt(wdc_df, n_races_predicted, n_total, DATA_DIR)
     plot_wdc_projection(wdc_df, n_races_predicted, PLOT_DIR)
     plot_season_predictions(pred_df, PLOT_DIR)
     plot_accuracy_timeline(metrics_df, PLOT_DIR)
@@ -896,6 +975,7 @@ def main():
     print(f"  Data:        {DATA_DIR}/")
     print(f"  Predictions: {PRED_2026}")
     print(f"  WDC table:   {WDC_2026}")
+    print(f"  Rankings txt:{txt_path}")
     print("=" * 60)
 
 

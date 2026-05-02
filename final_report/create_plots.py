@@ -35,6 +35,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib.colors import LinearSegmentedColormap, PowerNorm
 from matplotlib.ticker import MultipleLocator
 from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
 
 warnings.filterwarnings("ignore")   # FastF1 and scipy both love to warn about things we know
 
@@ -205,22 +206,25 @@ def plot_rq1a_quali_delta():
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
 
-    # use team colors with a lighter variant for the second driver
+    # Each driver gets a distinct color AND marker shape.
+    # Lighter-shade pairs (old approach) looked identical — now D1 = team color + circle,
+    # D2 = clearly contrasting color + square so you can tell them apart at a glance.
     np.random.seed(42)
-    team_base = {
-        "Red Bull Racing":  ["#3671C6", "#7EAADF"],
-        "Mercedes":         ["#00D2BE", "#99EDE7"],
-        "Ferrari":          ["#E8002D", "#F07088"],
-        "McLaren":          ["#FF8000", "#FFBA70"],
-        "Aston Martin":     ["#358C75", "#7DC4B0"],
-        "Alpine":           ["#FF87BC", "#FFBCD8"],
+    team_driver_styles = {
+        "Red Bull Racing":  [("#3671C6", "o"), ("#B44FCC", "s")],   # blue circle, purple square
+        "Mercedes":         [("#00D2BE", "o"), ("#F97316", "s")],   # teal circle, orange square
+        "Ferrari":          [("#E8002D", "o"), ("#FACC15", "s")],   # red circle, gold square
+        "McLaren":          [("#FF8000", "o"), ("#0EA5E9", "s")],   # orange circle, sky-blue square
+        "Aston Martin":     [("#358C75", "o"), ("#A3E635", "s")],   # dark-green circle, lime square
+        "Alpine":           [("#FF87BC", "o"), ("#7C3AED", "s")],   # pink circle, violet square
     }
-    driver_colors = {}
+    # (color, marker) per driver
+    driver_styles = {}
     for team in teams_ordered:
         drivers = all_drivers[team]
-        colors  = team_base.get(team, ["#666666", "#AAAAAA"])
+        styles  = team_driver_styles.get(team, [("#666666", "o"), ("#AAAAAA", "s")])
         for i, drv in enumerate(drivers):
-            driver_colors[drv] = colors[i % len(colors)]
+            driver_styles[drv] = styles[i % len(styles)]
 
     x_positions = {team: i for i, team in enumerate(teams_ordered)}
     jitter_w = 0.35
@@ -232,10 +236,15 @@ def plot_rq1a_quali_delta():
             drv_data = team_data[team_data["Driver"] == driver]["Delta"].values
             if len(drv_data) == 0:
                 continue
+            drv_color, drv_marker = driver_styles[driver]
             jitter = np.random.uniform(-jitter_w, jitter_w, size=len(drv_data))
             ax.scatter(x_base + jitter, drv_data,
-                       color=driver_colors[driver], alpha=0.75, s=30, zorder=3,
-                       label=driver)
+                       color=drv_color, marker=drv_marker,
+                       alpha=0.70, s=35, zorder=3, label=driver)
+            # median dot: larger, with white edge so it stands out from the scatter cloud
+            med = np.median(drv_data)
+            ax.scatter(x_base, med, color=drv_color, marker=drv_marker,
+                       s=160, zorder=5, edgecolors="white", linewidths=1.5)
 
     ax.axhline(0, color=DARK, linewidth=1.2, linestyle="--", alpha=0.5, zorder=2)
 
@@ -284,10 +293,15 @@ def plot_rq1a_quali_delta():
         for drv in all_drivers[team]:
             if drv not in seen:
                 seen.add(drv)
-                handles.append(mpatches.Patch(color=driver_colors[drv], label=drv))
+                drv_color, drv_marker = driver_styles[drv]
+                handles.append(Line2D(
+                    [0], [0], marker=drv_marker, color="none",
+                    markerfacecolor=drv_color, markeredgecolor="white",
+                    markeredgewidth=0.8, markersize=9, label=drv,
+                ))
 
-    ax.legend(handles=handles, title="Driver", bbox_to_anchor=(1.01, 1),
-              loc="upper left", fontsize=8.5, title_fontsize=9,
+    ax.legend(handles=handles, title="Driver  (● = faster, ■ = slower)", bbox_to_anchor=(1.01, 1),
+              loc="upper left", fontsize=8.5, title_fontsize=8.5,
               framealpha=0.9, ncol=1)
 
     plt.tight_layout()
@@ -1897,10 +1911,15 @@ def plot_fastf1_teammate_quali_duel():
     # this is the data we'll fill — if FastF1 fails we use synthetic fallback
     tel1_data, tel2_data = None, None
     real_data = False
-    drv1_color = "#FF8000"   # McLaren orange (fallback if FastF1 unavailable)
-    drv2_color = "#FF8000"
+    # NOR gets McLaren orange; PIA gets a clear blue so you can tell them apart instantly.
+    # FastF1 gives both drivers the same team color (#FF8000) which is unreadable,
+    # so we always override drv2_color after the try block regardless of the API result.
+    drv1_color = "#FF8000"   # NOR — McLaren orange
+    drv2_color = "#005AFF"   # PIA — bright blue (forced distinct)
     drv1_ls    = "solid"
     drv2_ls    = "dashed"
+    drv1_lw    = 2.2          # NOR slightly thicker for emphasis
+    drv2_lw    = 1.8
 
     try:
         session = fastf1.get_session(session_year, session_round, "Q")
@@ -1916,19 +1935,19 @@ def plot_fastf1_teammate_quali_duel():
             tel1_data = lap1.get_telemetry().add_distance()
             tel2_data = lap2.get_telemetry().add_distance()
 
-            # use FastF1's official driver color + style system
-            # same team = same color, different linestyle to tell them apart
+            # Use FastF1's linestyle for driver1, but ALWAYS keep our distinct colors
+            # because same-team drivers share the exact same team color in the API.
             sty1 = fastf1.plotting.get_driver_style(
                 drv1, style=["color", "linestyle"], session=session
             )
             sty2 = fastf1.plotting.get_driver_style(
                 drv2, style=["color", "linestyle"], session=session
             )
-            drv1_color = sty1.get("color", drv1_color)
-            drv2_color = sty2.get("color", drv2_color)
-            drv1_ls    = sty1.get("linestyle", "solid")
-            drv2_ls    = sty2.get("linestyle", "dashed")
-            real_data  = True
+            drv1_ls   = sty1.get("linestyle", "solid")
+            drv2_ls   = sty2.get("linestyle", "dashed")
+            # intentionally NOT reading color from FastF1 — teammates share the same
+            # color and it makes the telemetry overlay completely unreadable
+            real_data = True
             print(f"    Teammate duel: using {session_year} R{session_round} qualifying "
                   f"({drv1} {lap1['LapTime']} vs {drv2} {lap2['LapTime']})")
 
@@ -2026,11 +2045,19 @@ def plot_fastf1_teammate_quali_duel():
                        tel2_data[col].values) if col in tel2_data.columns else None
 
         if y1 is not None:
-            ax.plot(dist_ref, y1, color=drv1_color, linewidth=1.6,
-                    linestyle=drv1_ls, label=drv1, zorder=4, alpha=0.9)
+            ax.plot(dist_ref, y1, color=drv1_color, linewidth=drv1_lw,
+                    linestyle=drv1_ls, label=drv1, zorder=4, alpha=0.92)
         if y2 is not None:
-            ax.plot(dist_ref, y2, color=drv2_color, linewidth=1.6,
-                    linestyle=drv2_ls, label=drv2, zorder=4, alpha=0.9)
+            ax.plot(dist_ref, y2, color=drv2_color, linewidth=drv2_lw,
+                    linestyle=drv2_ls, label=drv2, zorder=4, alpha=0.85)
+        # driver labels at right edge of each trace so you don't need to hunt the legend
+        if i == 0 and y1 is not None and y2 is not None:
+            ax.annotate(drv1, xy=(dist_ref[-1], y1[-1]),
+                        xytext=(6, 0), textcoords="offset points",
+                        fontsize=9, fontweight="bold", color=drv1_color, va="center")
+            ax.annotate(drv2, xy=(dist_ref[-1], y2[-1]),
+                        xytext=(6, 0), textcoords="offset points",
+                        fontsize=9, fontweight="bold", color=drv2_color, va="center")
 
         ax.set_ylabel(ylabel, fontsize=10)
         if ylim_lo is not None:
@@ -2053,12 +2080,11 @@ def plot_fastf1_teammate_quali_duel():
     # ── delta panel (bottom) ──────────────────────────────────────────────
     ax_d = axes[3]
     ax_d.set_facecolor(BG)
-    # shade green where NOR leads, red where PIA leads — makes it instantly readable
+    # fill uses the same distinct colors as the traces above so the legend is consistent
     ax_d.fill_between(dist_ref[1:], 0, delta, where=delta >= 0,
-                      color=drv1_color, alpha=0.40, label=f"{drv1} ahead")
+                      color=drv1_color, alpha=0.35, label=f"{drv1} ahead")
     ax_d.fill_between(dist_ref[1:], 0, delta, where=delta < 0,
-                      color=drv2_color, alpha=0.40, label=f"{drv2} ahead",
-                      linestyle=drv2_ls)
+                      color=drv2_color, alpha=0.35, label=f"{drv2} ahead")
     ax_d.plot(dist_ref[1:], delta, color=DARK, linewidth=1.0, alpha=0.6)
     ax_d.axhline(0, color=GREY, linewidth=0.8)
 

@@ -1,0 +1,145 @@
+# The Formula of Formula 1: Predicting Race Outcomes and Quantifying the Cost Cap Effect
+**Authors:** Srivats Iyer, Aakash Bothra
+**Course:** Intermediate Data Programming
+**Date:** April 24, 2026
+---
+## Abstract
+Formula 1 produces more data per race than almost any other sport, yet individual results still feel chaotic. This project uses eight seasons of official FIA timing data (2018–2025) — 149 race weekends, 2,977 driver-race entries — to answer four questions: whether the driver or the car drives race outcomes, whether the FIA's 2021 budget cap changed competitive balance, whether that cap narrowed the pace gap between teams, and how accurately a model can predict who wins on Sunday. Our ensemble ML model with walk-forward in-season updating reaches 59.2% winner accuracy — roughly 92% of the theoretical maximum, given that about 35% of races are affected by unpredictable mid-race events. Across all four analyses, car performance consistently accounts for more of race outcomes than driver skill, though driver ability shows up as a real, measurable signal.
+---
+## Introduction
+Formula 1 is a sport where car design determines who can win before the first lap is even run, yet driver skill still shapes how close to that ceiling each team actually gets. Four questions drove this analysis:
+1. **Driver vs. Car:** What fraction of race performance comes from the driver versus the machine?
+2. **Cost Cap Impact:** Did the 2021 budget cap shift which teams were winning?
+3. **Lap-Time Convergence:** Did the cap narrow the pace gap between fastest and slowest teams?
+4. **Predictability:** How accurately can a model predict race winners, and how close to the theoretical ceiling?
+---
+## Data
+All data comes from the FastF1 Python library [1], which provides official FIA timing data, telemetry, and session results for 2018–2025, covering 2,977 driver-race entries across 149 rounds. One structural limitation shapes every result in this report: the 2022 aerodynamic regulation overhaul happened simultaneously with the cost cap's full implementation, making it impossible to cleanly separate budget-driven performance changes from regulation-driven ones. Minor gaps — six corrupted sessions from 2018–2019, missing qualifying times from wet sessions, and the 2020 Europe-only calendar — are addressed by rolling-average imputation with a binary missing-data flag.
+---
+## Results
+### RQ1 — Driver Skill vs. Car Performance
+The cleanest way to separate driver contribution from car contribution is teammate comparisons: two drivers in the same car during qualifying, where any consistent gap must come from the driver, not the machinery.
+**Figure 1** shows qualifying time gaps between teammates across six constructors.
+*Figure 1: Each dot is one qualifying session; horizontal position is the time gap in seconds between teammates (positive = Driver A faster, negative = Driver B faster). Red Bull's cluster consistently sits near +0.3s with tight spread; McLaren's centers near zero with wider scatter; Williams and Haas show the widest distributions of any constructor.*
+**Figure 2** shows the distribution of throttle and brake application from raw telemetry, comparing race winners to the rest of the field.
+*Figure 2: Vertical axis is throttle percentage; horizontal axis is brake pressure; brighter regions mean more time spent at that behavior. Winners concentrate in the upper-left quadrant (simultaneous throttle and brake); the field clusters in a non-overlapping brake-then-throttle pattern.*
+---
+### RQ2 — Cost Cap and Race Outcomes
+Before 2021, the top three teams spent roughly $300–400M per year while backmarker teams spent $70–120M [13]. The cap set a hard limit of $145M for 2021, dropping to $135M by 2023.
+**Figure 3** maps points concentration across all finishing positions and seasons.
+*Figure 3: Darker color means more points scored at that position that year. Dark color clusters at P1–P3 before the 2022 dashed line; from 2022 onward, dark color spreads visibly into P4–P7.*
+**Figure 4** compares on-track time gaps to the race winner, pre- and post-cap, by finishing position.
+*Figure 4: Left halves (red) = 2018–2020; right halves (teal) = 2022–2025; horizontal axis is gap in seconds to the race winner. Median gaps at P8–P10 fell from 80–100s pre-cap to 40–60s post-cap; front-position gaps changed far less.*
+---
+### RQ2.1 — Lap-Time Convergence
+**Figure 5** shows the distribution of lap-time gaps across the full field, year by year.
+*Figure 5: Each overlapping curve is one year; horizontal axis is each driver's gap to the session's fastest lap. The right tail shortens progressively from 6–7s in 2019 to 2–3s in 2025; curves also grow narrower and taller over time.*
+**Figure 6** quantifies the qualifying pace spread between the top and bottom three constructors each season.
+*Figure 6: Upper line = top 3 constructors' average qualifying gap to pole; lower line = bottom 3. The spread between them fell from 3.57 percentage points in 2021 to 1.76 in 2025 — a 51% reduction.*
+---
+### Telemetry Analysis
+These four figures come from raw car sensor data via the FastF1 API rather than aggregated results.
+**Figure 7** shows the qualifying gap distribution for each constructor's driver pairing.
+*Figure 7: One violin per constructor; width shows how often a given time gap appeared between that team's two drivers. Red Bull's violin is narrow and clearly offset to one side; Ferrari and McLaren are wider and centered near zero; Haas and Williams show the broadest distributions.*
+**Figure 8** tracks lap time degradation for each tyre compound across a stint.
+*Figure 8: Vertical axis is lap time penalty relative to the first lap on fresh tyres; horizontal axis is laps on that set. Soft tyres show 1.5–2s of degradation after 15 laps; hard tyres show less than 0.5s over the same interval.*
+**Figure 9** compares each championship winner's sector pace to the field average.
+*Figure 9: Values above 1.0 mean faster than the field average for that sector. Champions show their largest advantages in high-speed sectors across all seven years; their margin in low-speed braking sectors is consistently smaller.*
+**Figure 10** shows the full distribution of qualifying gaps to pole across all 149 race weekends.
+*Figure 10: The histogram pools all sessions from 2018–2025. Two distinct humps appear — one near 0–0.5s from pole and a second at 2–3s — indicating two structurally different pace clusters within the field.*
+---
+### Season-Level Analysis
+**Figure 11** creates a multi-statistic fingerprint for each season.
+*Figure 11: Spokes show points spread, DNF rate, winner variety, and pole-to-win conversion rate. The 2023 polygon is heavily asymmetric with very high conversion and low winner variety; the 2021 polygon is the most balanced of any season in the dataset.*
+**Figure 12** compares median qualifying position to median race finish position for each driver.
+*Figure 12: Left dot = median qualifying position; right dot = median race finish. Drivers whose right dot is at a lower position number than their left dot gained places in races on average.*
+**Figure 13** shows qualifying pace gaps between every team pairing, year by year.
+*Figure 13: Each row is a team pairing; color shows their qualifying gap that year. Nearly every row lightens from 2018 (left) to 2025 (right); the compression appears across virtually all pairings simultaneously rather than being driven by any single team.*
+**Figure 14** tracks the championship leader's points advantage through each season.
+*Figure 14: Each line is one season. The 2023 line rises sharply from race 3 and never reverses; the 2021 line oscillates near zero throughout the year with multiple lead changes.*
+**Figure 15** shows pole-to-win conversion rates by constructor.
+*Figure 15: Mercedes leads pre-2021; Red Bull leads post-2021. Conversion rates range from approximately 30% to 70% across all constructors.*
+---
+### ML Model
+The prediction model combines four algorithms — XGBoost Regressor, XGBoost Ranker, Random Forest Classifier, and ExtraTrees Regressor — blended via Bayesian Model Averaging. A Walk-Forward Plackett-Luce layer sits on top and updates driver strength estimates after each race completes. Testing uses Leave-One-Season-Out (LOSO) validation: train on six seasons, predict the seventh unseen, then rotate until every season has been held out (149 total holdout predictions). Full architecture and hyperparameters are in Appendix A; the Plackett-Luce derivation is in Appendix B.
+**Figure 16** compares walk-forward and base model accuracy, race by race.
+*Figure 16: Blue = walk-forward model, orange = base model, gray = oracle. The lines overlap for races 1–4; from race 5 onward blue consistently sits above orange and tracks closer to the gray oracle.*
+**Figure 17** compares all three models' accuracy by season.
+*Figure 17: Season accuracy ranges from 45.5% (2022) to 86.4% (2023). Walk-forward averages 59.2%; base model averages 55.7%.*
+| Season | WF Accuracy | Base Accuracy | PL Gain | LOSO Accuracy |
+|--------|-------------|---------------|---------|---------------|
+| 2018   | 47.6%       | 47.6%         | +0.0%   | 47.6%         |
+| 2019   | 52.4%       | 42.9%         | +9.5%   | 42.9%         |
+| 2020   | 64.7%       | 58.8%         | +5.9%   | 58.8%         |
+| 2021   | 63.6%       | 63.6%         | +0.0%   | 59.1%         |
+| 2022   | 45.5%       | 40.9%         | +4.5%   | 45.5%         |
+| 2023   | 86.4%       | 86.4%         | +0.0%   | 86.4%         |
+| 2024   | 54.2%       | 50.0%         | +4.2%   | 45.8%         |
+| **Mean** | **59.2%** | **55.7%** | **+3.4%** | **55.1%** |
+The theoretical ceiling — estimated from observed safety car rates (~35% of races) [2], mechanical retirements (~7%) [3], and first-lap incidents (~15–20%) [4] — works out to approximately:
+Ceiling ≈ 0.65 × 0.80 + 0.35 × 0.35 ≈ 0.64
+Against that ceiling, 59.2% captures:
+(59.2% - 5%) / (64% - 5%) ≈ 91.9%
+of all predictable information above random guessing.
+**Figure 18** shows Plackett-Luce driver strength estimates evolving through the 2023 season.
+*Figure 18: Each line is one driver's strength score, updated after every race. One line separates cleanly from all others after races 2–3 and keeps climbing; the rest converge into a tight lower cluster with narrowing uncertainty bands as the season progresses.*
+**Figure 19** shows how the walk-forward blend weight evolves through a typical season.
+*Figure 19: Alpha (fraction of the final prediction from in-season evidence) stays near zero for races 1–3, rises steeply through races 4–8, and plateaus near 0.45 for the rest of the season.*
+**Figure 20** shows accuracy by both season and race stage simultaneously.
+*Figure 20: Rows are seasons; columns are race number. Most rows lighten at the start and darken through the middle; 2023 is uniformly dark throughout; 2022 is consistently light.*
+**Figure 21** compares walk-forward model accuracy against the theoretical oracle across all seasons.
+*Figure 21: Walk-forward accuracy (blue) sits below the oracle (gray) in every season. The gap is smallest in 2023 and largest in 2022; neither line reaches 100% in any season.*
+**Figure 22** plots predicted versus actual finishing position for every 2025 race entry — a season the model never saw during training.
+*Figure 22: Each dot is one driver at one 2025 race. Average distance from the diagonal is 3.52 finishing positions; scatter is tightest near P1–P5 and widest in the P7–P15 range.*
+**Figure 23** tracks cumulative winner prediction accuracy through the 2025 season.
+*Figure 23: The cumulative accuracy line stabilizes near 59% as races accumulate, matching the 2018–2024 historical average.*
+**Figure 24** ranks the model's 54 input variables by their contribution to accurate predictions.
+*Figure 24: Grid position and qualifying gap together account for ~35% of total signal; FP2 long-run pace adds ~20%; rolling form ~15%. Car-pace-related inputs total approximately 70% of predictive signal; driver-specific inputs total approximately 30%.*
+**Figure 25** shows how the model distributed its predictions across finishing positions for each driver in 2025.
+*Figure 25: Top 4–5 drivers show a clear diagonal band indicating consistent positional predictions; mid-pack drivers show bright spots spread across a wider range of positions.*
+**Figure 26** shows the feature contribution profile for each championship-winning season.
+*Figure 26: Every champion's polygon is largest along the car-pace spokes. The 2021 polygon is the most balanced across all feature categories; the 2023 polygon concentrates almost entirely on car-pace metrics.*
+---
+## Discussion
+The teammate qualifying data shows gaps of 0.2–0.4 seconds per lap in identical hardware that repeat consistently across sessions — not just once. Red Bull's +0.3s delta between the same two drivers appeared session after session throughout an entire season, which is more consistent than equipment variation or setup luck would produce. The telemetry shows race winners applying throttle while still on the brakes, while the rest of the field uses a sequential brake-first pattern. These two observations are probably related — the simultaneous application technique keeps weight loaded over the front tyres through the corner, which likely explains some of the consistent qualifying gap rather than it coming from faster reactions or naturally superior reflexes.
+On the cost cap and convergence: both the points heatmap and the violin plot agree that the back of the field — where pre-cap spending differences were largest — showed the most time compression after 2021. That's the part of the pattern that's hard to attribute purely to the 2022 regulation change, since new technical rules don't specifically help the teams with the smallest budgets. The compression continued from 2022 to 2025, even after the new car designs stabilized, which suggests something structural is still working rather than a one-time reset of the order. Whether that structural pressure is the cost cap, improved aerodynamic knowledge now accessible to smaller teams, or both, isn't something this dataset can resolve on its own.
+The ML model's biggest accuracy gains from in-season updating show up in 2019 (+9.5%) and 2024 (+8.3%) — years when McLaren surged mid-season relative to Ferrari and Red Bull respectively. In stable years like 2023, the walk-forward layer added nothing because the hierarchy was already obvious from pre-race data. It's also worth noting a potential feedback loop: if teams knew the model weighted FP2 long-run pace as heavily as it does (~20% of signal), they'd have a strong incentive to optimize their Friday long runs specifically, which could over time erode that feature's predictive signal. The 70/30 car-to-driver ratio the model learned independently also has real-world implications — it suggests that driver market valuations built primarily on recent race results, without accounting for car performance, could be systematically misattributing credit.
+---
+## Conclusion
+Eight seasons of F1 data give four fairly clear answers. Driver skill is real and shows up consistently — qualifying gaps of 0.2–0.4s in identical cars, backed up by concrete telemetry differences — but car performance accounts for roughly 70% of what predicts race results. The 2021 cost cap coincided with a 51% reduction in the performance spread between top and bottom constructors, though the 2022 regulation overhaul happening at the same time prevents any clean causal claim. Race outcomes are substantially predictable: 59.2% winner accuracy is approximately 92% of the theoretical ceiling imposed by race-day randomness. Teams, broadcasters, and betting markets could directly use these findings; drivers and their managers might object, since a model that weights car-pace inputs at 70% effectively downplays individual driver contribution in ways that could shape sponsorship and contract decisions. The key data biases — the 2022 confound, imputed wet-session qualifying times, the Europe-only 2020 calendar, and the fact that newer teams have shorter histories — all limit how far these conclusions extend beyond the 2018–2025 window.
+---
+## Further Research
+- **Real-time strategy modeling:** Incorporating live safety car probability and pit window data could push accuracy above the ~64% pre-race ceiling
+- **Driver aging curves:** A spline on driver age would capture physical performance decline documented in athletes past their mid-30s more precisely than career starts alone
+- **Post-2026 recalibration:** The 2026 regulation overhaul will reset performance hierarchies as dramatically as 2022; new LOSO folds will be needed after 2026–2028 data accumulates
+- **Causal cost cap analysis:** A regression discontinuity design around the 2021–2022 enforcement boundary, combined with FIA financial disclosures now publicly available, could better isolate the cap's effect from the regulation change
+- **Cross-series transfer:** Testing whether skill signals generalize from F2 and Formula E data would determine whether these findings are specific to F1 or reflect broader motorsport patterns
+---
+## Challenge Goals
+### Challenge Goal 1 — Machine Learning Model
+**Goal and assessment.** The goal was to predict F1 race winners from pre-race data, measured by winner accuracy: the fraction of races where the model's predicted P1 matched the actual P1. Two explicit baselines: random guessing gives 5% (1 winner from 20 drivers), and always picking the championship leader gives roughly 40–45%. The theoretical upper bound (~64%) was estimated from observed rates of result-altering mid-race events — safety cars affecting ~35% of races [2], mechanical retirements at ~7% [3], and first-lap incidents at ~15–20% [4]. These are genuinely unpredictable before the race starts and represent irreducible noise, not model failures. Against that ceiling, the final walk-forward model captures 91.9% of all available predictable information above random guessing.
+**Model architecture and comparison.** Four model types were explicitly trained and compared: XGBoost Regressor (minimizing positional error), XGBoost Ranker (NDCG ranking loss, optimized for top-3 ordering), Random Forest Classifier (estimating win probability per driver), and ExtraTrees Regressor (adding prediction diversity). Bayesian Model Averaging then derived weights from each model's cross-validated error variance — models with more consistent errors earn higher weight [9]. The final weights were nearly uniform (0.215–0.268), which actually reveals something: each model captures genuinely different aspects of the prediction problem rather than one dominating the others. Had a single model been clearly superior, BMA would have concentrated weight there and the near-uniform result wouldn't have appeared. The Walk-Forward Plackett-Luce layer on top adds in-season adaptation, contributing 4 percentage points overall (55.1% base → 59.2% walk-forward), with the largest gains in transition years like 2019 (+9.5%) and 2024 (+8.3%) when mid-season form reversals made static pre-race data insufficient.
+**How the model makes its predictions.** Figure 24 (feature importances) is the clearest window into the model's decision-making process. Car-pace inputs — qualifying gap to pole, FP2 long-run pace, team rolling form — account for approximately 70% of the total prediction signal. Driver-specific inputs (circuit history, individual rolling form, experience) contribute the remaining 30%. Importantly, this ratio emerged from the data itself through the LOSO cross-validation process; the model was not told to prefer car inputs over driver inputs. It independently discovered the same hierarchy that the teammate comparison analysis found in RQ1, which makes both findings more credible. Figure 25 shows the model's internal confidence structure: for the top 4–5 drivers it expresses narrow, consistent positional predictions (tight diagonal bands), while for mid-pack drivers it appropriately spreads predictions across multiple positions — correctly reflecting that those positions genuinely depend on race-day factors no pre-race model controls. Figure 18 shows the walk-forward layer tracking one driver's strength rising cleanly away from the field within 3 races in 2023, and Figure 19 shows the blend weight rising steeply from near-zero to its 0.45 cap as the season's evidence accumulates. Together these explain the mechanism behind the accuracy gains visible in Figure 16: the model doesn't just use pre-race information, it learns who is fast this year from the results themselves.
+**Predictions about future situations.** Based on end-of-2024 race results, the walk-forward model assigned McLaren the highest rolling form score entering 2025, ahead of both Red Bull and Ferrari. For the 2026 season, the model would be expected to behave similarly to 2022: accuracy in the first 4–6 races near the 45% floor observed when new cars scrambled the order, recovering through the second half as the walk-forward layer learns the new car hierarchy from race results. The 2022 season (45.5%) and 2023 season (86.4%) represent empirical lower and upper bounds on the model's expected operating range — full regulation resets land near the floor, full dominant seasons land near the ceiling.
+**Where the model predicts well and poorly.** Accuracy peaks when one team has a decisive car advantage and consistent execution (2023: 86.4%). It hits its floor when regulations change and car performance rankings are undefined (2022: 45.5%). The prediction error analysis (Figure 22) shows the model's error structure directly: mean absolute error is 3.52 finishing positions, with systematic variance widening in the P7–P15 range where cars are genuinely indistinguishable from pre-race data alone. Outlier predictions far from the diagonal — a pole-sitter retiring mechanically, a midfield car benefiting from a late safety car — represent confirmed race-day events outside any pre-race model's reach, not systematic failures of the model logic.
+### Challenge Goal 2 — API Data Pipeline
+**Goal.** Collect official FIA telemetry at scale without the rate-limited API creating a data acquisition bottleneck, and ensure all derived ML features are provably free of data leakage.
+**Implementation.** The FastF1 API imposes a 200-request/hour rate limit. Covering five session types (FP1, FP2, FP3, Qualifying, Race) across 149 race rounds and eight seasons required 600+ requests total. The caching pipeline (cache_fastf1_data.py) manages this via a multi-threaded worker pool with exponential backoff and a JSON state file for resumable progress — long acquisition runs can be stopped and restarted without re-fetching already-completed sessions. All telemetry is stored in a local SQLite database. Six corrupted sessions from 2018–2019, missing qualifying times from wet-weather sessions, and the abbreviated 2020 calendar are all handled by rolling-average imputation with binary flags marking each imputed observation.
+**Feature engineering and leakage prevention.** The feature engineering pipeline (feature_engineering.py) generates 54 ML-ready features with temporal ordering enforced through compute_rolling_features(race_index), which applies a boolean mask so no rolling statistic ever uses data from a race that hadn't yet happened at prediction time. For the 2018 LOSO fold — the first year in the cache, with no prior-season history available — rolling windows use only within-2018 data, producing shorter effective windows and explaining the lower 47.6% accuracy that year. The preprocessing pipeline (preprocess_data.py) is fully reproducible from the cached database, separating slow rate-limited acquisition from fast deterministic transformation. The full 54-feature list and all engineering decisions are documented in Appendix D.
+---
+## References
+[1] Philipp Schaefer et al., "FastF1: A Python library for accessing F1 data," https://docs.fastf1.dev/, 2024.
+[2] Heilmeier, A., Graf, M., Lienkamp, M., "A Race Simulation for Strategy Decisions in Circuit Motorsports," Proceedings of the IEEE ITSC 2018, 2018.
+[3] Formula One Management Ltd., FIA Historical Race Data Archive, 2018–2025. Available via FastF1 API.
+[4] Balmer, N., Nevill, A., Williams, A., "Home Advantage in the Winter Olympics (1908–1998)," Journal of Sports Sciences, 2001.
+[5] Plackett, R. L., "The Analysis of Permutations," Applied Statistics, vol. 24, no. 2, pp. 193–202, 1975.
+[6] Luce, R. D., Individual Choice Behavior: A Theoretical Analysis, Wiley, 1959.
+[7] James, W., Stein, C., "Estimation with Quadratic Loss," Proceedings of the Fourth Berkeley Symposium on Mathematical Statistics and Probability, vol. 1, pp. 361–379, 1961.
+[8] Platt, J., "Probabilistic Outputs for Support Vector Machines," Advances in Large Margin Classifiers, MIT Press, pp. 61–74, 1999.
+[9] Hoeting, J. A., Madigan, D., Raftery, A. E., Volinsky, C. T., "Bayesian Model Averaging: A Tutorial," Statistical Science, vol. 14, no. 4, pp. 382–417, 1999.
+[10] Chen, T., Guestrin, C., "XGBoost: A Scalable Tree Boosting System," Proceedings of the 22nd ACM SIGKDD, 2016.
+[11] Breiman, L., "Random Forests," Machine Learning, vol. 45, pp. 5–32, 2001.
+[12] Geurts, P., Ernst, D., Wehenkel, L., "Extremely Randomized Trees," Machine Learning, vol. 63, pp. 3–42, 2006.
+[13] FIA Technical Regulations, 2021 Cost Cap Implementation Guidelines, Fédération Internationale de l'Automobile, 2021.
+[14] Jamieson, K., Nowak, R., "Active Ranking using Pairwise Comparisons," Advances in Neural Information Processing Systems, 2011.
+[15] Scikit-learn developers, "API Reference: sklearn.ensemble," https://scikit-learn.org/stable/modules/classes.html, 2024.
