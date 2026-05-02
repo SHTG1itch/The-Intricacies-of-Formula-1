@@ -458,7 +458,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, "2026_wdc_predictions.txt")
 
-    # full driver name lookup — three-letter codes from the feature data map to full names
+    # full driver name lookup - three-letter codes from the feature data map to full names
     full_names = {
         "VER": "Max Verstappen",     "NOR": "Lando Norris",
         "LEC": "Charles Leclerc",    "PIA": "Oscar Piastri",
@@ -483,7 +483,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
 
     lines = [
         "=" * 62,
-        "  2026 F1 WORLD CHAMPIONSHIP — PREDICTED FINAL STANDINGS",
+        "  2026 F1 WORLD CHAMPIONSHIP - PREDICTED FINAL STANDINGS",
         "=" * 62,
         f"  Races predicted : {n_predicted} of {n_total}",
         f"  Model           : 3-model BMA ensemble (XGBoost Regressor +",
@@ -498,7 +498,7 @@ def write_wdc_predictions_txt(wdc_df, n_predicted, n_total, out_dir):
         "",
         "─" * 62,
         f"  PREDICTED WORLD CHAMPION:",
-        f"    {champion_name} ({champion_team})  —  {champion_pts} projected points",
+        f"    {champion_name} ({champion_team})  -  {champion_pts} projected points",
         "─" * 62,
         "",
         f"  {'Rank':>4}  {'Driver':<22}  {'Team':<28}  {'Pred Pts':>9}",
@@ -678,7 +678,7 @@ def plot_season_predictions(pred_df, out_dir, max_races=24):
     fig, ax = plt.subplots(figsize=(max(12, n_races * 0.95), 5))
     fig.patch.set_facecolor(F1_DARK)
     ax.set_facecolor(F1_DARK)
-    fig.suptitle("2026 Season — Predicted Top-5 per Race",
+    fig.suptitle("2026 Season - Predicted Top-5 per Race",
                  fontsize=13, color=F1_WHITE, fontweight="bold")
 
     has_actuals = "actual_position" in pred_sub.columns
@@ -766,7 +766,7 @@ def plot_accuracy_timeline(metrics_df, out_dir):
     ax.set_ylim(-0.05, 1.1)
     ax.set_xlabel("Round", color=F1_WHITE, fontsize=10)
     ax.set_ylabel("Score", color=F1_WHITE, fontsize=10)
-    ax.set_title("2026 Prediction Accuracy — Completed Races",
+    ax.set_title("2026 Prediction Accuracy - Completed Races",
                  color=F1_WHITE, fontsize=12, fontweight="bold")
     ax.tick_params(colors=F1_WHITE)
     ax.legend(fontsize=9, facecolor=F1_DARK, edgecolor=F1_GREY, labelcolor=F1_WHITE)
@@ -789,7 +789,7 @@ def main():
     os.makedirs(DATA_DIR,  exist_ok=True)
 
     print("=" * 60)
-    print("  F1 2026 — Race Predictions & WDC Projection")
+    print("  F1 2026 - Race Predictions & WDC Projection")
     print("=" * 60)
 
     # print the regulation caveat up front so it's impossible to miss

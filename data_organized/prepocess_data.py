@@ -117,7 +117,7 @@ def save_csv_or_keep_existing(df, path):
 
 
 # ╔════════════════════════════════════════════════════════════════════╗
-# ║  CSV 1: qualifying_deltas.csv  (for RQ1 — Driver Skill vs. Car)  ║
+# ║  CSV 1: qualifying_deltas.csv  (for RQ1 - Driver Skill vs. Car)  ║
 # ╚════════════════════════════════════════════════════════════════════╝
 
 def build_qualifying_deltas():
@@ -206,7 +206,7 @@ def build_qualifying_deltas():
 
 
 # ╔════════════════════════════════════════════════════════════════════╗
-# ║  CSV 2: race_results.csv  (for RQ2 — Cost Cap Impact)            ║
+# ║  CSV 2: race_results.csv  (for RQ2 - Cost Cap Impact)            ║
 # ╚════════════════════════════════════════════════════════════════════╝
 
 def build_race_results():
@@ -269,7 +269,7 @@ def build_race_results():
 
 
 # ╔════════════════════════════════════════════════════════════════════╗
-# ║  CSV 3: lap_time_spreads.csv  (for RQ2.1 — Cost Cap Function)    ║
+# ║  CSV 3: lap_time_spreads.csv  (for RQ2.1 - Cost Cap Function)    ║
 # ╚════════════════════════════════════════════════════════════════════╝
 
 def build_lap_time_spreads():
@@ -375,7 +375,7 @@ def build_lap_time_spreads():
 
 
 # ╔════════════════════════════════════════════════════════════════════╗
-# ║  CSV 4: driver_season_profiles.csv  (for RQ3 — WDC Prediction)   ║
+# ║  CSV 4: driver_season_profiles.csv  (for RQ3 - WDC Prediction)   ║
 # ╚════════════════════════════════════════════════════════════════════╝
 
 def build_driver_season_profiles():
@@ -521,7 +521,7 @@ def build_driver_season_profiles():
 
 
 # ──────────────────────────────────────────────────────────────────────
-# MAIN — run all four preprocessing steps
+# MAIN - run all four preprocessing steps
 # ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -538,16 +538,16 @@ def main():
     print(f"  Output:  {OUTPUT_DIR}/")
     print("=" * 60 + "\n")
 
-    # Step 1: Qualifying deltas (RQ1 — skill vs. car)
+    # Step 1: Qualifying deltas (RQ1 - skill vs. car)
     build_qualifying_deltas()
 
-    # Step 2: Race results with gap to winner (RQ2 — cost cap impact)
+    # Step 2: Race results with gap to winner (RQ2 - cost cap impact)
     build_race_results()
 
-    # Step 3: Lap time spreads (RQ2.1 — cost cap effectiveness)
+    # Step 3: Lap time spreads (RQ2.1 - cost cap effectiveness)
     build_lap_time_spreads()
 
-    # Step 4: Driver season profiles (RQ3 — WDC prediction features)
+    # Step 4: Driver season profiles (RQ3 - WDC prediction features)
     build_driver_season_profiles()
 
     print("=" * 60)

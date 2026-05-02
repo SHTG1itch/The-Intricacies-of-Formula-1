@@ -22,7 +22,7 @@ from scipy.special import logsumexp
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error
 
-# reach into mach_learning for shared infrastructure — avoids code duplication
+# reach into mach_learning for shared infrastructure - avoids code duplication
 sys.path.insert(0, os.path.dirname(__file__))
 from mach_learning import (
     FEATURE_COLS, SEED,
@@ -56,7 +56,7 @@ WF_EVAL_FILE = os.path.join(DATA_DIR, "wf_evaluation.txt")
 # These come from RandomizedSearchCV 80-iteration tuning on the full 2018-2024 dataset.
 # Using them here avoids re-running expensive tuning per WF fold (7 × 80 = 560 CV evals
 # would take ~2 hours). The slight bias from using full-dataset params instead of per-fold
-# is acceptable — we're not selecting features, just using learned regularization strengths.
+# is acceptable - we're not selecting features, just using learned regularization strengths.
 # ──────────────────────────────────
 WF_BEST_PARAMS = {
     "xgb": {
@@ -89,17 +89,17 @@ RF_TEMPERATURE = 0.9968
 # DECAY_LAMBDA controls how quickly old race results fade.
 # ALPHA_CAP: hard ceiling on how much PL can influence the final prediction.
 #   0.45 means qualifying position and car pace always contribute at least 55% of the signal.
-#   this is important — even if VER dominated all season, if he's starting P10 today
+#   this is important - even if VER dominated all season, if he's starting P10 today
 #   the base ensemble (which knows about grid position) needs to have its say.
 # WINNER_WEIGHT: the classic PL model treats finishing P2 almost as informatively as winning.
 #   the problem is, in 2021 HAM finished P2 behind VER so often that PL started thinking
-#   they were equally good — but VER was clearly the dominant driver. bumping P1 to count
+#   they were equally good - but VER was clearly the dominant driver. bumping P1 to count
 #   twice as much as a runner-up finish fixes this. not tuned, just basic logic: wins matter more.
 SIGMA2_BASE    = 2.0
 DECAY_LAMBDA   = 0.10
 ALPHA_CAP      = 0.45
 WINNER_WEIGHT  = 2.0
-# QUAL_PL_WEIGHT: qualifying order is the single best pre-race signal we have — grid position
+# QUAL_PL_WEIGHT: qualifying order is the single best pre-race signal we have - grid position
 #   accounts for ~27% of XGB feature importance. so we feed past qualifying rounds into PL
 #   as lightweight "soft" observations to give it some car-pace signal early in the season
 #   before enough race results have accumulated. weight 0.25 means one qualifying session
@@ -107,14 +107,14 @@ WINNER_WEIGHT  = 2.0
 #   so we're not double-counting with the base ensemble which already knows about today's grid.
 QUAL_PL_WEIGHT = 0.25
 # TAIL_WEIGHT: the standard PL model treats finishing P12 the same as finishing P2 in terms
-#   of how much it tells us about front-runner ability. that's clearly wrong — whether
+#   of how much it tells us about front-runner ability. that's clearly wrong - whether
 #   Williams or Haas finished 12th vs 15th tells us almost nothing about who'll win next race.
 #   down-weighting P11+ finishers by 0.7 reduces that backmarker noise while keeping the
 #   top-10 ordering signal fully intact.
 TAIL_WEIGHT    = 0.7
 
 # advanced blend architecture constants
-# N_RECENT_RACES: we run two PLs in parallel — a "full season" one and a "recent window" one.
+# N_RECENT_RACES: we run two PLs in parallel - a "full season" one and a "recent window" one.
 #   this is the window size for the recent one. the idea is that the full-season PL might
 #   still have VER at the top in race 16 of 2024 based on H1 dominance, but the
 #   last-5-races PL already sees NOR and PIA winning everything. using both gives us
@@ -125,7 +125,7 @@ TAIL_WEIGHT    = 0.7
 #   pre-season predictions more aggressively once real race data comes in.
 # PRIOR_SIGMA_NEW_ERA: weaker prior on the PL θ values in regulation-change years.
 #   basically "we don't trust the pre-season prediction as much, let the race results speak."
-# NEW_ERA_YEARS: the years where F1 had a major regulation reset. 2022 was the big one —
+# NEW_ERA_YEARS: the years where F1 had a major regulation reset. 2022 was the big one -
 #   ground-effect cars meant Ferrari suddenly looked competitive again and our models
 #   trained on 2018-2021 Mercedes/HAM dominance were caught off guard.
 N_RECENT_RACES      = 5
@@ -145,7 +145,7 @@ class PlackettLuceEstimator:
     Call .fit(race_results, prior_means) with:
       race_results: list of dicts {driver_abbr: finish_position, ...}, one per race
                     DNF drivers should be excluded (only classified finishers)
-      prior_means:  dict {driver_abbr: float} — base ensemble log-quality for each driver
+      prior_means:  dict {driver_abbr: float} - base ensemble log-quality for each driver
                     (higher = model thinks driver/car is better)
                     We use log(n+1) - log(approx_rank) where approx_rank comes from ensemble scores
 
@@ -161,13 +161,13 @@ class PlackettLuceEstimator:
         #   base ensemble's pre-season guess. smaller = tighter leash, stays closer
         #   to what the ensemble predicted. larger = PL can go rogue based on race results.
         # decay_lambda: older races get down-weighted exponentially so recent form matters more.
-        #   this is basically a short memory — what VER did in race 1 matters less by race 15.
+        #   this is basically a short memory - what VER did in race 1 matters less by race 15.
         # winner_weight: extra credit for actually winning the race (vs consistently finishing P2).
-        #   the standard PL is a bit too generous to P2 finishers — in 2021, HAM finishing
+        #   the standard PL is a bit too generous to P2 finishers - in 2021, HAM finishing
         #   P2 behind VER every week was inflating HAM's θ score close to VER's even though
         #   VER was clearly the dominant driver that season. this weight fixes that by making
         #   a race win count about twice as much as a runner-up finish.
-        # tail_weight: less credit for finishing P11 or worse — those results just add noise.
+        # tail_weight: less credit for finishing P11 or worse - those results just add noise.
         #   whether someone finished P12 vs P15 tells us almost nothing about who'll win next race,
         #   so we down-weight all of that backmarker traffic without throwing it out entirely.
         self.prior_sigma   = prior_sigma
@@ -180,14 +180,14 @@ class PlackettLuceEstimator:
     def fit(self, race_results, prior_means, current_race_num=None,
             qualifying_results=None, qual_weight_factor=QUAL_PL_WEIGHT):
         """
-        the main workhorse — takes all the race results we've seen so far this season
+        the main workhorse - takes all the race results we've seen so far this season
         and figures out the best estimate for each driver's "true ability" θ.
 
         race_results: list of dicts [{driver: position}, ...] for races 1..k-1
                       earlier races come first (race_results[0] = race 1 of the season)
-        prior_means:  {driver: log-quality-score from base ensemble} — this is what
+        prior_means:  {driver: log-quality-score from base ensemble} - this is what
                       the model believed BEFORE the season started, based on pre-race features
-        current_race_num: which race number we're predicting — used to calculate how
+        current_race_num: which race number we're predicting - used to calculate how
                           much to down-weight older race results via exponential decay
         qualifying_results: past qualifying sessions as lightweight PL observations.
                             these are PAST rounds only (not today's) to avoid double-counting
@@ -196,7 +196,7 @@ class PlackettLuceEstimator:
         qual_weight_factor: how much one qualifying session is worth vs a race result (default 0.25)
         """
         if not race_results and not qualifying_results:
-            # no data yet — just use the prior as-is (we have nothing to update from)
+            # no data yet - just use the prior as-is (we have nothing to update from)
             self.theta_         = dict(prior_means)
             self.posterior_var_ = {d: self.prior_sigma**2 for d in prior_means}
             return self
@@ -215,7 +215,7 @@ class PlackettLuceEstimator:
         k_pred = current_race_num if current_race_num is not None else len(race_results) + 1
 
         # convert race_results (dicts) into sorted index arrays for fast computation.
-        # the trick is we also attach a decay weight to each race — the more recent the race,
+        # the trick is we also attach a decay weight to each race - the more recent the race,
         # the closer to 1.0 its weight. something from 7 races ago gets about half the credit.
         # format: (ranked_driver_indices, decay_weight)
         race_list = race_results or []
@@ -229,7 +229,7 @@ class PlackettLuceEstimator:
 
         # qualifying observations get the same time-decay treatment but scaled down
         # by qual_weight_factor so they don't overwhelm the actual race signal.
-        # note: pole position doesn't get the winner upweight bonus — starting P1 ≠ winning P1.
+        # note: pole position doesn't get the winner upweight bonus - starting P1 ≠ winning P1.
         qual_list = qualifying_results or []
         for qual_idx, qual_dict in enumerate(qual_list):
             # align with the race decay: qual round i = race round i
@@ -258,9 +258,9 @@ class PlackettLuceEstimator:
         tw = self.tail_weight     # P11+ down-weight factor (i ≥ 10, 0-indexed)
 
         def _pos_weight(i):
-            # P1 (i=0): wins count more — that's the whole point of winner_weight
+            # P1 (i=0): wins count more - that's the whole point of winner_weight
             # P2-P10 (i=1..9): standard weight, full signal
-            # P11+ (i≥10): down-weighted — backmarker results are mostly noise
+            # P11+ (i≥10): down-weighted - backmarker results are mostly noise
             if i == 0:
                 return ww
             elif i >= 10:
@@ -274,7 +274,7 @@ class PlackettLuceEstimator:
                 m = len(ranked_idx)
                 for i in range(m):
                     pos_w = _pos_weight(i)
-                    # logsumexp for numerical stability — avoids exp overflow/underflow
+                    # logsumexp for numerical stability - avoids exp overflow/underflow
                     log_lik += w * pos_w * (theta_race[i] - logsumexp(theta_race[i:]))
             # Normal prior: pulls θ back toward the ensemble's pre-season guess
             log_prior = -np.sum((theta - prior_mu) ** 2) / (2 * prior_var)
@@ -309,20 +309,20 @@ class PlackettLuceEstimator:
         )
         theta_map = result.x
 
-        # ── Laplace approximation — basically computing how uncertain we are about θ ──
+        # ── Laplace approximation - basically computing how uncertain we are about θ ──
         # once we have the MAP estimate θ*, we want to know how confident we are in it.
-        # the trick is: near the MAP, the log-posterior looks like a Gaussian — so we can
+        # the trick is: near the MAP, the log-posterior looks like a Gaussian - so we can
         # use the curvature (second derivative / Hessian) to get uncertainty estimates.
         # Σ ≈ -H^{-1} where H is the Hessian of the log-posterior at the MAP point.
         #
         # inverting the full Hessian (20×20 for 20 drivers) is slow and numerically messy.
-        # we just use the diagonal — each driver gets their own independent variance estimate.
+        # we just use the diagonal - each driver gets their own independent variance estimate.
         # Σ_ii ≈ 1/(-∂² log posterior / ∂θ_i²)
         #
         # the diagonal Hessian of the PL log-likelihood:
         #   ∂² log L / ∂θ_d² = -Σ_races w_r × Σ_positions_i 1(d remaining) × p_d(1-p_d)
         # where p_d = exp(θ_d) / Σ_{j remaining} exp(θ_j) is the selection probability.
-        # the p_d(1-p_d) term is exactly the variance of a coin flip — it measures how much
+        # the p_d(1-p_d) term is exactly the variance of a coin flip - it measures how much
         # info each race position gives us about driver d's ability. consistent winners → low
         # uncertainty. drivers in the murky midfield → high uncertainty.
 
@@ -336,7 +336,7 @@ class PlackettLuceEstimator:
                 exp_t = np.exp(theta_rem - np.max(theta_rem))
                 softmax = exp_t / exp_t.sum()
                 pos_w = _pos_weight(i)
-                # p(1-p) Bernoulli variance — how informative is this race about each driver's θ
+                # p(1-p) Bernoulli variance - how informative is this race about each driver's θ
                 hess_diag_ll[remaining_idx] -= w * pos_w * softmax * (1.0 - softmax)
 
         # prior also contributes -1/σ² to the diagonal (it's penalizing curvature too)
@@ -351,7 +351,7 @@ class PlackettLuceEstimator:
         return self
 
     def get_mean_posterior_variance(self, drivers):
-        """Average posterior variance across the given drivers — proxy for PL uncertainty."""
+        """Average posterior variance across the given drivers - proxy for PL uncertainty."""
         if not self.posterior_var_:
             return self.prior_sigma ** 2
         vars_ = [self.posterior_var_.get(d, self.prior_sigma**2) for d in drivers]
@@ -369,49 +369,49 @@ def compute_blend_alpha(sigma2_pl, n_observed,
                         is_new_era=False,
                         sigma2_base=SIGMA2_BASE, alpha_cap=ALPHA_CAP):
     """
-    computes α, the blend weight — basically "how much should we trust the PL model
+    computes α, the blend weight - basically "how much should we trust the PL model
     vs the base ensemble for this specific race?" it's the product of five gates,
     each of which can reduce α toward 0 if something looks off.
 
-    Factor 1 — confidence gate (inverse-variance):
+    Factor 1 - confidence gate (inverse-variance):
         if the PL model is uncertain about who the season leader is (high sigma2_pl),
         we trust it less. when PL is confident → α can be high. when PL is unsure → α drops.
         in regulation-change years we treat the ensemble as less reliable (sigma2_base_eff = 4.0)
         so PL can override it more aggressively once race data comes in.
 
-    Factor 2 — have we seen enough races? (data sufficiency gate):
+    Factor 2 - have we seen enough races? (data sufficiency gate):
         0 races seen → gate ≈ 0 (we have no PL data, don't use it)
         5 races seen → gate ≈ 50%
         10+ races → gate ≈ 91%
         basically a smooth warm-up ramp so PL doesn't have outsized influence in race 2.
 
-    Factor 3 — is the season chaotic? (entropy gate):
+    Factor 3 - is the season chaotic? (entropy gate):
         winner_entropy = unique_winners / n_observed. if 8 different drivers won 8 races
         (like 2024), the season is unpredictable and PL can't reliably identify a "dominant"
-        driver — so we scale back its influence. dominant seasons (2023) have low entropy.
+        driver - so we scale back its influence. dominant seasons (2023) have low entropy.
 
-    Factor 4 — is there actually a clear leader? (dominance gate, pre-computed outside):
+    Factor 4 - is there actually a clear leader? (dominance gate, pre-computed outside):
         we want PL to matter mainly when one driver is CLEARLY better than everyone else.
         uses min(raw_gap_gate, z_gate) so both conditions must hold:
-          raw_gap_gate = clip(gap/1.5, 0, 1) — the θ gap between #1 and #2 must be large
-          z_gate = clip(z/2.0, 0, 1) — the gap must also be statistically credible (z-score)
+          raw_gap_gate = clip(gap/1.5, 0, 1) - the θ gap between #1 and #2 must be large
+          z_gate = clip(z/2.0, 0, 1) - the gap must also be statistically credible (z-score)
         in 2021 VER/HAM the gap was tiny → gate ≈ 0.15. in 2023 VER >> everyone → gate ≈ 1.0.
 
-    Factor 5 — does today's grid position support the PL pick? (grid alignment gate):
+    Factor 5 - does today's grid position support the PL pick? (grid alignment gate):
         PL says VER wins. but VER qualified P8 today. those are contradictory signals.
         if the PL champion is starting P1-P4, full trust. P5+ → exponential decay.
         prevents PL from insisting on a prediction that qualifying clearly contradicts.
     """
-    # in regulation-change years the ensemble is less calibrated — bump up base uncertainty
+    # in regulation-change years the ensemble is less calibrated - bump up base uncertainty
     sigma2_base_eff = SIGMA2_BASE_NEW_ERA if is_new_era else sigma2_base
 
     # Factor 1: how confident is PL about the season leader's ability?
     inv_var = sigma2_base_eff / (sigma2_base_eff + max(sigma2_pl, 1e-8))
 
-    # Factor 2: data sufficiency — smooth ramp, 0.5 at n=5 races, ~0.91 at n=10
+    # Factor 2: data sufficiency - smooth ramp, 0.5 at n=5 races, ~0.91 at n=10
     data_gate = 1.0 - 1.0 / (1.0 + n_observed / 5.0)
 
-    # Factor 3: season entropy — high chaos → reduce PL trust
+    # Factor 3: season entropy - high chaos → reduce PL trust
     if winner_entropy is not None:
         entropy_gate = 1.0 - 0.5 * np.clip(winner_entropy, 0.0, 1.0)
     else:
@@ -420,7 +420,7 @@ def compute_blend_alpha(sigma2_pl, n_observed,
     # Factor 4: credible dominance gate (pre-computed caller-side, defaults to 1.0 if not supplied)
     dom_gate = float(np.clip(dominance_gate, 0.0, 1.0)) if dominance_gate is not None else 1.0
 
-    # Factor 5: grid alignment — PL's pick must be starting near the front today
+    # Factor 5: grid alignment - PL's pick must be starting near the front today
     grid_gate = float(np.clip(grid_alignment, 0.0, 1.0))
 
     alpha = inv_var * data_gate * entropy_gate * dom_gate * grid_gate
@@ -458,7 +458,7 @@ def ensemble_score_to_pl_prior(ens_scores, n_drivers):
 
 def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
     """
-    the main evaluation loop — runs the full walk-forward experiment across all seasons.
+    the main evaluation loop - runs the full walk-forward experiment across all seasons.
 
     the idea is simple: hold out one season at a time, train the ensemble on everything
     else, then walk race-by-race through the holdout season, updating the PL model as
@@ -467,7 +467,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
 
     for each holdout season Y:
       1. train 4-model BMA ensemble on all other seasons (same LOSO split as mach_learning.py)
-         we use pre-tuned hyperparams here — re-tuning for each fold would take hours
+         we use pre-tuned hyperparams here - re-tuning for each fold would take hours
          and the regularization strengths don't change much between folds anyway.
       2. walk through each race k in season Y:
          - ensemble predicts from pre-race features (quali, practice, rolling form, circuit history)
@@ -515,7 +515,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
             print(f"\n  Training ensemble for holdout {holdout_year} "
                   f"({len(df_tr)} rows from {df_tr['Year'].nunique()} seasons)...", end="", flush=True)
 
-        # train all 4 base models with saved best hyperparams — no per-fold re-tuning
+        # train all 4 base models with saved best hyperparams - no per-fold re-tuning
         xgb_model    = train_xgboost_regressor(X_tr, y_tr, params=WF_BEST_PARAMS["xgb"])
         ranker_model = train_xgboost_ranker(X_tr, y_tr, groups_tr,
                                              best_params=WF_BEST_PARAMS["xgb"])
@@ -532,7 +532,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
         df_year = df_train[test_mask].copy().sort_values(["Round", "Driver"])
         rounds  = sorted(df_year["Round"].unique())
 
-        # check if this is a new-regulation year — 2022 was the ground-effect reset and
+        # check if this is a new-regulation year - 2022 was the ground-effect reset and
         # our ensemble (trained on 2018-2021 Mercedes/Hamilton era) really didn't see
         # Ferrari's resurgence coming. in those years we loosen the PL prior and bump
         # up base uncertainty so real race results can override the stale pre-season model faster.
@@ -540,7 +540,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
         pl_prior_sigma = PRIOR_SIGMA_NEW_ERA if is_new_era else 2.0
 
         # pre-collect the qualifying grid for every round in this season.
-        # we only feed PAST rounds to the PL fitter (not today's) — this is important because
+        # we only feed PAST rounds to the PL fitter (not today's) - this is important because
         # the base ensemble already knows today's grid position. feeding it to PL too would
         # be double-counting that signal. pit-lane starters (grid_position 0 or NaN) are
         # excluded since their grid slot doesn't reflect actual qualifying speed.
@@ -555,11 +555,11 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
                 if len(qual_round) >= 2:
                     full_qualifying_history[r] = qual_round
 
-        # within-season result accumulator — grows as we process each race
+        # within-season result accumulator - grows as we process each race
         result_history      = {}   # {round_number: {driver_abbr: finish_position}}
         team_result_history = {}   # {round_number: {team_name: best_position_of_either_driver}}
 
-        # PL estimator resets each season — θ is season-specific, not a persistent rating
+        # PL estimator resets each season - θ is season-specific, not a persistent rating
         pl_est = PlackettLuceEstimator(prior_sigma=pl_prior_sigma, decay_lambda=DECAY_LAMBDA)
 
         if verbose:
@@ -604,7 +604,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
                 X_features=X_race,
                 apply_bayesian_prior=True,
                 cal_temperature=RF_TEMPERATURE,
-                meta_model=None,    # no stacking meta in WF — would need nested LOSO
+                meta_model=None,    # no stacking meta in WF - would need nested LOSO
             )
 
             # reindex to match our `drivers` list (ens_df may have been re-sorted)
@@ -620,7 +620,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
             # ── fit the season-long PL from all races before this one ───────────────
             past_races = [result_history[r] for r in sorted(result_history.keys())]
             # for qualifying observations: only feed PAST rounds (not today's).
-            # in regulation-change years we skip qualifying entirely — early 2022 Ferrari
+            # in regulation-change years we skip qualifying entirely - early 2022 Ferrari
             # was on pole a lot before their race pace was confirmed, feeding those early
             # quali signals made PL too bullish on Ferrari before race data caught up.
             # the new-era uncertainty mechanisms already handle this without qualifying noise.
@@ -636,7 +636,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
 
             # ── recent-window PL: last N_RECENT_RACES races only, no decay ────────────
             # we run a second PL in parallel that only looks at the last 5 races.
-            # the purpose is catching mid-season power shifts that the full-season PL misses —
+            # the purpose is catching mid-season power shifts that the full-season PL misses -
             # for example in 2024, VER dominated H1 so the full-season PL kept him on top,
             # but by race 16 NOR and PIA were winning everything. the recent-window PL
             # flips toward McLaren much faster because it forgets VER's H1 dominance entirely.
@@ -651,7 +651,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
             else:
                 past_quals_recent = None
             pl_recent = PlackettLuceEstimator(
-                prior_sigma=pl_prior_sigma * 1.5,  # weaker prior — let recent form speak freely
+                prior_sigma=pl_prior_sigma * 1.5,  # weaker prior - let recent form speak freely
                 decay_lambda=0.0,                  # all races in the window count equally
             )
             pl_recent.fit(past_recent, prior_means, current_race_num=rnd,
@@ -659,7 +659,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
 
             # ── team-level PL: what does the car say, not just the driver? ──────────
             # the individual driver PL misses team-level signals. if NOR finishes P1 and
-            # PIA finishes P3, McLaren's car is clearly fast — and that should boost PIA's
+            # PIA finishes P3, McLaren's car is clearly fast - and that should boost PIA's
             # individual score too, not just NOR's. we run a separate PL on team-level
             # best-finish-per-team results and blend a bit of that signal in.
             driver_to_team_cur = {}
@@ -744,7 +744,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
             # ── compute the five-factor α ─────────────────────────────────────────────
             theta_dict_blend = {d: float(theta_race[i]) for i, d in enumerate(drivers)}
 
-            # for the uncertainty factor (Factor 1), we use the season PL leader's variance —
+            # for the uncertainty factor (Factor 1), we use the season PL leader's variance -
             # not the composite θ. the composite gets compressed by team PL blending which
             # can make VER's uncertainty look artificially high. using the clean season PL
             # gives us a clearer read on how confident PL actually is about its top pick.
@@ -758,7 +758,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
                 sigma2_pl = pl_est.get_mean_posterior_variance(drivers)
 
             # dominance gate: computed from season PL θ (not composite) for the same reason.
-            # we need BOTH conditions to hold — large raw gap AND statistically credible gap.
+            # we need BOTH conditions to hold - large raw gap AND statistically credible gap.
             # min(raw_gate, z_gate) means neither can inflate the other: in 2021 the gap
             # between VER and HAM was small both ways → gate ≈ 0.15. in 2023 VER was so
             # far ahead that both gates were high → gate ≈ 1.0.
@@ -786,7 +786,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
             # ── convert composite θ to a rank-normalized score (higher θ → lower = better)
             pl_scores = _rank_normalize_1d(theta_race, ascending=False)
 
-            # ── final blended score — lower = predicted winner ─────────────────────
+            # ── final blended score - lower = predicted winner ─────────────────────
             blended_scores = (1 - alpha_k) * base_scores + alpha_k * pl_scores
 
             # ── Record results ────────────────────────────────────────────────────
@@ -827,7 +827,7 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
                 })
 
             # ── store this race's result so PL can use it for the next race ────────
-            # this is the key "walk-forward" mechanic — we only know race k result AFTER
+            # this is the key "walk-forward" mechanic - we only know race k result AFTER
             # we've made the prediction, then it feeds into the PL for race k+1.
             valid_mask = ~pd.isna(df_race["finish_position"])
             result_history[rnd] = {
@@ -934,7 +934,7 @@ def plot_accuracy_by_race_number(df_pred, loso_mean=0.551, outdir=PLOT_DIR):
     the LOSO mean is shown as a dashed reference line.
 
     what to look for: at race 0 (before any data), walk-forward and base ensemble
-    are basically identical — PL hasn't seen anything yet. by mid-season (8+ races),
+    are basically identical - PL hasn't seen anything yet. by mid-season (8+ races),
     the PL correction kicks in and you should see the walk-forward line pull ahead.
     in chaotic seasons like 2021 or 2024 (lots of different winners), the entropy
     gate keeps PL from making things worse by being overconfident.
@@ -977,7 +977,7 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
       LOSO  →  Walk-forward + PL  →  Oracle (theoretical ceiling)
 
     the WF base bar was removed because it cluttered the chart without adding a clear
-    message for the reader — the key insight is LOSO < WF+PL < Oracle.
+    message for the reader - the key insight is LOSO < WF+PL < Oracle.
     """
     os.makedirs(outdir, exist_ok=True)
     per_year = compute_per_year_metrics(df_pred)
@@ -1013,13 +1013,13 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
     c_oracle = "#1a9641"   # green
 
     bars_loso   = ax.bar(x - width, loso_vals,   width,
-                         label="LOSO — static pre-race model\n(no in-season data)",
+                         label="LOSO - static pre-race model\n(no in-season data)",
                          color=c_loso,   alpha=0.85, edgecolor="white")
     bars_wf     = ax.bar(x,          wf_vals,     width,
-                         label="Walk-forward + PL — Bayesian in-season update",
+                         label="Walk-forward + PL - Bayesian in-season update",
                          color=c_wf,     alpha=0.85, edgecolor="white")
     bars_oracle = ax.bar(x + width,  oracle_vals, width,
-                         label="Oracle — theoretical best (WF or LOSO correct)",
+                         label="Oracle - theoretical best (WF or LOSO correct)",
                          color=c_oracle, alpha=0.85, edgecolor="white")
 
     for bars in [bars_loso, bars_wf, bars_oracle]:
@@ -1131,12 +1131,12 @@ def plot_pl_ability_evolution(df_pred, year=2023, outdir=PLOT_DIR):
     one line per driver (top-8 by peak θ), x = races seen so far, y = θ score.
     higher θ means PL thinks that driver is better based on what it's seen this season.
 
-    in 2023 this plot is really satisfying — Verstappen's θ rockets up after the first
+    in 2023 this plot is really satisfying - Verstappen's θ rockets up after the first
     few wins and visually separates from the field by about race 5 or 6. this is exactly
     what the LOSO model fundamentally can't do: it holds out the entire 2023 season so
     it never gets to see a single 2023 race result.
 
-    the gap between VER's θ and #2 is also what drives the high α_k in dominant seasons —
+    the gap between VER's θ and #2 is also what drives the high α_k in dominant seasons -
     when one driver is clearly above everyone else, PL's uncertainty is low and we
     trust it more to override the base ensemble.
     """
@@ -1146,7 +1146,7 @@ def plot_pl_ability_evolution(df_pred, year=2023, outdir=PLOT_DIR):
         print(f"  [skip] No walk-forward data for year {year}")
         return
 
-    # one row per driver per race — pivot to get θ over time
+    # one row per driver per race - pivot to get θ over time
     pivot = yr_df.pivot_table(index="races_observed", columns="Driver",
                                values="pl_theta", aggfunc="mean")
 
@@ -1166,7 +1166,7 @@ def plot_pl_ability_evolution(df_pred, year=2023, outdir=PLOT_DIR):
     ax.axhline(0, color="#999", lw=0.8, ls="--", alpha=0.5, label="Prior mean level")
     ax.set_xlabel("Prior races observed (information fed to PL model)", fontsize=12)
     ax.set_ylabel("PL log-quality score θ* (MAP estimate)\nhigher = model thinks driver is better", fontsize=11)
-    ax.set_title(f"Plackett-Luce Ability Evolution — {year} Season\n"
+    ax.set_title(f"Plackett-Luce Ability Evolution - {year} Season\n"
                  f"(how the PL posterior updates as race results accumulate)", fontsize=12)
     ax.legend(fontsize=9, loc="upper left", bbox_to_anchor=(1.01, 1.0), borderaxespad=0)
     ax.grid(True, alpha=0.3)
@@ -1186,7 +1186,7 @@ def plot_blend_alpha_by_race(df_pred, outdir=PLOT_DIR):
     the five gates in action:
       - starts near 0 early on because the data_gate ramps up from zero
       - climbs as PL sees more races and its uncertainty shrinks
-      - hard cap at 0.45 — base ensemble always contributes at least 55%
+      - hard cap at 0.45 - base ensemble always contributes at least 55%
       - stays low all season in chaotic years (2024 had ~15 different winners →
         entropy gate suppresses trust even when PL thinks it knows something)
 
@@ -1234,7 +1234,7 @@ def plot_season_accuracy_heatmap(df_pred, loso_by_year, outdir=PLOT_DIR):
     the most interesting pattern to look for: walk-forward should shine in the late-season
     bucket where PL has had enough races to figure out the competitive order. in 2023,
     even the early bucket looks good because VER's θ separates from everyone after
-    just 3-4 wins — the PL model picks it up unusually fast that year.
+    just 3-4 wins - the PL model picks it up unusually fast that year.
     """
     os.makedirs(outdir, exist_ok=True)
 
@@ -1314,14 +1314,14 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
       - correct_base: the base ensemble alone (no within-season learning)
 
     At each race there are only four possible outcomes:
-      A. Both right  — both models agree and they're both correct
-      B. WF only     — the PL update specifically made the difference
-      C. Base only   — the base got it right but PL overrode it wrong
-      D. Neither     — neither model had a shot; probably a genuine upset
+      A. Both right  - both models agree and they're both correct
+      B. WF only     - the PL update specifically made the difference
+      C. Base only   - the base got it right but PL overrode it wrong
+      D. Neither     - neither model had a shot; probably a genuine upset
 
     The "oracle" model is the theoretical upper bound: it always picks the right
     answer if EITHER model knew it. Oracle = A + B + C.  Category D is the hard
-    floor — races no pre-race model could realistically predict.
+    floor - races no pre-race model could realistically predict.
 
     Two panels:
       Left:  Per-year accuracy bars (Base, WF, Oracle, theoretical ceiling dots)
@@ -1332,7 +1332,7 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
     os.makedirs(outdir, exist_ok=True)
 
     # theoretical ceiling per year from our analysis
-    # these are the actual race-winner frequency maximums — what a perfect model could hit
+    # these are the actual race-winner frequency maximums - what a perfect model could hit
     theoretical_ceiling = {
         2018: 0.571, 2019: 0.524, 2020: 0.647,
         2021: 0.545, 2022: 0.636, 2023: 0.864, 2024: 0.500,
@@ -1372,10 +1372,10 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
                              gridspec_kw={"width_ratios": [1.1, 1]})
 
     # palette
-    c_base   = "#4393c3"   # blue — base/LOSO
-    c_wf     = "#d6604d"   # red-orange — walk-forward
-    c_oracle = "#1a9641"   # green — oracle
-    c_ceil   = "#333333"   # dark grey — theoretical ceiling
+    c_base   = "#4393c3"   # blue - base/LOSO
+    c_wf     = "#d6604d"   # red-orange - walk-forward
+    c_oracle = "#1a9641"   # green - oracle
+    c_ceil   = "#333333"   # dark grey - theoretical ceiling
     c_both   = "#2c7bb6"   # stacked: both right
     c_wf_s   = "#d7191c"   # stacked: WF only
     c_base_s = "#74add1"   # stacked: base only
@@ -1482,12 +1482,12 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
     # explanatory note
     fig.text(0.5, -0.03,
              "Oracle model = theoretical upper bound assuming we always pick whichever model predicted correctly.\n"
-             "It cannot be built in practice — it requires knowing the result. The gap between WF and Oracle\n"
+             "It cannot be built in practice - it requires knowing the result. The gap between WF and Oracle\n"
              "shows how many races one model got right that the other missed (complementary blind spots).",
              ha="center", fontsize=9, style="italic", color="#555",
              wrap=True)
 
-    plt.suptitle("Theoretical Best Model Analysis — What's the Ceiling?", fontsize=14,
+    plt.suptitle("Theoretical Best Model Analysis - What's the Ceiling?", fontsize=14,
                  fontweight="bold", y=1.02)
     plt.tight_layout()
     path = os.path.join(outdir, "wf_theoretical_oracle.png")
@@ -1506,7 +1506,7 @@ def write_wf_report(df_pred, loso_by_year, outpath=WF_EVAL_FILE):
     race_df  = compute_per_race_metrics(df_pred)
 
     with open(outpath, "w", encoding="utf-8") as f:
-        f.write("F1 Walk-Forward Evaluation — Plackett-Luce Bayesian Update\n")
+        f.write("F1 Walk-Forward Evaluation - Plackett-Luce Bayesian Update\n")
         f.write("=" * 55 + "\n\n")
         f.write("Method: 4-model BMA base (XGB+Ranker+RF+ET, pre-race features)\n")
         f.write("        + Bayesian Plackett-Luce within-season updating\n")
@@ -1559,7 +1559,7 @@ def write_wf_report(df_pred, loso_by_year, outpath=WF_EVAL_FILE):
 
 def main():
     print("=" * 55)
-    print("  F1 Walk-Forward Model — Plackett-Luce Bayesian Update")
+    print("  F1 Walk-Forward Model - Plackett-Luce Bayesian Update")
     print("=" * 55)
 
     print(f"\nLoading data from {TRAIN_FILE}...")

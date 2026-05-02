@@ -1,4 +1,4 @@
-# IDP Final Project — Formula 1 Data Analysis
+# IDP Final Project - Formula 1 Data Analysis
 
 **Srivats Iyer & Aakash B.**
 
@@ -36,7 +36,7 @@
 ```
 idp-final-project-25-26-srivatsi-aakashb/
 │
-├── cache_fastf1_data.py          # Step 1 — download raw FIA timing data
+├── cache_fastf1_data.py          # Step 1 - download raw FIA timing data
 ├── requirements.txt              # Python dependencies for reproducing the analysis
 ├── test_cache_sandbox.py         # Unit tests for the caching system (fully mocked)
 │
@@ -46,7 +46,7 @@ idp-final-project-25-26-srivatsi-aakashb/
 │   └── YYYY/YYYY-MM-DD_Race/     # One folder per session (Practice 1-3, Quali, Race)
 │
 ├── data_organized/               # Cleaned CSVs and trained models (produced by Steps 2-4)
-│   ├── preprocess_data.py        # Step 2 — rubric entry point for preprocessing
+│   ├── preprocess_data.py        # Step 2 - rubric entry point for preprocessing
 │   ├── prepocess_data.py         # Original preprocessing implementation
 │   ├── qualifying_deltas.csv     # RQ1: teammate qualifying gaps
 │   ├── race_results.csv          # RQ2: all finishes 2018-2025
@@ -66,12 +66,12 @@ idp-final-project-25-26-srivatsi-aakashb/
 │   └── test_data/                # Small test datasets for preprocessing validation
 │
 └── final_report/                 # All analysis code, plots, and the written report
-    ├── feature_engineering.py    # Step 3 — builds the ML feature matrix
-    ├── mach_learning.py          # Step 4 — trains the ensemble + Bayesian post-processing
-    ├── predict_2025.py           # Step 5a — backtest predictions against 2025 season
-    ├── predict_2026.py           # Step 5b — retrain and predict the 2026 season
-    ├── walk_forward_model.py     # Step 5c — Plackett-Luce in-season updater
-    ├── create_plots.py           # Step 6 — generates all report visualizations
+    ├── feature_engineering.py    # Step 3 - builds the ML feature matrix
+    ├── mach_learning.py          # Step 4 - trains the ensemble + Bayesian post-processing
+    ├── predict_2025.py           # Step 5a - backtest predictions against 2025 season
+    ├── predict_2026.py           # Step 5b - retrain and predict the 2026 season
+    ├── walk_forward_model.py     # Step 5c - Plackett-Luce in-season updater
+    ├── create_plots.py           # Step 6 - generates all report visualizations
     ├── final.md                  # Written research report (27 figures, appendix)
     └── plots/                    # Generated PNG figures (27 files)
 ```
@@ -93,7 +93,7 @@ qualifying_deltas.csv  race_results.csv  lap_time_spreads.csv  driver_season_pro
   │
 final_report/feature_engineering.py
   │  Extracts rolling form, circuit history, pace, consistency, telemetry features
-  │  (Computes rolling stats BEFORE loading race results — no data leakage)
+  │  (Computes rolling stats BEFORE loading race results - no data leakage)
   ▼
 ml_training_features.csv  +  ml_2025_features.csv
   │
@@ -127,7 +127,7 @@ cd idp-final-project-25-26-srivatsi-aakashb
 # 2. Install dependencies
 python3 -m pip install -r requirements.txt
 
-# 3. Cache raw data  (one-time, ~several hours — see note below)
+# 3. Cache raw data  (one-time, ~several hours - see note below)
 python cache_fastf1_data.py
 
 # 4. Preprocess into analysis CSVs
@@ -148,13 +148,13 @@ python final_report/walk_forward_model.py
 python final_report/create_plots.py
 ```
 
-> **Note on caching:** `cache_fastf1_data.py` downloads from the FastF1 API and respects rate limits using exponential back-off (60s → 300s → 1200s → 3600s). By default it uses 1 worker to stay within API limits. Progress is saved to `discovery_raw_data/cache_progress.json` so the download is resumable — you can safely interrupt and restart it. Once cached, all subsequent steps run fully offline.
+> **Note on caching:** `cache_fastf1_data.py` downloads from the FastF1 API and respects rate limits using exponential back-off (60s → 300s → 1200s → 3600s). By default it uses 1 worker to stay within API limits. Progress is saved to `discovery_raw_data/cache_progress.json` so the download is resumable - you can safely interrupt and restart it. Once cached, all subsequent steps run fully offline.
 
 ---
 
 ## Step-by-Step Instructions
 
-### Step 1 — Cache Raw Data
+### Step 1 - Cache Raw Data
 
 ```bash
 python cache_fastf1_data.py
@@ -175,7 +175,7 @@ python test_cache_sandbox.py
 
 ---
 
-### Step 2 — Preprocess Data
+### Step 2 - Preprocess Data
 
 ```bash
 python data_organized/preprocess_data.py
@@ -188,11 +188,11 @@ Reads the FastF1 cache and outputs four cleaned CSVs to `data_organized/`:
 | `qualifying_deltas.csv` | ~488 | Teammate qualifying gaps per race (RQ1) |
 | `race_results.csv` | ~2,977 | All race finishes with points and gap-to-winner (RQ2) |
 | `lap_time_spreads.csv` | large | Per-driver lap delta from fastest lap per race (RQ2.1) |
-| `driver_season_profiles.csv` | — | Season aggregate stats per driver (RQ4) |
+| `driver_season_profiles.csv` | - | Season aggregate stats per driver (RQ4) |
 
 ---
 
-### Step 3 — Build the ML Feature Matrix
+### Step 3 - Build the ML Feature Matrix
 
 ```bash
 python final_report/feature_engineering.py
@@ -211,12 +211,12 @@ Constructs one row per driver per race weekend from the FastF1 cache. Features i
 Rolling statistics are computed strictly from races *before* the current round to prevent data leakage. A warmup period using 2019–2021 data populates the rolling windows before the 2022 training set begins.
 
 Outputs:
-- `data_organized/ml_training_features.csv` — 2022–2024 training features
-- `data_organized/ml_2025_features.csv` — 2025 backtest features
+- `data_organized/ml_training_features.csv` - 2022–2024 training features
+- `data_organized/ml_2025_features.csv` - 2025 backtest features
 
 ---
 
-### Step 4 — Train the Ensemble
+### Step 4 - Train the Ensemble
 
 ```bash
 python final_report/mach_learning.py
@@ -238,14 +238,14 @@ Saved artifacts:
 | `rf_top10_model.joblib` | Random Forest top-10 ranker |
 | `et_model.joblib` | Extra Trees ensemble |
 | `meta_model.joblib` | Stacking meta-model |
-| `feature_imputer.joblib` | Missing-value imputer (must reuse at inference — do not refit) |
+| `feature_imputer.joblib` | Missing-value imputer (must reuse at inference - do not refit) |
 | `bma_weights.joblib` | Bayesian Model Averaging blend weights |
 | `cal_temperature.joblib` | Calibration temperature (Platt scaling) |
 | `pl_temperature.joblib` | Plackett-Luce temperature parameter |
 
 ---
 
-### Step 5a — Backtest Against 2025
+### Step 5a - Backtest Against 2025
 
 ```bash
 python final_report/predict_2025.py
@@ -254,13 +254,13 @@ python final_report/predict_2025.py
 Loads the trained models and makes pre-race predictions for every 2025 race (using only FP/qualifying data available before Sunday). Race results are loaded only after predictions are made to prevent leakage.
 
 Outputs to `data_organized/` and `final_report/plots/`:
-- `2025_predictions.csv` — predicted vs. actual position per driver per race
-- `2025_race_metrics.csv` — winner accuracy, podium overlap (Jaccard), position MAE by race
+- `2025_predictions.csv` - predicted vs. actual position per driver per race
+- `2025_race_metrics.csv` - winner accuracy, podium overlap (Jaccard), position MAE by race
 - `plots/season_accuracy_2025.png`, `plots/predicted_vs_actual.png`, `plots/top10_heatmap.png`
 
 ---
 
-### Step 5b — Predict the 2026 Season
+### Step 5b - Predict the 2026 Season
 
 ```bash
 python final_report/predict_2026.py
@@ -268,11 +268,11 @@ python final_report/predict_2026.py
 
 Retrains the full ensemble from scratch on 2022–2025 data (adding one extra full season vs. the 2025 backtest) then generates race-by-race predictions for the 2026 season. New models are saved to `data_organized/models_2026/` to avoid overwriting the 2025 validation artifacts.
 
-**Important caveat:** The 2026 season introduces entirely new hybrid power units and active aerodynamics. The model cannot account for regulation resets — its predictions assume relative team competitiveness follows historical trends (see `final_report/final.md` Discussion section for more detail).
+**Important caveat:** The 2026 season introduces entirely new hybrid power units and active aerodynamics. The model cannot account for regulation resets - its predictions assume relative team competitiveness follows historical trends (see `final_report/final.md` Discussion section for more detail).
 
 ---
 
-### Step 5c — Walk-Forward Plackett-Luce Updater
+### Step 5c - Walk-Forward Plackett-Luce Updater
 
 ```bash
 python final_report/walk_forward_model.py
@@ -284,7 +284,7 @@ See [ML Model Architecture](#ml-model-architecture) for details on the Plackett-
 
 ---
 
-### Step 6 — Generate All Plots
+### Step 6 - Generate All Plots
 
 ```bash
 python final_report/create_plots.py
@@ -292,7 +292,7 @@ python final_report/create_plots.py
 
 Reads all cleaned CSVs from `data_organized/` and outputs 18+ PNG files to `final_report/plots/`. Uses `matplotlib.use("Agg")` for headless (no display required) rendering.
 
-Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge (joy) plots, violin plots, radar charts, confusion matrices, feature importance bar charts, and predicted-vs-actual scatter plots — all 27 referenced by figure number in `final_report/final.md`.
+Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge (joy) plots, violin plots, radar charts, confusion matrices, feature importance bar charts, and predicted-vs-actual scatter plots - all 27 referenced by figure number in `final_report/final.md`.
 
 ---
 
@@ -316,29 +316,29 @@ Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge
 
 ### Base Ensemble (Three Models)
 
-**Model 1 — XGBoost Regressor**
+**Model 1 - XGBoost Regressor**
 Predicts each driver's finishing position as a continuous number. Trained with gradient-boosted trees using `reg:squarederror` objective. Hyperparameters tuned via randomized search with LOSO cross-validation.
 
-**Model 2 — XGBoost Ranker**
+**Model 2 - XGBoost Ranker**
 Treats each race as a ranking problem with NDCG objective, placing extra weight on correctly ordering the top-3. Uses `rank:ndcg` objective with query groups defined per race.
 
-**Model 3 — Random Forest**
+**Model 3 - Random Forest**
 Binary classifier predicting win probability. A second Random Forest predicts top-10 probability. Outputs are probability scores that feed into the Bayesian calibration step.
 
 ### Bayesian Post-Processing (Three Layers)
 
-**Layer A — Normal-Normal Hierarchical Shrinkage (Circuit History)**
+**Layer A - Normal-Normal Hierarchical Shrinkage (Circuit History)**
 Applies James-Stein shrinkage to each driver's per-circuit historical average. Drivers with few appearances at a track are shrunk toward the population mean; drivers with many appearances retain more of their individual signal.
 
-**Layer B — Temperature Scaling (Probability Calibration)**
+**Layer B - Temperature Scaling (Probability Calibration)**
 Applies Platt scaling (a single learned temperature parameter) to the Random Forest win probabilities to convert raw scores into well-calibrated probabilities. The temperature is fitted on a held-out validation fold.
 
-**Layer C — Bayesian Model Averaging**
+**Layer C - Bayesian Model Averaging**
 Blends the three base-model predictions using inverse-variance weighting. Models with lower variance on the validation set receive higher weight. Weights are saved to `bma_weights.joblib` and are not refitted at inference time.
 
 ### Validation Strategy
 
-**Leave-One-Season-Out (LOSO):** The primary validation strategy. Each season from 2022 to 2024 is held out in turn — the model trains on all other seasons and predicts the held-out one. This simulates real deployment where an entire season's worth of new cars and driver transfers create distribution shift.
+**Leave-One-Season-Out (LOSO):** The primary validation strategy. Each season from 2022 to 2024 is held out in turn - the model trains on all other seasons and predicts the held-out one. This simulates real deployment where an entire season's worth of new cars and driver transfers create distribution shift.
 
 **Walk-Forward (Plackett-Luce):** The `walk_forward_model.py` adds a second validation track. The Plackett-Luce model represents the probability of a finishing order given latent driver quality scores θ:
 
@@ -364,7 +364,7 @@ This softmax-over-remaining formulation (Luce 1959) treats each race result as a
 - Missing/corrupted: 6 sessions from 2018–2019 (filled with rolling-average imputation)
 - 2022 regulation change is confounded with cost-cap introduction (acknowledged in report)
 - Wet-session qualifying times treated as missing (binary rain flag added instead)
-- 2026 active aero and new PU regs are unmodeled — forward predictions assume historical relative pace holds
+- 2026 active aero and new PU regs are unmodeled - forward predictions assume historical relative pace holds
 
 ---
 

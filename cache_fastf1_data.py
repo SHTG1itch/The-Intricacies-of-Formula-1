@@ -68,12 +68,12 @@ def session_key(year, round_num, idx):
 def fetch_session(year, round_num, idx):
     """
     Download and cache one session. Returns (status, session):
-      ('ok', session)     — loaded successfully
-      ('not_found', None) — no session at this index for this event
-      ('failed', None)    — unrecoverable after all retries
+      ('ok', session)     - loaded successfully
+      ('not_found', None) - no session at this index for this event
+      ('failed', None)    - unrecoverable after all retries
 
     RateLimitExceededError retries are tracked separately so they don't consume
-    the transient-error budget — FastF1's rolling window can require a full hour
+    the transient-error budget - FastF1's rolling window can require a full hour
     to reset, and we'd rather wait than permanently skip a session.
     """
     rl_attempt = 0   # rate-limit retry counter
@@ -100,7 +100,7 @@ def fetch_session(year, round_num, idx):
                 return "failed", None
             wait = RATE_LIMIT_BACKOFFS[rl_attempt]
             log.warning(
-                "  [%d R%02d S%d] rate-limited (backoff %d/%d) — sleeping %ds",
+                "  [%d R%02d S%d] rate-limited (backoff %d/%d) - sleeping %ds",
                 year, round_num, idx,
                 rl_attempt + 1, len(RATE_LIMIT_BACKOFFS), wait,
             )
@@ -116,7 +116,7 @@ def fetch_session(year, round_num, idx):
                 return "failed", None
             delay = RETRY_DELAYS[tx_attempt]
             log.warning(
-                "  [%d R%02d S%d] attempt %d failed: %s — retry in %ds",
+                "  [%d R%02d S%d] attempt %d failed: %s - retry in %ds",
                 year, round_num, idx, tx_attempt + 1, exc, delay,
             )
             time.sleep(delay)
@@ -146,10 +146,10 @@ def process_round(year, round_num, event_name, done_set):
             break
 
         if status == "failed":
-            # Transient error after all retries — skip this session but keep
+            # Transient error after all retries - skip this session but keep
             # going so a single bad session doesn't block the whole round.
             log.warning(
-                "  [%d R%02d S%d] skipped after repeated errors — will retry next run",
+                "  [%d R%02d S%d] skipped after repeated errors - will retry next run",
                 year, round_num, idx,
             )
             continue
@@ -198,7 +198,7 @@ def cache_year(year, done_set):
             rn, name = futures[fut]
             try:
                 _, _, loaded = fut.result()
-                log.info("  [%d R%02d] %s — %d sessions", year, rn, name, loaded)
+                log.info("  [%d R%02d] %s - %d sessions", year, rn, name, loaded)
             except Exception as exc:
                 log.error("  [%d R%02d] %s crashed: %s", year, rn, name, exc)
 

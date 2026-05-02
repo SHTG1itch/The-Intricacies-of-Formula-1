@@ -1,4 +1,4 @@
-F1 Walk-Forward Evaluation — Plackett-Luce Bayesian Update
+F1 Walk-Forward Evaluation - Plackett-Luce Bayesian Update
 =======================================================
 
 Method: 4-model BMA base (XGB+Ranker+RF+ET, pre-race features)

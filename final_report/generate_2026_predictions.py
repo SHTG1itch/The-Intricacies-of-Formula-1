@@ -126,7 +126,7 @@ def load_2026_actuals():
         fastf1.Cache.enable_cache(CACHE_DIR)
         fastf1.Cache.offline_mode(enabled=False)
     except ImportError:
-        print("  [warn] FastF1 not available — falling back to R1 offline only")
+        print("  [warn] FastF1 not available - falling back to R1 offline only")
         return _offline_r1_fallback()
 
     completed_rounds = []
@@ -198,7 +198,7 @@ def build_driver_strength(form_2025, avg_finish_2026, pts_2026, n_completed):
       10% championship-pace implied    (points/race converted to implied position)
 
     The high 2026 weight reflects that the regulation change makes past seasons
-    less predictive — 3 actual 2026 races are worth more than a full 2025 season
+    less predictive - 3 actual 2026 races are worth more than a full 2025 season
     at this stage of the championship.
     """
     # team-level average from 2025 (for team-change blending)
@@ -374,7 +374,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
 
     lines = [
         "=" * 70,
-        "  2026 F1 WORLD CHAMPIONSHIP — UPDATED PROJECTED FINAL STANDINGS",
+        "  2026 F1 WORLD CHAMPIONSHIP - UPDATED PROJECTED FINAL STANDINGS",
         "=" * 70,
         f"  Races completed : {n_done} of {n_total}  "
         f"(R{min(completed_rounds)}-R{max(completed_rounds)} actual + {n_future} simulated)",
@@ -384,7 +384,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
         "",
         "  NOTE: 2026 regulations (active aero + new PUs) make historical",
         "  data less reliable. The 3 real races already outweigh all of 2025",
-        "  in this model. Treat as directional — not a confident prediction.",
+        "  in this model. Treat as directional - not a confident prediction.",
         "",
         "─" * 70,
         "  PREDICTED WORLD CHAMPION:",
@@ -435,7 +435,7 @@ def write_predictions_txt(wdc, completed_rounds, n_total, strength,
 
 def main():
     print("=" * 70)
-    print("  F1 2026 — Updated Season Projection  (3-race data + 2025 form)")
+    print("  F1 2026 - Updated Season Projection  (3-race data + 2025 form)")
     print("=" * 70)
 
     print("\n[1/6] Loading 2025 driver form (historical baseline)...")

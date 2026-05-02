@@ -1,16 +1,16 @@
 """
-generate_all_plots.py  —  F1 IDP Final Report: Complete Research Question Plot Suite
+generate_all_plots.py  -  F1 IDP Final Report: Complete Research Question Plot Suite
 =====================================================================================
 This is the main plot generator for our Formula 1 research project. Every plot in
 this file is meant to answer (or support) one of our four research questions:
 
-    RQ1  — What factors in a race weekend lead to a win? Does driver skill matter?
-    RQ2  — Did the 2021 cost cap change F1 results?
-    RQ2.1 — Did the cost cap actually close the performance gap between teams?
+    RQ1  - What factors in a race weekend lead to a win? Does driver skill matter?
+    RQ2  - Did the 2021 cost cap change F1 results?
+    RQ2.1 - Did the cost cap actually close the performance gap between teams?
            (This is a subset / deeper follow-up to RQ2.)
-    RQ4  — Can we predict the WDC winner? Is it skill, the car, or something else?
+    RQ4  - Can we predict the WDC winner? Is it skill, the car, or something else?
 
-The numbering jumps from RQ2.1 to RQ4 intentionally — RQ2.1 is a sub-question of RQ2,
+The numbering jumps from RQ2.1 to RQ4 intentionally - RQ2.1 is a sub-question of RQ2,
 not a stand-alone third question. 
 
 Run from the repo root:
@@ -28,7 +28,7 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 
 import matplotlib
-matplotlib.use("Agg")           # no display needed — we're just writing PNGs
+matplotlib.use("Agg")           # no display needed - we're just writing PNGs
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.gridspec as gridspec
@@ -53,15 +53,15 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 # ── shared color palette ──────────────────────────────────────────────────────
 # Keeping a light background so the charts are legible in the written report.
 # The accent colors are loosely inspired by the official F1 media brand guide.
-BG    = "#FFFFFF"          # clean white — prints well, no eyestrain
+BG    = "#FFFFFF"          # clean white - prints well, no eyestrain
 DARK  = "#1a1a2e"          # near-black for text
-RED   = "#E8002D"          # F1 red — for winners / dominant series
-BLUE  = "#3A86FF"          # blue — for second series / contrast
-TEAL  = "#4ECDC4"          # teal — post-cost-cap era, "progress"
-AMBER = "#FFBE0B"          # amber — highlights / accent annotations
+RED   = "#E8002D"          # F1 red - for winners / dominant series
+BLUE  = "#3A86FF"          # blue - for second series / contrast
+TEAL  = "#4ECDC4"          # teal - post-cost-cap era, "progress"
+AMBER = "#FFBE0B"          # amber - highlights / accent annotations
 GREY  = "#888888"          # neutral grey
 LGREY = "#DDDDDD"          # light grey for grid lines / background fills
-GREEN = "#228B22"          # dark green — for the 2021 cost cap marker
+GREEN = "#228B22"          # dark green - for the 2021 cost cap marker
 
 # Team-specific colors for 2024 season
 TEAM_COLORS = {
@@ -149,7 +149,7 @@ def _load_telemetry_data(year, gp_round, corner_dist_low, corner_dist_high):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ1a — Teammate Qualifying Delta Swarm Plot
+#  RQ1a - Teammate Qualifying Delta Swarm Plot
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq1a_quali_delta():
@@ -173,7 +173,7 @@ def plot_rq1a_quali_delta():
     ]
     df = df[df["Team"].isin(teams_ordered)].copy()
 
-    # figure out the "reference" driver per team — whichever shows up as Driver1 most often
+    # figure out the "reference" driver per team - whichever shows up as Driver1 most often
     # Driver1 is always the faster of the pair in qualifying_deltas.csv
     ref_driver = {}
     for team, grp in df.groupby("Team"):
@@ -184,7 +184,7 @@ def plot_rq1a_quali_delta():
         team = row["Team"]
         ref  = ref_driver[team]
         d1, d2, delta = row["Driver1"], row["Driver2"], row["Delta_s"]
-        delta = min(delta, 1.5)   # cap outliers — sometimes a driver misses Q3 entirely
+        delta = min(delta, 1.5)   # cap outliers - sometimes a driver misses Q3 entirely
 
         if d1 == ref:
             rows.append({"Team": team, "Driver": d1, "Delta": +delta, "Role": "faster"})
@@ -207,7 +207,7 @@ def plot_rq1a_quali_delta():
     ax.set_facecolor(BG)
 
     # Each driver gets a distinct color AND marker shape.
-    # Lighter-shade pairs (old approach) looked identical — now D1 = team color + circle,
+    # Lighter-shade pairs (old approach) looked identical - now D1 = team color + circle,
     # D2 = clearly contrasting color + square so you can tell them apart at a glance.
     np.random.seed(42)
     team_driver_styles = {
@@ -248,7 +248,7 @@ def plot_rq1a_quali_delta():
 
     ax.axhline(0, color=DARK, linewidth=1.2, linestyle="--", alpha=0.5, zorder=2)
 
-    # fit a linear trend across the team medians — is skill gap consistent?
+    # fit a linear trend across the team medians - is skill gap consistent?
     team_medians = [
         plot_df[(plot_df["Team"] == t) & (plot_df["Delta"] > 0)]["Delta"].median()
         for t in teams_ordered
@@ -279,7 +279,7 @@ def plot_rq1a_quali_delta():
     ax.set_xlabel("Constructor", fontsize=11)
     ax.set_ylim(-0.75, 0.75)
     ax.set_title(
-        "RQ1 — Plot A: Teammate Qualifying Delta by Team (2024 Season)\n"
+        "RQ1 - Plot A: Teammate Qualifying Delta by Team (2024 Season)\n"
         "Consistent gap = Skill Factor;  Overlap near 0 = Car Dominates",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -312,7 +312,7 @@ def plot_rq1a_quali_delta():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ1b — Throttle vs. Brake Input KDE  (FastF1 telemetry)
+#  RQ1b - Throttle vs. Brake Input KDE  (FastF1 telemetry)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq1b_throttle_brake():
@@ -407,7 +407,7 @@ def plot_rq1b_throttle_brake():
     ax.set_xlabel("Throttle Application (%)", fontsize=12)
     ax.set_ylabel("Brake Application (%)", fontsize=12)
     ax.set_title(
-        "RQ1 — Plot B: Throttle vs. Brake Input KDE  (Turn 8, Bahrain GP)\n"
+        "RQ1 - Plot B: Throttle vs. Brake Input KDE  (Turn 8, Bahrain GP)\n"
         "Trail-Braking Signature = Skill-Driven Win vs. Mechanical Grip",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -430,7 +430,7 @@ def plot_rq1b_throttle_brake():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ2a — Points Concentration Heatmap
+#  RQ2a - Points Concentration Heatmap
 # ════════════════════════════════════════════════════════════════════════════
 
 def _estimate_points_for_year(year):
@@ -457,7 +457,7 @@ def plot_rq2a_points_heatmap():
     per season (2018–2025).
 
     The visual story: pre-cost-cap, almost all the heat is stuck at P1–P3.
-    After the cap kicks in, the heat "bleeds" toward the midfield — meaning
+    After the cap kicks in, the heat "bleeds" toward the midfield - meaning
     more teams and drivers are scoring meaningful points.
 
     Data: race_results.csv (2023–2025) + estimates for 2018–2022
@@ -527,7 +527,7 @@ def plot_rq2a_points_heatmap():
     cbar.set_label("Total Points Scored (all teams combined)", fontsize=9)
 
     ax.set_title(
-        "RQ2 — Plot A: Points Concentration Heatmap by Year & Finishing Position\n"
+        "RQ2 - Plot A: Points Concentration Heatmap by Year & Finishing Position\n"
         "Pre-Cost Cap: Heat clusters at P1–P3 → Post-Cost Cap: Heat 'bleeds' to midfield",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -540,7 +540,7 @@ def plot_rq2a_points_heatmap():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ2b — Gap to Winner Violin Plot
+#  RQ2b - Gap to Winner Violin Plot
 # ════════════════════════════════════════════════════════════════════════════
 
 def _load_race_gaps_fastf1(years_list, max_per_year=8):
@@ -611,7 +611,7 @@ def plot_rq2b_gap_violin():
     print("    loading pre-cap race gaps from FastF1 (2019–2020)...")
     pre_df  = _load_race_gaps_fastf1([2019, 2020], max_per_year=15)
 
-    # 2021 included in post era — that's when the cost cap was introduced
+    # 2021 included in post era - that's when the cost cap was introduced
     print("    loading post-cap race gaps from FastF1 (2021–2025)...")
     post_df = _load_race_gaps_fastf1([2021, 2022, 2023, 2024, 2025], max_per_year=10)
 
@@ -705,7 +705,7 @@ def plot_rq2b_gap_violin():
     ax.set_xlabel("Finishing Position", fontsize=11)
     ax.set_ylim(-5, 210)
     ax.set_title(
-        "RQ2 — Plot B: Gap to Race Winner — Pre vs. Post Cost Cap  (Split Violin)\n"
+        "RQ2 - Plot B: Gap to Race Winner - Pre vs. Post Cost Cap  (Split Violin)\n"
         "Shorter, fatter Right-Side violins → Field has compressed since 2021",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -728,7 +728,7 @@ def plot_rq2b_gap_violin():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ2.1a — Field Spread Ridge Plot
+#  RQ2.1a - Field Spread Ridge Plot
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq2_1a_field_spread():
@@ -736,7 +736,7 @@ def plot_rq2_1a_field_spread():
     Ridge / joy plot: one distribution per season showing each driver's median
     lap time delta from the fastest car in the race.
 
-    The "story" is in the tails. In 2019 the tail runs to ~6-7 seconds — slow
+    The "story" is in the tails. In 2019 the tail runs to ~6-7 seconds - slow
     cars were getting lapped at a big margin. By 2025 that tail has tucked in
     dramatically. Whether that's the cost cap or technical regs is debatable,
     but the visual speaks for itself.
@@ -827,7 +827,7 @@ def plot_rq2_1a_field_spread():
     ax.set_xlabel("Lap Time Delta from Race Winner / Fastest Lap (seconds)", fontsize=11)
     ax.set_ylabel("Year (stacked density)", fontsize=11)
     ax.set_title(
-        "RQ2.1 — Plot A: Field Spread Ridge Plot  (Normalised Lap Time Delta, 2019–2025)\n"
+        "RQ2.1 - Plot A: Field Spread Ridge Plot  (Normalised Lap Time Delta, 2019–2025)\n"
         "Tail 'tucking in' toward 0 → Slower cars catching the front runners post-2021",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -845,7 +845,7 @@ def plot_rq2_1a_field_spread():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ2.1b — Performance Tiers Step Plot
+#  RQ2.1b - Performance Tiers Step Plot
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq2_1b_performance_tiers():
@@ -856,7 +856,7 @@ def plot_rq2_1b_performance_tiers():
     The shaded area between the lines represents the "performance gap" between
     the haves and have-nots. A narrowing gap = cost cap doing its job.
 
-    The green dashed line marks 2021 — the year the cost cap was introduced.
+    The green dashed line marks 2021 - the year the cost cap was introduced.
     It sits exactly on the 2021 data point to make the before/after contrast obvious.
     """
     # ML features cover 2022-2025 with actual qualifying gap data
@@ -932,7 +932,7 @@ def plot_rq2_1b_performance_tiers():
             label="Bottom Teams (avg gap to pace)")
     ax.scatter(years, bot_vals, color=BLUE, s=50, zorder=5)
 
-    # the cost cap was introduced in 2021 — mark it exactly on that year's data point
+    # the cost cap was introduced in 2021 - mark it exactly on that year's data point
     ax.axvline(2021, color=GREEN, linewidth=1.8, linestyle="--", alpha=0.85)
     y_max = perf_df["Bottom"].max()
     ax.text(2021.07, y_max * 0.92,
@@ -951,7 +951,7 @@ def plot_rq2_1b_performance_tiers():
     ax.set_ylabel("Average Gap to Race Lap Time (s)", fontsize=11)
     ax.set_xlabel("Season", fontsize=11)
     ax.set_title(
-        "RQ2.1 — Plot B: Average Gap to Pace % — Top vs. Bottom Teams  (2019–2025)\n"
+        "RQ2.1 - Plot B: Average Gap to Pace % - Top vs. Bottom Teams  (2019–2025)\n"
         "Converging lines → Fiscal Cap is compressing performance tiers",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -969,7 +969,7 @@ def plot_rq2_1b_performance_tiers():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ4a — WDC Feature Radar Chart
+#  RQ4a - WDC Feature Radar Chart
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq3a_wdc_radar():
@@ -1002,8 +1002,8 @@ def plot_rq3a_wdc_radar():
             "Strategy":    pts_per_finish,
         }
 
-    wdc_2025 = "NOR"   # 2025 champion — Lando Norris
-    wdc_2024 = "VER"   # 2024 champion — Max Verstappen
+    wdc_2025 = "NOR"   # 2025 champion - Lando Norris
+    wdc_2024 = "VER"   # 2024 champion - Max Verstappen
 
     p25 = driver_profile(wdc_2025, 2025)
     p24 = driver_profile(wdc_2024, 2024)
@@ -1066,7 +1066,7 @@ def plot_rq3a_wdc_radar():
     ax.plot(angles_closed, v24_closed, color=BLUE, linewidth=2.5, zorder=3)
     ax.fill(angles_closed, v24_closed, color=BLUE, alpha=0.25,    zorder=2)
 
-    # remove the default xticklabels — we'll place our own so they don't overlap
+    # remove the default xticklabels - we'll place our own so they don't overlap
     ax.set_xticklabels([])
 
     # place axis labels at r=1.25 with correct ha/va for each position
@@ -1091,8 +1091,8 @@ def plot_rq3a_wdc_radar():
     ax.grid(color=LGREY, alpha=0.6, linewidth=0.8)
 
     legend_handles = [
-        mpatches.Patch(color=RED,  alpha=0.60, label=f"2025 WDC ({wdc_2025})  — Car-Pace Dominant"),
-        mpatches.Patch(color=BLUE, alpha=0.60, label=f"2024 WDC ({wdc_2024})  — Experience + Strategy"),
+        mpatches.Patch(color=RED,  alpha=0.60, label=f"2025 WDC ({wdc_2025})  - Car-Pace Dominant"),
+        mpatches.Patch(color=BLUE, alpha=0.60, label=f"2024 WDC ({wdc_2024})  - Experience + Strategy"),
     ]
     ax.legend(handles=legend_handles, loc="lower center",
               bbox_to_anchor=(0.5, -0.14), fontsize=8.5, framealpha=0.9,
@@ -1139,8 +1139,8 @@ def plot_rq3a_wdc_radar():
                      fontsize=9, color=GREY, pad=4)
 
     fig.suptitle(
-        "RQ4 — Plot A: WDC Feature Profile Radar Chart\n"
-        "Shape reveals 'Why They Won' — Car vs. Human Factors",
+        "RQ4 - Plot A: WDC Feature Profile Radar Chart\n"
+        "Shape reveals 'Why They Won' - Car vs. Human Factors",
         fontsize=12, fontweight="bold", y=1.01,
     )
 
@@ -1152,7 +1152,7 @@ def plot_rq3a_wdc_radar():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  RQ4b — Championship Rank Confusion Matrix
+#  RQ4b - Championship Rank Confusion Matrix
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_rq3b_confusion_matrix():
@@ -1167,11 +1167,11 @@ def plot_rq3b_confusion_matrix():
     A perfect model → bright diagonal cells.
 
     FIX APPLIED: Previous version used plt.cm.Blues with vmin=0, which made empty
-    cells (value=0) white and indistinguishable from the background — the whole matrix
+    cells (value=0) white and indistinguishable from the background - the whole matrix
     looked washed out. Now using PowerNorm(gamma=0.5) so lower counts still show as
     visible blue, and all annotation text is black for maximum legibility.
     """
-    # try the full ML predictions first — fall back to grid-position proxy
+    # try the full ML predictions first - fall back to grid-position proxy
     pred_path = os.path.join(DATA_DIR, "2025_predictions.csv")
     use_ml = os.path.exists(pred_path)
     if use_ml:
@@ -1223,7 +1223,7 @@ def plot_rq3b_confusion_matrix():
                 p   = pts(row["PredictedPosition"]) if pd.notna(row["PredictedPosition"]) else 0
                 cum_pred[drv] = cum_pred.get(drv, 0) + p
         else:
-            # grid position is a decent proxy — it represents qualifying pace
+            # grid position is a decent proxy - it represents qualifying pace
             race_sorted = race.dropna(subset=["GridPosition"]).sort_values("GridPosition")
             for rank, (_, row) in enumerate(race_sorted.iterrows(), start=1):
                 drv = row["Driver"]
@@ -1249,7 +1249,7 @@ def plot_rq3b_confusion_matrix():
     # light grey background so the zero cells are clearly "empty" rather than white
     ax.set_facecolor("#EEEEEE")
 
-    # PowerNorm with gamma=0.5 (square-root scaling) makes low counts visible —
+    # PowerNorm with gamma=0.5 (square-root scaling) makes low counts visible -
     # a count of 1 will appear much more saturated than with linear scaling.
     # vmin=0.5 so actual zero cells fall "below" the colormap range and stay grey.
     vmax = max(matrix.max(), 1)
@@ -1259,7 +1259,7 @@ def plot_rq3b_confusion_matrix():
 
     im = ax.imshow(matrix, cmap=cmap, norm=norm, aspect="auto")
 
-    # all annotation text is black — readable on any shade of blue or grey
+    # all annotation text is black - readable on any shade of blue or grey
     for i in range(10):
         for j in range(10):
             val = matrix[i, j]
@@ -1272,7 +1272,7 @@ def plot_rq3b_confusion_matrix():
     for y in range(-1, 10):
         ax.axhline(y + 0.5, color="white", linewidth=0.5, alpha=0.5)
 
-    # highlight the diagonal — that's the "right answer" cells
+    # highlight the diagonal - that's the "right answer" cells
     for i in range(10):
         rect = plt.Rectangle((i - 0.5, i - 0.5), 1, 1,
                               linewidth=2, edgecolor=AMBER, facecolor="none", zorder=4)
@@ -1305,7 +1305,7 @@ def plot_rq3b_confusion_matrix():
             bbox=dict(boxstyle="round,pad=0.4", fc="#FFFDE7", ec=AMBER, alpha=0.95))
 
     ax.set_title(
-        "RQ4 — Plot B: Championship Rank Confusion Matrix — 2025 Season\n"
+        "RQ4 - Plot B: Championship Rank Confusion Matrix - 2025 Season\n"
         "Car-Pace Model: Bright diagonal = car predicts winner;  Off-diagonal = skill / strategy",
         fontsize=11, fontweight="bold", pad=12,
     )
@@ -1318,7 +1318,7 @@ def plot_rq3b_confusion_matrix():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  EXTRA PLOT 1 — Season Result Fingerprint (Driver × Round heatmap)
+#  EXTRA PLOT 1 - Season Result Fingerprint (Driver × Round heatmap)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_extra_season_fingerprint():
@@ -1343,7 +1343,7 @@ def plot_extra_season_fingerprint():
     df = pd.read_csv(os.path.join(DATA_DIR, "race_results.csv"))
     df = df[df["Year"] == 2025].copy()
 
-    # focus on the drivers who scored meaningful points — top 15 by total
+    # focus on the drivers who scored meaningful points - top 15 by total
     prof = pd.read_csv(os.path.join(DATA_DIR, "driver_season_profiles.csv"))
     top_drivers = (
         prof[prof["Year"] == 2025]
@@ -1379,19 +1379,19 @@ def plot_extra_season_fingerprint():
     # I chose these colors to match F1's trophy colors (gold=win, silver=podium, green=points)
     def cell_color(pos, status):
         if status == "dnf":
-            return "#E8002D"      # red — DNF is bad no matter what
+            return "#E8002D"      # red - DNF is bad no matter what
         if status == "absent":
-            return "#CCCCCC"      # grey — not in this race
+            return "#CCCCCC"      # grey - not in this race
         if pd.isna(pos):
             return "#EEEEEE"
         pos = int(pos)
         if pos == 1:
-            return "#FFD700"      # gold — win
+            return "#FFD700"      # gold - win
         if pos <= 3:
-            return "#5CB85C"      # green — podium
+            return "#5CB85C"      # green - podium
         if pos <= 10:
-            return "#4ECDC4"      # teal — points
-        return "#F0F0F0"          # white-ish — out of points
+            return "#4ECDC4"      # teal - points
+        return "#F0F0F0"          # white-ish - out of points
 
     fig, ax = plt.subplots(figsize=(max(14, n_rounds * 0.55), len(top_drivers) * 0.6 + 2.5))
     fig.patch.set_facecolor(BG)
@@ -1432,7 +1432,7 @@ def plot_extra_season_fingerprint():
 
     ax.set_xlabel("Race Round", fontsize=11, labelpad=8)
     ax.set_title(
-        "RQ4 / RQ1 — Driver Season Fingerprint  (2025)\n"
+        "RQ4 / RQ1 - Driver Season Fingerprint  (2025)\n"
         "Every cell is one race. Pattern = consistency. Gaps = DNFs / absence.",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -1462,7 +1462,7 @@ def plot_extra_season_fingerprint():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  EXTRA PLOT 2 — Qualifying vs. Race Position Dumbbell Chart
+#  EXTRA PLOT 2 - Qualifying vs. Race Position Dumbbell Chart
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_extra_quali_vs_race_dumbbell():
@@ -1471,7 +1471,7 @@ def plot_extra_quali_vs_race_dumbbell():
     to their average race finish position (square) by a horizontal line.
 
     A line extending LEFT means the driver GAINED positions in the race
-    (they race better than they qualify — usually a sign of strong racecraft).
+    (they race better than they qualify - usually a sign of strong racecraft).
     A line extending RIGHT means the driver LOST positions on average
     (car reliability, strategy calls, or pressure from rivals hurt their results).
 
@@ -1519,7 +1519,7 @@ def plot_extra_quali_vs_race_dumbbell():
                 f"{sign}{delta:.1f}", ha="center", va="bottom",
                 fontsize=7.5, color=lc, fontweight="bold")
 
-    # driver names as ytick labels — these go on the LEFT (standard placement)
+    # driver names as ytick labels - these go on the LEFT (standard placement)
     ax.set_yticks(range(len(df)))
     ax.set_yticklabels(df["Driver"].tolist(), fontsize=10, fontweight="bold")
     ax.invert_yaxis()   # best driver (lowest finish pos) at top
@@ -1527,7 +1527,7 @@ def plot_extra_quali_vs_race_dumbbell():
     ax.set_xlim(0.3, df["AvgQualiPos"].max() + 1.5)
     ax.set_xlabel("Average Position  (P1 = leftmost = best)", fontsize=11)
     ax.set_title(
-        "RQ1 — Qualifying vs. Race Finish Dumbbell  (2025 Season)\n"
+        "RQ1 - Qualifying vs. Race Finish Dumbbell  (2025 Season)\n"
         "Line extends LEFT = driver gains places in the race (racecraft)\n"
         "Line extends RIGHT = driver loses places on average (reliability / strategy)",
         fontsize=11, fontweight="bold", pad=12,
@@ -1564,7 +1564,7 @@ def plot_extra_quali_vs_race_dumbbell():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  EXTRA PLOT 3 — Team Lap-Pace Convergence Heatmap  (2019–2025)
+#  EXTRA PLOT 3 - Team Lap-Pace Convergence Heatmap  (2019–2025)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_extra_team_convergence_heatmap():
@@ -1575,7 +1575,7 @@ def plot_extra_team_convergence_heatmap():
     A cell going from dark (large deficit) to light (small deficit) as you move
     left to right across the year axis = that team converged toward the front.
 
-    This is one of the clearest visualizations for RQ2.1 — it shows not just
+    This is one of the clearest visualizations for RQ2.1 - it shows not just
     whether the overall gap closed, but WHICH teams benefited most from the cap.
 
     Data: lap_time_spreads.csv (2019–2025)
@@ -1584,7 +1584,7 @@ def plot_extra_team_convergence_heatmap():
     df = df[df["Year"].between(2019, 2025)].copy()
     df = df[df["DeltaFromFastest_s"].between(0, 7)]
 
-    # F1 teams change names but are the same entity — consolidate so the history
+    # F1 teams change names but are the same entity - consolidate so the history
     # reads as one continuous line rather than two disconnected ones.
     # This makes the "convergence" story much clearer visually.
     team_name_map = {
@@ -1647,7 +1647,7 @@ def plot_extra_team_convergence_heatmap():
                 ax.text(j, i, f"{val:.2f}s", ha="center", va="center",
                         fontsize=9, color=text_c, fontweight="bold")
             else:
-                ax.text(j, i, "—", ha="center", va="center",
+                ax.text(j, i, "-", ha="center", va="center",
                         fontsize=10, color="#AAAAAA")
 
     # mark the cost cap year
@@ -1670,7 +1670,7 @@ def plot_extra_team_convergence_heatmap():
     cbar.set_label("Mean Race Lap-Time Deficit from Fastest (s)", fontsize=9)
 
     ax.set_title(
-        "RQ2.1 — Team Pace Convergence Heatmap  (2019–2025)\n"
+        "RQ2.1 - Team Pace Convergence Heatmap  (2019–2025)\n"
         "Dark red = large deficit from race leader · Light green = near parity\n"
         "Cells going lighter over time = cost cap working for that constructor",
         fontsize=11, fontweight="bold", pad=12,
@@ -1684,7 +1684,7 @@ def plot_extra_team_convergence_heatmap():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  EXTRA PLOT 4 — Championship Points Gap Evolution  (2025 Season)
+#  EXTRA PLOT 4 - Championship Points Gap Evolution  (2025 Season)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_extra_championship_gap():
@@ -1695,7 +1695,7 @@ def plot_extra_championship_gap():
     A widening gap = the leader is pulling away and the championship is becoming
     a foregone conclusion. A narrowing gap = a real fight is still on.
 
-    This is extremely relevant for RQ4 — if the gap stabilizes early, it means
+    This is extremely relevant for RQ4 - if the gap stabilizes early, it means
     the model could have predicted the winner well before the end of the season.
     """
     df   = pd.read_csv(os.path.join(DATA_DIR, "race_results.csv"))
@@ -1764,7 +1764,7 @@ def plot_extra_championship_gap():
     ax.set_xlabel("Race Round", fontsize=11)
     ax.set_ylim(0, max(gap_data[5]) * 1.25 if gap_data[5] else 100)
     ax.set_title(
-        "RQ4 — Championship Points Gap Evolution  (2025 Season)\n"
+        "RQ4 - Championship Points Gap Evolution  (2025 Season)\n"
         "Widening gap = title becoming inevitable; tight gap = real fight",
         fontsize=12, fontweight="bold", pad=12,
     )
@@ -1781,7 +1781,7 @@ def plot_extra_championship_gap():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  EXTRA PLOT 5 — Pole-to-Win Conversion Rate by Era  (2018–2025)
+#  EXTRA PLOT 5 - Pole-to-Win Conversion Rate by Era  (2018–2025)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_extra_pole_to_win_rate():
@@ -1789,10 +1789,10 @@ def plot_extra_pole_to_win_rate():
     Bar chart: what percentage of pole positions converted into race wins each season.
 
     A high conversion rate (>60%) means the fastest qualifier dominates the race too
-    — suggesting car superiority over in-race variables (strategy, safety cars, luck).
+    - suggesting car superiority over in-race variables (strategy, safety cars, luck).
 
     A lower conversion rate (<40%) suggests more chaotic, strategy-driven races where
-    the pole-sitter couldn't hold on — which is what we'd hope to see post-cost-cap
+    the pole-sitter couldn't hold on - which is what we'd hope to see post-cost-cap
     as midfield cars get closer and can challenge at different strategy windows.
 
     Data: race_results.csv for 2023–2025, historical estimates for 2018–2022.
@@ -1812,8 +1812,8 @@ def plot_extra_pole_to_win_rate():
     # these are well-known figures in the F1 community
     historical = {
         2018: 0.52,   # Hamilton era but Ferrari challenged
-        2019: 0.48,   # More spread — Bottas, Vettel also on poles
-        2020: 0.53,   # COVID season — Hamilton dominant but not every pole
+        2019: 0.48,   # More spread - Bottas, Vettel also on poles
+        2020: 0.53,   # COVID season - Hamilton dominant but not every pole
         2021: 0.41,   # VER-HAM title fight, more variability
         2022: 0.36,   # New regulations, early chaos, Red Bull emerged slowly
     }
@@ -1861,7 +1861,7 @@ def plot_extra_pole_to_win_rate():
     ax.set_ylim(0, 0.80)
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=1))
     ax.set_title(
-        "RQ2 — Pole-to-Win Conversion Rate (2018–2025)\n"
+        "RQ2 - Pole-to-Win Conversion Rate (2018–2025)\n"
         "A lower conversion rate → more chaotic / competitive races\n"
         "Red bars = pre-cost cap · Green bars = post-cost cap (2021+)",
         fontsize=11, fontweight="bold", pad=12,
@@ -1878,12 +1878,12 @@ def plot_extra_pole_to_win_rate():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  FASTF1 PLOT 1 — Teammate Telemetry Duel  (RQ1)
+#  FASTF1 PLOT 1 - Teammate Telemetry Duel  (RQ1)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_fastf1_teammate_quali_duel():
     """
-    RQ1: The core question — does driver skill matter, or is it all about the car?
+    RQ1: The core question - does driver skill matter, or is it all about the car?
 
     The cleanest way to isolate driver skill from car performance is to look at
     TEAMMATES in the SAME QUALIFYING SESSION. Both drivers have identical machinery,
@@ -1893,11 +1893,11 @@ def plot_fastf1_teammate_quali_duel():
     This 4-panel plot shows NOR vs PIA (McLaren teammates) in 2024 Bahrain Qualifying:
       Panel 1 (Speed):      Where each driver brakes/accelerates differently
       Panel 2 (Throttle):   How aggressively each driver gets back on power
-      Panel 3 (Brake):      Trail-braking technique — a key skill differentiator
-      Panel 4 (Delta):      Cumulative time difference — who was ahead and when
+      Panel 3 (Brake):      Trail-braking technique - a key skill differentiator
+      Panel 4 (Delta):      Cumulative time difference - who was ahead and when
 
     Uses fastf1.plotting.get_driver_style() to apply official McLaren color codes
-    with correct line styles (solid for NOR, dashed for PIA — same team, same color).
+    with correct line styles (solid for NOR, dashed for PIA - same team, same color).
     """
     import fastf1
     import fastf1.plotting
@@ -1908,14 +1908,14 @@ def plot_fastf1_teammate_quali_duel():
     drv1, drv2 = "NOR", "PIA"
     session_year, session_round = 2024, 1   # Bahrain 2024 Q is confirmed cached
 
-    # this is the data we'll fill — if FastF1 fails we use synthetic fallback
+    # this is the data we'll fill - if FastF1 fails we use synthetic fallback
     tel1_data, tel2_data = None, None
     real_data = False
     # NOR gets McLaren orange; PIA gets a clear blue so you can tell them apart instantly.
     # FastF1 gives both drivers the same team color (#FF8000) which is unreadable,
     # so we always override drv2_color after the try block regardless of the API result.
-    drv1_color = "#FF8000"   # NOR — McLaren orange
-    drv2_color = "#005AFF"   # PIA — bright blue (forced distinct)
+    drv1_color = "#FF8000"   # NOR - McLaren orange
+    drv2_color = "#005AFF"   # PIA - bright blue (forced distinct)
     drv1_ls    = "solid"
     drv2_ls    = "dashed"
     drv1_lw    = 2.2          # NOR slightly thicker for emphasis
@@ -1925,7 +1925,7 @@ def plot_fastf1_teammate_quali_duel():
         session = fastf1.get_session(session_year, session_round, "Q")
         session.load(laps=True, telemetry=True, weather=False, messages=False)
 
-        # pick_drivers() is the correct v3.x call — pick_driver() is deprecated
+        # pick_drivers() is the correct v3.x call - pick_driver() is deprecated
         laps1 = session.laps.pick_drivers(drv1)
         laps2 = session.laps.pick_drivers(drv2)
         lap1  = laps1.pick_fastest()
@@ -1945,7 +1945,7 @@ def plot_fastf1_teammate_quali_duel():
             )
             drv1_ls   = sty1.get("linestyle", "solid")
             drv2_ls   = sty2.get("linestyle", "dashed")
-            # intentionally NOT reading color from FastF1 — teammates share the same
+            # intentionally NOT reading color from FastF1 - teammates share the same
             # color and it makes the telemetry overlay completely unreadable
             real_data = True
             print(f"    Teammate duel: using {session_year} R{session_round} qualifying "
@@ -2070,9 +2070,9 @@ def plot_fastf1_teammate_quali_duel():
             ax.legend(fontsize=10, framealpha=0.9, loc="upper right")
             source_note = "Real FastF1 telemetry" if real_data else "Synthetic (FastF1 unavailable)"
             ax.set_title(
-                f"RQ1 — FastF1 Teammate Telemetry Duel: {drv1} vs {drv2}  "
+                f"RQ1 - FastF1 Teammate Telemetry Duel: {drv1} vs {drv2}  "
                 f"(Bahrain {session_year} Qualifying)\n"
-                "Same car, same tyres — any gap here is the driver's contribution alone  "
+                "Same car, same tyres - any gap here is the driver's contribution alone  "
                 f"[{source_note}]",
                 fontsize=11, fontweight="bold", pad=10,
             )
@@ -2114,7 +2114,7 @@ def plot_fastf1_teammate_quali_duel():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  FASTF1 PLOT 2 — Field Compression at Bahrain GP across years  (RQ2.1)
+#  FASTF1 PLOT 2 - Field Compression at Bahrain GP across years  (RQ2.1)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_fastf1_quali_field_spread():
@@ -2183,7 +2183,7 @@ def plot_fastf1_quali_field_spread():
 
             year_data[yr]  = q_laps
             real_years.append(yr)
-            print(f"    Quali spread: {yr} Bahrain — {len(q_laps)} drivers loaded")
+            print(f"    Quali spread: {yr} Bahrain - {len(q_laps)} drivers loaded")
 
         except Exception as e:
             print(f"    Quali spread: {yr} Bahrain not available ({e}), using synthetic")
@@ -2275,7 +2275,7 @@ def plot_fastf1_quali_field_spread():
     )
 
     fig.suptitle(
-        "RQ2.1 — FastF1: Qualifying Field Spread at Bahrain GP (2019 / 2021 / 2023 / 2024)\n"
+        "RQ2.1 - FastF1: Qualifying Field Spread at Bahrain GP (2019 / 2021 / 2023 / 2024)\n"
         "Each dot = one driver's gap to pole. Tighter cluster = closer competition. "
         "Cost cap (from 2022) visibly compresses the field.",
         fontsize=11, fontweight="bold", y=1.01,
@@ -2289,7 +2289,7 @@ def plot_fastf1_quali_field_spread():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  FASTF1 PLOT 3 — Tyre Degradation: Top Teams vs Bottom Teams  (RQ2)
+#  FASTF1 PLOT 3 - Tyre Degradation: Top Teams vs Bottom Teams  (RQ2)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_fastf1_tyre_degradation():
@@ -2438,11 +2438,11 @@ def plot_fastf1_tyre_degradation():
     ax.set_xlabel("Tyre Age (laps into stint)", fontsize=11)
     ax.set_ylabel("Lap Time (seconds)", fontsize=11)
     ax.set_title(
-        f"RQ2 — FastF1: Tyre Degradation Comparison  "
+        f"RQ2 - FastF1: Tyre Degradation Comparison  "
         f"(Bahrain {session_year} Race)\n"
         "Top teams (Red Bull / Ferrari / McLaren) vs Bottom teams (Williams / Haas / Sauber)  "
-        "— steeper slope = faster degradation\n"
-        f"[{'Real FastF1 data' if real_data else 'Synthetic — FastF1 unavailable'}]",
+        "- steeper slope = faster degradation\n"
+        f"[{'Real FastF1 data' if real_data else 'Synthetic - FastF1 unavailable'}]",
         fontsize=11, fontweight="bold", pad=10,
     )
     ax.legend(fontsize=9.5, framealpha=0.92, loc="upper left", ncol=2)
@@ -2458,12 +2458,12 @@ def plot_fastf1_tyre_degradation():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  FASTF1 PLOT 4 — Champion Race Pace Consistency Across 2025 Season  (RQ4)
+#  FASTF1 PLOT 4 - Champion Race Pace Consistency Across 2025 Season  (RQ4)
 # ════════════════════════════════════════════════════════════════════════════
 
 def plot_fastf1_champion_pace():
     """
-    RQ4: Can we predict the WDC winner, and what drives it — skill or car?
+    RQ4: Can we predict the WDC winner, and what drives it - skill or car?
 
     Championships are rarely won by being fastest in one race. They are won
     by being CONSISTENTLY fast across an entire 24-round season.
@@ -2485,10 +2485,10 @@ def plot_fastf1_champion_pace():
     fastf1.Cache.enable_cache(CACHE)
     fastf1.plotting.setup_mpl(misc_mpl_mods=False, color_scheme=None)
 
-    # The top-5 drivers we track — these were the 2025 championship contenders
+    # The top-5 drivers we track - these were the 2025 championship contenders
     TARGET_DRIVERS = ["NOR", "PIA", "VER", "LEC", "HAM"]
 
-    # 2025 rounds available as of today (April 2026 — season complete)
+    # 2025 rounds available as of today (April 2026 - season complete)
     # We try up to round 24 but stop when we get errors (not cached or not run)
     MAX_ROUND = 24
 
@@ -2510,7 +2510,7 @@ def plot_fastf1_champion_pace():
                 sess = fastf1.get_session(2025, rnd, "R")
                 sess.load(laps=True, telemetry=False, weather=False, messages=False)
 
-                # only accurate, representative laps — excludes SC / VSC laps
+                # only accurate, representative laps - excludes SC / VSC laps
                 clean = sess.laps.pick_accurate()
                 if clean.empty:
                     continue
@@ -2530,7 +2530,7 @@ def plot_fastf1_champion_pace():
                 print(f"    Champion pace: round {rnd} loaded ({len(round_pace)} rows so far)")
 
             except Exception:
-                # race not cached — stop trying further rounds
+                # race not cached - stop trying further rounds
                 break
 
     if not round_pace:
@@ -2539,7 +2539,7 @@ def plot_fastf1_champion_pace():
         rng = np.random.default_rng(42)
         # typical relative pace per driver (negative = faster than field median)
         driver_pace_mu = {
-            "NOR": -1.8,   # champion — consistently fastest
+            "NOR": -1.8,   # champion - consistently fastest
             "PIA": -1.5,   # very close teammate
             "VER": -1.2,   # strong but car slightly off peak
             "LEC": -0.9,   # good but strategic issues occasionally
@@ -2547,7 +2547,7 @@ def plot_fastf1_champion_pace():
         }
         for rnd in range(1, 25):
             for drv, mu in driver_pace_mu.items():
-                # each round has some variance — e.g., rain, safety cars, strategy
+                # each round has some variance - e.g., rain, safety cars, strategy
                 rel = mu + rng.normal(0, 0.6)
                 # occasionally a driver has a bad race (mechanical, penalty, etc.)
                 if rng.random() < 0.08:
@@ -2631,7 +2631,7 @@ def plot_fastf1_champion_pace():
     ax.set_xlabel("Round Number (2025 season)", fontsize=11)
     ax.set_ylabel("Median Lap Pace vs Field Median (%)\nNegative = faster than field", fontsize=10)
     ax.set_title(
-        "RQ4 — FastF1: Championship Contenders' Race Pace Consistency (2025 Season)\n"
+        "RQ4 - FastF1: Championship Contenders' Race Pace Consistency (2025 Season)\n"
         "Negative % = faster than the field median. Champions win by being consistently"
         " fast, not just occasionally fastest.",
         fontsize=11, fontweight="bold", pad=10,
@@ -2659,34 +2659,34 @@ def plot_fastf1_champion_pace():
 
 def main():
     print("=" * 70)
-    print("  F1 IDP Final Report — Complete Research Question Plot Suite")
+    print("  F1 IDP Final Report - Complete Research Question Plot Suite")
     print("=" * 70)
     print(f"  Output directory: {PLOT_DIR}")
     print()
 
     # ── CORE plots (one per research question subplot) ────────────────────
-    print("[1/8]  RQ1a  — Teammate qualifying delta swarm plot...")
+    print("[1/8]  RQ1a  - Teammate qualifying delta swarm plot...")
     plot_rq1a_quali_delta()
 
-    print("[2/8]  RQ1b  — Throttle vs. brake KDE (Bahrain Turn 8)...")
+    print("[2/8]  RQ1b  - Throttle vs. brake KDE (Bahrain Turn 8)...")
     plot_rq1b_throttle_brake()
 
-    print("[3/8]  RQ2a  — Points concentration heatmap...")
+    print("[3/8]  RQ2a  - Points concentration heatmap...")
     plot_rq2a_points_heatmap()
 
-    print("[4/8]  RQ2b  — Gap to winner violin plot (2021 included in post era)...")
+    print("[4/8]  RQ2b  - Gap to winner violin plot (2021 included in post era)...")
     plot_rq2b_gap_violin()
 
-    print("[5/8]  RQ2.1a — Field spread ridge plot...")
+    print("[5/8]  RQ2.1a - Field spread ridge plot...")
     plot_rq2_1a_field_spread()
 
-    print("[6/8]  RQ2.1b — Performance tiers step plot (cost cap line at 2021)...")
+    print("[6/8]  RQ2.1b - Performance tiers step plot (cost cap line at 2021)...")
     plot_rq2_1b_performance_tiers()
 
-    print("[7/8]  RQ4a  — WDC feature radar chart (fixed: no overlap)...")
+    print("[7/8]  RQ4a  - WDC feature radar chart (fixed: no overlap)...")
     plot_rq3a_wdc_radar()
 
-    print("[8/8]  RQ4b  — Championship rank confusion matrix (fixed: colormap)...")
+    print("[8/8]  RQ4b  - Championship rank confusion matrix (fixed: colormap)...")
     plot_rq3b_confusion_matrix()
 
     print()
@@ -2710,16 +2710,16 @@ def main():
     print()
     print("-- FastF1-specific plots (real telemetry where available) ----------")
 
-    print("[F1/4]  RQ1  — Teammate telemetry duel: NOR vs PIA (2024 Bahrain Q)...")
+    print("[F1/4]  RQ1  - Teammate telemetry duel: NOR vs PIA (2024 Bahrain Q)...")
     plot_fastf1_teammate_quali_duel()
 
-    print("[F2/4]  RQ2.1 — Qualifying field compression across years (Bahrain GP)...")
+    print("[F2/4]  RQ2.1 - Qualifying field compression across years (Bahrain GP)...")
     plot_fastf1_quali_field_spread()
 
-    print("[F3/4]  RQ2  — Tyre degradation: top-3 vs bottom-3 teams (2024 Bahrain R)...")
+    print("[F3/4]  RQ2  - Tyre degradation: top-3 vs bottom-3 teams (2024 Bahrain R)...")
     plot_fastf1_tyre_degradation()
 
-    print("[F4/4]  RQ4  — Championship contenders' race pace consistency (2025 season)...")
+    print("[F4/4]  RQ4  - Championship contenders' race pace consistency (2025 season)...")
     plot_fastf1_champion_pace()
 
     print()

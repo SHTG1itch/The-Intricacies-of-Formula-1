@@ -177,7 +177,7 @@ FEATURE_COLS = [
 ]  # 54 total: original 47 + 7 new features targeting specific weaknesses in 2019/2024 holdout
   # fp2_deg_rate / fp2_deg_rate_obs computed and saved to CSV but excluded until coverage improves across seasons
 
-# F1 points — used for championship projection in predict_2025 and predict_2026
+# F1 points - used for championship projection in predict_2025 and predict_2026
 # Maps race standings to points granted
 POINTS_MAP = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
 
@@ -247,7 +247,7 @@ def load_and_prepare(filepath, fit_imputer=None):
 # 1. Normal-Normal conjugate hierarchical model (James-Stein shrinkage) for win probability prior
 #    - Treats each driver's circuit-specific avg finish as a noisy observation of their latent ability
 #    - Posterior mean shrinks toward the global mid-field mean (mu_0=10) with shrinkage factor B
-#      B = n*tau^2 / (n*tau^2 + sigma_obs^2)  — strong shrinkage when history is thin
+#      B = n*tau^2 / (n*tau^2 + sigma_obs^2)  - strong shrinkage when history is thin
 #    - ref: Gelman et al. BDA3 ch. 5 (https://stat.columbia.edu/~gelman/book/)
 #    - ref: James-Stein estimator (https://doi.org/10.1007/BF02888369)
 #
@@ -428,7 +428,7 @@ def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0,
     alpha_post        = alpha_prior + observed
     dirichlet_weights = alpha_post / alpha_post.sum()
 
-    # inverse-MAE weights — fall back to equal if MAE not provided
+    # inverse-MAE weights - fall back to equal if MAE not provided
     if model_mae is not None:
         mae_arr = np.array([
             model_mae.get("xgb",    np.nan),
@@ -1403,7 +1403,7 @@ def print_feature_importances(xgb_model, rf_win_model, feature_names):
 
 def main():
     print("=" * 55)
-    print("  F1 Race Prediction — Model Training & Evaluation")
+    print("  F1 Race Prediction - Model Training & Evaluation")
     print("=" * 55)
 
     if not os.path.exists(TRAIN_FILE):
@@ -1580,7 +1580,7 @@ def main():
         # print the first 3 predicted races so we can eyeball if the output looks sane
         for rnd in pred_df["Round"].unique()[:3]:
             race = pred_df[pred_df["Round"] == rnd].head(10)
-            print(f"\n  2025 R{rnd:02d} {race.iloc[0]['EventName']} — Predicted Top 10:")
+            print(f"\n  2025 R{rnd:02d} {race.iloc[0]['EventName']} - Predicted Top 10:")
             print(f"    {'Pos':>3}  {'Driver':<6}  {'Team':<30}  {'Win%':>5}")
             print(f"    {'───':>3}  {'──────':<6}  {'──────────────────────────────':<30}  {'─────':>5}")
             for _, row in race.iterrows():
@@ -1592,7 +1592,7 @@ def main():
     # write the full evaluation summary to a text file for the report
     eval_path = os.path.join(OUT_DIR, "model_evaluation.txt")
     with open(eval_path, "w") as f:
-        f.write("F1 Race Prediction — Model Evaluation Summary\n")
+        f.write("F1 Race Prediction - Model Evaluation Summary\n")
         f.write("=" * 55 + "\n\n")
         f.write("Leave-One-Season-Out CV:\n")
         f.write(val_results.to_string(index=False))
