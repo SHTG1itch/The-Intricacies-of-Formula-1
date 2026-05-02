@@ -12,9 +12,17 @@ Formula 1 is one of the most data-rich sports in the world, yet individual races
 
 ---
 
-## Introduction and Research Questions
+## Introduction
 
-Formula 1 is a sport where a tenth of a second separates competitors, hundreds of millions of dollars determine car performance, and Sunday's winner was often decided in the factory months earlier. Four questions drove this analysis:
+Formula 1 is a sport where a tenth of a second separates competitors, hundreds of millions of dollars determine car performance, and Sunday's winner was often decided in the factory months earlier.
+
+## Motivation
+
+The project started from a debate F1 fans have all the time: is the driver the main reason a team wins, or is the car so important that the driver mostly inherits the result? The budget cap adds a second version of that same question. If the sport limits spending, the field should eventually tighten, but the 2022 regulation reset makes that hard to prove cleanly. That mix of telemetry, money, rules, and race-day randomness makes F1 a good data-programming problem rather than just a sports argument.
+
+## Research Questions
+
+Four questions drove this analysis:
 
 1. **Driver vs. Car:** How much of race performance actually comes from the driver, and how much is just the car they're in?
 2. **Cost Cap Impact:** Did the FIA's 2021 budget cap change which teams were winning races?
@@ -23,7 +31,7 @@ Formula 1 is a sport where a tenth of a second separates competitors, hundreds o
 
 ---
 
-## Data Overview
+## Data
 
 All data comes from the FastF1 Python library [1], which provides access to official FIA timing data, telemetry, and session results for 2018–2025, covering 2,977 driver-race entries across 149 rounds. One limitation shapes every result in this report: **the 2022 regulation change**. Formula 1 introduced entirely new aerodynamic rules that same year the cost cap took full effect, making it impossible to cleanly separate "teams converging due to budget limits" from "teams converging because all-new cars reset the order." This caveat is flagged wherever relevant. Minor gaps — six corrupted sessions from 2018–2019, missing qualifying times from wet sessions, and the 2020 season's Europe-only calendar — are handled by rolling-average imputation with a binary flag.
 
@@ -283,7 +291,7 @@ The ML model is most interesting in transition years. When the stable pre-season
 
 ---
 
-## Conclusion
+## Summary and Conclusion
 
 Eight seasons of F1 data give four clear answers. Driver skill is real and measurable — elite drivers extract a consistent 0.2–0.4 second per lap advantage from identical cars — but car pace is the dominant factor, explaining about 70% of what the ML model uses to predict results. The 2021 cost cap has measurably compressed the field: a 51% reduction in the performance gap between top and bottom teams from 2021 to 2025, with race outcome distributions visibly spreading toward the midfield — though the concurrent 2022 regulation change prevents a clean causal claim. F1 race outcomes are substantially predictable from pre-race data: 59.2% winner accuracy with in-season updating represents about 92% of the theoretical ceiling imposed by race-day randomness. The remaining gap is genuinely irreducible, not a model limitation. The car sets the ceiling, the driver determines how close to that ceiling the team operates, and about one in three races is decided by something no pre-race model can ever foresee.
 
@@ -309,7 +317,7 @@ The Walk-Forward Plackett-Luce extension updates driver latent ability estimates
 
 ### Challenge Goal 2 — API Data Pipeline
 
-The FastF1 Python library served as the primary data source at scale. The caching pipeline (`cache_fastf1_data.py`) fetches five session types per race weekend (FP1, FP2, FP3, Qualifying, Race) across eight seasons, managing the API's 200 requests/hour rate limit via a multi-threaded worker pool with exponential backoff and a JSON state file for resumable progress — 600+ API requests total, with hundreds of gigabytes of telemetry cached in a local SQLite database. The feature engineering pipeline (`feature_engineering.py`) produces 54 ML-ready features with strict temporal ordering enforced through `compute_rolling_features(race_index)`: no rolling statistic ever uses data from a future race. The preprocessing pipeline (`data_organized/prepocess_data.py`) is reproducible from the cached database when schedule metadata is available, and it now keeps existing CSVs instead of overwriting them if a local cache cannot load any rows. Full feature list and engineering notes are in Appendix D.
+The FastF1 Python library served as the primary data source at scale. The caching pipeline (`cache_fastf1_data.py`) fetches five session types per race weekend (FP1, FP2, FP3, Qualifying, Race) across eight seasons, managing the API's 200 requests/hour rate limit via a multi-threaded worker pool with exponential backoff and a JSON state file for resumable progress — 600+ API requests total, with hundreds of gigabytes of telemetry cached in a local SQLite database. The feature engineering pipeline (`feature_engineering.py`) produces 54 ML-ready features with strict temporal ordering enforced through `compute_rolling_features(race_index)`: no rolling statistic ever uses data from a future race. The preprocessing pipeline (`data_organized/preprocess_data.py`) is reproducible from the cached database when schedule metadata is available, and it now keeps existing CSVs instead of overwriting them if a local cache cannot load any rows. Full feature list and engineering notes are in Appendix D.
 
 ---
 

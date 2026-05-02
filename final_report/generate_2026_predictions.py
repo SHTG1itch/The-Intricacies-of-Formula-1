@@ -1,35 +1,14 @@
-# generate_2026_predictions.py  (UTF-8 source)
 # -*- coding: utf-8 -*-
-#
-# 2026 WDC projection — updated with actual 2026 race results (R1-R3).
-#
-# How the strength model works (3-layer blend):
-#
-#   Layer 1 — 2025 driver form (25% weight)
-#     Recency-weighted average finish from all 24 rounds of 2025.
-#     Captures each driver's baseline skill and reliability.
-#     Team-adjustment for drivers who changed constructors in 2026:
-#     their personal form is blended with the new team's 2025 car level.
-#
-#   Layer 2 — 2026 actual results (65% weight)
-#     Average actual finishing position from the 3 completed races.
-#     Three results already tell us a great deal: Mercedes (ANT 2 wins,
-#     RUS 1 win) is clearly dominant; McLaren (NOR/PIA) has underperformed
-#     versus 2025 expectations; Ferrari (LEC/HAM) is consistently 3rd-4th.
-#     65% weight because the regulation change makes 2025 form less reliable
-#     than real 2026 data, even from just 3 races.
-#
-#   Layer 3 — championship points pace (10% weight)
-#     A driver's current points / races converts to an implied avg finish.
-#     Useful as a small tie-breaker for drivers with similar raw averages.
-#
-# After strength is computed, the remaining 21 races are simulated with
-# Plackett-Luce noise (sigma=0.80) to capture F1's inherent unpredictability.
-# 2000 independent season simulations are averaged to get stable expected
-# championship totals; the actual completed race points are then added on top.
-#
-# Run from project root:
-#   python -X utf8 final_report/generate_2026_predictions.py
+"""Generate the text/CSV 2026 championship projection.
+
+The projection blends 2025 form, completed 2026 results, and current points
+pace, then simulates the remaining calendar with Plackett-Luce noise. It is a
+lighter-weight reporting script than predict_2026.py, meant for updating the
+plain-English standings output.
+
+Run from the project root:
+    python -X utf8 final_report/generate_2026_predictions.py
+"""
 
 import os
 import warnings

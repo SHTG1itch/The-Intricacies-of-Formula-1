@@ -1,91 +1,10 @@
-# This is the secondary model that complements the LOSO model in mach_learning.py.
-# The key idea: the LOSO model uses only pre-race features (qualifying, practice, rolling form).
-# This model ALSO uses within-season race results to update its beliefs as the season unfolds.
-#
-# Think about it this way: after Verstappen wins the first 12 races of 2023, any sensible
-# prediction for race 13 should account for that pattern. The LOSO model can't do this —
-# it only sees pre-race telemetry. This model does it rigorously with Bayesian math.
-#
-# The two-layer architecture:
-#   Layer 1: Full 4-model BMA ensemble (XGBoost Regressor + Ranker + Random Forest + ExtraTrees)
-#            trained on all other seasons — same split as LOSO but no meta-model stacking
-#            (we can't run nested LOSO-within-LOSO in a walk-forward loop without leakage)
-#   Layer 2: Plackett-Luce Bayesian updater, fit on within-season race results
-#            The PL adjusts the ensemble's pre-race score based on what actually happened
-#
-# The PL layer is the genuinely different piece — it's mathematical machinery the LOSO model
-# fundamentally cannot use, because LOSO holds out the entire season at once.
-#
-# ─── What IS the Plackett-Luce model? ────────────────────────────────────────────────────
-# The PL model says: for a race with drivers {d_1, d_2, ..., d_n} and latent "quality"
-# scores θ = (θ_d1, θ_d2, ..., θ_dn), the probability of observing the finishing order
-# (d_1 finishes P1, d_2 finishes P2, ...) is:
-#
-#     P(ranking | θ) = ∏_{i=1}^{n}  exp(θ_{π_i})  /  Σ_{j=i}^{n} exp(θ_{π_j})
-#
-# where π is the permutation corresponding to the finishing order.
-# Read it as: at each position, the driver who wins that spot from the remaining field
-# does so with probability proportional to exp(θ). Higher θ = better driver.
-#
-# This is choice theory, not pairwise comparison. Luce (1959) proved that if individual
-# choice satisfies a "constant ratio" property (independence from irrelevant alternatives),
-# then choices follow exactly this softmax-over-remaining form.
-#
-# ─── Why PL is NOT ELO / a rating system ──────────────────────────────────────────────────
-# ELO (and variants: TrueSkill, Glicko, OpenSkill) are PAIRWISE comparison models.
-# They maintain a persistent "rating" for each player, update it after each match,
-# and predict future matchups via P(i beats j) = f(rating_i - rating_j).
-#
-# Plackett-Luce is categorically different:
-#   1. It models the COMPLETE finishing order as one probabilistic event — not 190 pairwise
-#      contests. A race is not "20 drivers beating each other one at a time."
-#   2. θ_d is NOT a "rating" — it is a latent parameter in a generative probability model
-#      for complete orderings. It is estimated fresh within each season via MAP optimization,
-#      not updated incrementally from a running score.
-#   3. We place a Bayesian PRIOR on θ from our pre-race ML predictions. This is Bayesian
-#      inference, not a rating algorithm.
-#   4. We compute posterior uncertainty via Laplace approximation — something ELO has no
-#      concept of (it only tracks a point estimate, not a distribution).
-#
-# The difference in spirit: ELO asks "how strong is this player historically?"
-# PL asks "given the race results I've seen this season, what's the posterior distribution
-# over each driver's underlying quality, and how should I blend it with what I knew before
-# the season started?"
-#
-# References:
-#   Plackett, R. (1975). The analysis of permutations. Applied Statistics, 24(2), 193-202.
-#   Luce, R. D. (1959). Individual Choice Behavior. Wiley.
-#   Guiver, J. & Snelson, E. (2009). Bayesian inference for Plackett-Luce ranking models.
-#       ICML 2009. https://dl.acm.org/doi/10.1145/1553374.1553423
-#   Caron, F. & Doucet, A. (2012). Efficient Bayesian inference for generalized Bradley-Terry
-#       models. Journal of Computational and Graphical Statistics, 21(1), 174-196.
-# ──────────────────────────────────────────────────────────────────────────────────────────
-#
-# ─── How the math flows in this file ─────────────────────────────────────────────────────
-# 1. For each holdout season Y (2018-2024):
-#    a. Train the full 4-model ensemble on all other seasons (same LOSO split as mach_learning.py)
-#       The ensemble uses tuned hyperparams from the final mach_learning.py run — no re-tuning.
-#    b. For race k in season Y:
-#       - Ensemble predicts a blended score for each driver (pre-race features only)
-#       - PL estimator fits θ* (MAP) from race results of rounds 1..k-1 of season Y
-#         with an exponential time-decay weighting (recent races count more)
-#       - Posterior uncertainty σ²_PL from diagonal Laplace approximation
-#       - Posterior uncertainty σ²_PL from diagonal Laplace approximation
-#       - Blend weight α_k combines FOUR signals:
-#           (a) inverse-variance: σ²_base / (σ²_base + σ²_PL)  — confident PL → higher α
-#           (b) data sufficiency: 1 - 1/(1 + k/5)  — fewer prior races → stay conservative
-#           (c) season entropy gate: if many different winners, reduce PL trust further
-#           (d) dominance-gap gate: min(clip((θ[1st] - θ[2nd]) / 1.5, 0, 1), z_credible_gate)
-#               — trusts PL only when one driver clearly leads the θ ranking
-#               — suppresses PL in close two-driver battles (2021: VER≈HAM, gap~0.3 → gate~0.15)
-#               — suppresses PL in mid-season transitions (2024: VER→NOR, gap shrinks → α drops)
-#               — preserves PL in dominant seasons (2023: VER >> field, gap~2.0 → gate~1.0)
-#       - Final: blended_score = (1-α_k) × ensemble_score + α_k × pl_score
-#
-# 2. α cap of 0.45 is critical because qualifying position and race-specific pace are strongly
-#    predictive for THIS SPECIFIC RACE regardless of season form. The four-factor formula
-#    automatically suppresses α when PL's ranking is uncertain or contested.
-# ──────────────────────────────────────────────────────────────────────────────────────────
+"""Walk-forward race prediction with a Plackett-Luce update layer.
+
+The LOSO model in mach_learning.py only sees pre-race features. This script
+adds a second layer that learns from races already completed within the same
+season, then blends that signal back into the base ensemble. The math details
+are written up in Appendix B of final.md; this file keeps the implementation.
+"""
 
 import sys
 import os
@@ -160,24 +79,14 @@ WF_BEST_PARAMS = {
     },
 }
 
-# BMA weights from the LOSO Dirichlet+inverse-MAE posterior in mach_learning.py
-# xgb=0.215, ranker=0.258, rf=0.258, et=0.268  — ExtraTrees leads because it got the most
-# correct LOSO winners (83), despite being the most randomized model
+# BMA weights from the LOSO run in mach_learning.py.
 BMA_WEIGHTS = {"w_xgb": 0.215, "w_ranker": 0.258, "w_rf": 0.258, "w_et": 0.268}
 
-# RF temperature from the main LOSO calibration run (T ≈ 1.0 = essentially uncalibrated,
-# meaning the RF probability distribution was already well-shaped across LOSO folds)
+# RF temperature from the main LOSO calibration run.
 RF_TEMPERATURE = 0.9968
 
-# tuning constants for the Plackett-Luce blend
-# SIGMA2_BASE: basically "how uncertain is the base ensemble about who wins?"
-#   2.0 is calibrated loosely against the LOSO 53% base accuracy. higher = ensemble
-#   is treated as less confident = PL gets less trust by default. think of it as the
-#   denominator that controls how quickly PL can override the pre-race prediction.
-# DECAY_LAMBDA: controls how fast old race results fade out. 0.10 means a race from
-#   7 rounds ago only gets weight exp(-0.7) ≈ 0.5 — half as much as last race.
-#   so here's the deal: Verstappen's wins from race 1-5 still count in race 15,
-#   just with less weight than what happened recently.
+# Plackett-Luce blend controls. SIGMA2_BASE is the base-model uncertainty prior;
+# DECAY_LAMBDA controls how quickly old race results fade.
 # ALPHA_CAP: hard ceiling on how much PL can influence the final prediction.
 #   0.45 means qualifying position and car pace always contribute at least 55% of the signal.
 #   this is important — even if VER dominated all season, if he's starting P10 today

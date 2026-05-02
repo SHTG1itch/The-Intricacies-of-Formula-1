@@ -7,7 +7,7 @@ This folder contains **cleaned, preprocessed data** ready for plotting and analy
 **From the project root**, run:
 
 ```bash
-python data_organized/prepocess_data.py
+python data_organized/preprocess_data.py
 ```
 
 This reads from the FastF1 cache in `discovery_raw_data/` and produces 4 CSV files:
@@ -31,5 +31,5 @@ This reads from the FastF1 cache in `discovery_raw_data/` and produces 4 CSV fil
 
 ## Notes
 
-- The preprocessing file is named `prepocess_data.py` because that was the original project filename; the README keeps the existing path so old links and commands continue to work.
+- `preprocess_data.py` is the rubric entry point. It calls the original project file, `prepocess_data.py`, so older commands still work.
 - `race_results.csv` stores `GapToWinner_s` as a positive gap in seconds. Winners are `0.0`; lapped finishers and DNFs may be blank when FastF1 does not provide a comparable time.

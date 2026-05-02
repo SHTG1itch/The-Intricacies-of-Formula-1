@@ -33,7 +33,7 @@ The final dataset focuses on 2018-2025 because modern FastF1 telemetry coverage 
 ## Data Pipeline
 
 1. `cache_fastf1_data.py` downloads FastF1 sessions and saves them into `discovery_raw_data/`.
-2. `data_organized/prepocess_data.py` reads the local FastF1 cache and produces cleaner CSVs for analysis.
+2. `data_organized/preprocess_data.py` reads the local FastF1 cache and produces cleaner CSVs for analysis.
 3. `final_report/feature_engineering.py` turns practice, qualifying, weather, rolling form, circuit history, and race results into model-ready features.
 4. `final_report/mach_learning.py`, `walk_forward_model.py`, and the prediction scripts train and evaluate the model.
 5. `final_report/create_plots.py` generates the report plots in `final_report/plots/`.

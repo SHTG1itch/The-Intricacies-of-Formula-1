@@ -1,31 +1,12 @@
-"""
-prepocess_data.py  —  FastF1 Data Preprocessing Pipeline
-=========================================================
-Pulls data from the locally cached FastF1 API data and produces four
-clean CSV files in the data_organized/ folder, one for each research
-question.
+"""Build the four organized CSV files used by the report.
 
-HOW TO RUN (from the project root):
-    python data_organized/prepocess_data.py
+Run from the project root:
+    python data_organized/preprocess_data.py
 
-PREREQUISITES:
-    1. Run  python cache_fastf1_data.py  first to download raw data.
-    2. pip install fastf1 pandas numpy
-
-OUTPUT FILES (saved to data_organized/):
-    • qualifying_deltas.csv       → RQ1  (driver skill vs. car)
-    • race_results.csv            → RQ2  (cost cap impact on results)
-    • lap_time_spreads.csv        → RQ2.1 (cost cap lap-time convergence)
-    • driver_season_profiles.csv  → RQ3  (WDC prediction features)
-
-FASTF1 DOCUMENTATION REFERENCES:
-    Main docs        : https://docs.fastf1.dev/
-    Session object   : https://docs.fastf1.dev/core.html#fastf1.core.Session
-    Session.results  : https://docs.fastf1.dev/core.html#fastf1.core.SessionResults
-    Session.laps     : https://docs.fastf1.dev/core.html#fastf1.core.Laps
-    Event schedule   : https://docs.fastf1.dev/events.html
-    Session IDs      : https://docs.fastf1.dev/events.html#session-identifiers
-    Cache control    : https://docs.fastf1.dev/fastf1.html#fastf1.Cache.enable_cache
+This reads the local FastF1 cache in discovery_raw_data/ and writes smaller,
+analysis-ready CSVs to data_organized/. The filename is misspelled because it
+was the original project file; preprocess_data.py is the clean wrapper used by
+the rubric.
 """
 
 import os

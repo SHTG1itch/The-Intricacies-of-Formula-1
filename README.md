@@ -46,7 +46,8 @@ idp-final-project-25-26-srivatsi-aakashb/
 │   └── YYYY/YYYY-MM-DD_Race/     # One folder per session (Practice 1-3, Quali, Race)
 │
 ├── data_organized/               # Cleaned CSVs and trained models (produced by Steps 2-4)
-│   ├── prepocess_data.py         # Step 2 — builds the 4 analysis CSVs
+│   ├── preprocess_data.py        # Step 2 — rubric entry point for preprocessing
+│   ├── prepocess_data.py         # Original preprocessing implementation
 │   ├── qualifying_deltas.csv     # RQ1: teammate qualifying gaps
 │   ├── race_results.csv          # RQ2: all finishes 2018-2025
 │   ├── lap_time_spreads.csv      # RQ2.1: per-driver lap delta from fastest
@@ -61,6 +62,7 @@ idp-final-project-25-26-srivatsi-aakashb/
 │   ├── model_evaluation.txt      # LOSO cross-validation results
 │   ├── wf_evaluation.txt         # Walk-forward validation metrics
 │   ├── models/                   # Saved model artifacts (*.joblib)
+│   ├── sketches/                 # Plot sketches and sketch README
 │   └── test_data/                # Small test datasets for preprocessing validation
 │
 └── final_report/                 # All analysis code, plots, and the written report
@@ -84,7 +86,7 @@ cache_fastf1_data.py
   ▼
 discovery_raw_data/          (~149 race weekends × 5 sessions each)
   │
-data_organized/prepocess_data.py
+data_organized/preprocess_data.py
   │  Cleans raw sessions into 4 analysis-ready CSVs
   ▼
 qualifying_deltas.csv  race_results.csv  lap_time_spreads.csv  driver_season_profiles.csv
@@ -129,7 +131,7 @@ python3 -m pip install -r requirements.txt
 python cache_fastf1_data.py
 
 # 4. Preprocess into analysis CSVs
-python data_organized/prepocess_data.py
+python data_organized/preprocess_data.py
 
 # 5. Build ML feature matrix
 python final_report/feature_engineering.py
@@ -176,7 +178,7 @@ python test_cache_sandbox.py
 ### Step 2 — Preprocess Data
 
 ```bash
-python data_organized/prepocess_data.py
+python data_organized/preprocess_data.py
 ```
 
 Reads the FastF1 cache and outputs four cleaned CSVs to `data_organized/`:
@@ -300,7 +302,7 @@ Generated visualizations include swarm plots, KDE distributions, heatmaps, ridge
 |---|---|---|---|
 | `cache_fastf1_data.py` | FastF1 API (internet) | `discovery_raw_data/` | Hours (first run) |
 | `test_cache_sandbox.py` | None (mocked) | Test results in terminal | <1 min |
-| `data_organized/prepocess_data.py` | `discovery_raw_data/` | 4 CSVs in `data_organized/` | ~5 min |
+| `data_organized/preprocess_data.py` | `discovery_raw_data/` | 4 CSVs in `data_organized/` | ~5 min |
 | `final_report/feature_engineering.py` | `discovery_raw_data/` | `ml_training_features.csv`, `ml_2025_features.csv` | ~10 min |
 | `final_report/mach_learning.py` | `ml_training_features.csv` | `data_organized/models/*.joblib` | 5–15 min |
 | `final_report/predict_2025.py` | models + `ml_2025_features.csv` | prediction CSVs + plots | ~2 min |
