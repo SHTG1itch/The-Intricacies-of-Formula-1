@@ -1437,7 +1437,8 @@ def plot_extra_season_fingerprint():
         fontsize=12, fontweight="bold", pad=12,
     )
 
-    # custom legend
+    # legend placed BELOW the figure (not the axes) so it never sits on top of
+    # the rotated x-tick labels that already occupy the bottom margin
     legend_patches = [
         mpatches.Patch(color="#FFD700", label="Win (P1)"),
         mpatches.Patch(color="#5CB85C", label="Podium (P2–P3)"),
@@ -1446,8 +1447,8 @@ def plot_extra_season_fingerprint():
         mpatches.Patch(color="#E8002D", label="DNF"),
         mpatches.Patch(color="#CCCCCC", label="Absent / DNS"),
     ]
-    ax.legend(handles=legend_patches, loc="upper right",
-              bbox_to_anchor=(1.0, -0.12), ncol=3, fontsize=8.5, framealpha=0.9)
+    fig.legend(handles=legend_patches, loc="lower center",
+               bbox_to_anchor=(0.5, -0.04), ncol=6, fontsize=8.5, framealpha=0.9)
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -1488,7 +1489,8 @@ def plot_extra_quali_vs_race_dumbbell():
     # sort so the best-finishing driver is at the TOP of the chart
     df   = df.sort_values("AvgFinishPos").head(15).reset_index(drop=True)
 
-    fig, ax = plt.subplots(figsize=(11, 9))
+    # wider canvas + extra top margin so the 2-row title never clips
+    fig, ax = plt.subplots(figsize=(12, 10))
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
 
@@ -1512,11 +1514,13 @@ def plot_extra_quali_vs_race_dumbbell():
         ax.scatter(r_pos, i, color=color, s=90, zorder=4, marker="s",
                    edgecolors="black", linewidth=0.8)
 
-        # delta annotation above midpoint of the line
-        delta = q_pos - r_pos   # positive = gained (quali worse than race)
-        sign  = "+" if delta >= 0 else ""
-        ax.text((q_pos + r_pos) / 2, i + 0.30,
-                f"{sign}{delta:.1f}", ha="center", va="bottom",
+        # delta annotation: place it to the RIGHT of the rightmost endpoint so
+        # it never sits on top of the dumbbell line or the endpoint markers
+        delta    = q_pos - r_pos   # positive = gained positions (race > quali number-wise)
+        sign     = "+" if delta >= 0 else ""
+        right_x  = max(q_pos, r_pos) + 0.25
+        ax.text(right_x, i,
+                f"{sign}{delta:.1f}", ha="left", va="center",
                 fontsize=7.5, color=lc, fontweight="bold")
 
     # driver names as ytick labels - these go on the LEFT (standard placement)
@@ -1524,39 +1528,47 @@ def plot_extra_quali_vs_race_dumbbell():
     ax.set_yticklabels(df["Driver"].tolist(), fontsize=10, fontweight="bold")
     ax.invert_yaxis()   # best driver (lowest finish pos) at top
 
-    ax.set_xlim(0.3, df["AvgQualiPos"].max() + 1.5)
+    x_max = int(np.ceil(df[["AvgQualiPos", "AvgFinishPos"]].values.max())) + 2
+    ax.set_xlim(0.3, x_max + 1.0)   # right margin for the delta labels
     ax.set_xlabel("Average Position  (P1 = leftmost = best)", fontsize=11)
+
+    # single-line title + separate subtitle annotation avoids a 3-row monster title
     ax.set_title(
-        "RQ1 - Qualifying vs. Race Finish Dumbbell  (2025 Season)\n"
-        "Line extends LEFT = driver gains places in the race (racecraft)\n"
-        "Line extends RIGHT = driver loses places on average (reliability / strategy)",
-        fontsize=11, fontweight="bold", pad=12,
+        "RQ1 — Qualifying vs. Race Finish Dumbbell  (2025 Season)",
+        fontsize=12, fontweight="bold", pad=14,
     )
+    ax.text(0.50, 1.01,
+            "○ = Avg Qualifying Position   ■ = Avg Race Finish   "
+            "Green = gained positions   Red = lost positions",
+            transform=ax.transAxes, ha="center", va="bottom",
+            fontsize=8.5, color=GREY, style="italic")
 
-    # x-axis: lower position number on the left (P1 is best, at the left)
-    ax.xaxis.set_major_locator(MultipleLocator(2))
+    # explicit ticks avoid the fragile ax.get_xticks() filter pattern
+    tick_positions = np.arange(2, x_max + 1, 2)
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels([f"P{int(t)}" for t in tick_positions], fontsize=9)
     ax.xaxis.set_minor_locator(MultipleLocator(1))
-    ax.set_xticklabels([f"P{int(x)}" for x in ax.get_xticks() if x >= 1],
-                       fontsize=9)
 
+    # legend in the upper-right corner: best drivers (top rows) have their data on
+    # the LEFT side of the chart (P1-P5), leaving the upper-right relatively clear
     legend_handles = [
         plt.Line2D([0], [0], color=GREEN, linewidth=2.2,
-                   label="Gained positions race vs. quali (green = skill indicator)"),
+                   label="Gained positions (racecraft / strategy)"),
         plt.Line2D([0], [0], color=RED,   linewidth=2.2,
-                   label="Lost positions race vs. quali"),
+                   label="Lost positions (reliability / traffic)"),
         plt.scatter([], [], marker="o", color="white", edgecolors="#888888",
                     linewidth=2, s=70, label="Avg Qualifying Position (circle)"),
         plt.scatter([], [], marker="s", color="#888888", s=70,
                     label="Avg Race Finish Position (square)"),
     ]
-    ax.legend(handles=legend_handles, loc="lower right", fontsize=8.5,
-              framealpha=0.9, ncol=1)
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=8.5,
+              framealpha=0.92, ncol=1, borderpad=0.8)
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.grid(axis="x", linestyle="--", alpha=0.3)
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
     out = os.path.join(PLOT_DIR, "extra_quali_vs_race_dumbbell.png")
     fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=BG)
     plt.close(fig)
@@ -1744,17 +1756,15 @@ def plot_extra_championship_gap():
 
     # mark the point where the championship became mathematically secure
     # (rough threshold: if leader gap > remaining points, it's over)
+    # find the round first, annotate AFTER set_ylim so the y-position is correct
     remaining_pts_per_round = 25   # max per race
-    n_total = len(rounds)
+    n_total     = len(rounds)
+    secure_rnd  = None
     for k, rnd in enumerate(plot_rounds):
         rounds_left = n_total - k - 1
         max_possible_catch = rounds_left * remaining_pts_per_round
         if k < len(gap_data[2]) and gap_data[2][k] > max_possible_catch > 0:
-            ax.axvline(rnd, color=GREEN, linewidth=1.5, linestyle=":",
-                       alpha=0.7, zorder=2)
-            ax.text(rnd + 0.2, ax.get_ylim()[1] * 0.9, "Title\nMathematically\nSecure?",
-                    fontsize=7.5, color=GREEN, va="top",
-                    bbox=dict(boxstyle="round", fc="#E8FFE8", ec=GREEN, alpha=0.8))
+            secure_rnd = rnd
             break
 
     ax.set_xticks(rounds[:len(gap_data[2])])
@@ -1762,7 +1772,16 @@ def plot_extra_championship_gap():
                        rotation=45, ha="right")
     ax.set_ylabel("Points Gap to Championship Leader", fontsize=11)
     ax.set_xlabel("Race Round", fontsize=11)
-    ax.set_ylim(0, max(gap_data[5]) * 1.25 if gap_data[5] else 100)
+    y_max = max(gap_data[5]) * 1.25 if gap_data[5] else 100
+    ax.set_ylim(0, y_max)
+
+    # place the annotation now that ylim is finalised
+    if secure_rnd is not None:
+        ax.axvline(secure_rnd, color=GREEN, linewidth=1.5, linestyle=":",
+                   alpha=0.7, zorder=2)
+        ax.text(secure_rnd + 0.2, y_max * 0.88, "Title\nMathematically\nSecure?",
+                fontsize=7.5, color=GREEN, va="top",
+                bbox=dict(boxstyle="round", fc="#E8FFE8", ec=GREEN, alpha=0.8))
     ax.set_title(
         "RQ4 - Championship Points Gap Evolution  (2025 Season)\n"
         "Widening gap = title becoming inevitable; tight gap = real fight",

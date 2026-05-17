@@ -1,69 +1,90 @@
-======================================================================
-  2026 F1 WORLD CHAMPIONSHIP - UPDATED PROJECTED FINAL STANDINGS
-======================================================================
-  Races completed : 3 of 24  (R1-R3 actual + 21 simulated)
-  Simulation      : 2000 Monte-Carlo season runs (Plackett-Luce, sigma=0.80)
-  Strength model  : 65% 2026 actual form  |  25% 2025 historical  |  10% pts pace
+========================================================================
+  2026 F1 WORLD CHAMPIONSHIP — PROJECTED STANDINGS — WITH ELO
+========================================================================
+  Races completed : 4 of 24  (R1–R4 actual + 20 simulated)
+  Simulation      : 3000 Monte-Carlo runs  (PL + DNF + experience penalties + pressure + circuit familiarity)
 
-  NOTE: 2026 regulations (active aero + new PUs) make historical
-  data less reliable. The 3 real races already outweigh all of 2025
-  in this model. Treat as directional - not a confident prediction.
+  Strength layers (w/o ELO):
+    45% 2026 race pace  |  20% grid/quali pace  |  7% reliability  |  5% strategy
+    15% championship pace  |  8% 2025 historical form
 
-──────────────────────────────────────────────────────────────────────
-  PREDICTED WORLD CHAMPION:
-    Kimi Antonelli  (Mercedes)
-    68 actual pts  +  ~325 projected  =  393 total
-──────────────────────────────────────────────────────────────────────
+  Antonelli experience model (v3):
+    Base σ = 0.85 + rookie σ = 0.85 + pressure σ = 0.40 → total σ ≈ 2.10 per race
+    H1 remaining (R5-R12) strength penalty : +15%
+    H2 season   (R13-R24) strength penalty : +45%
+    Circuit-unfamiliarity σ (+0.30) at 8 F1-exclusive venues: CAN, ZAN, VAL, SIN, USA, MEX, BRA, LV
 
-   Rk  Driver                  Team                     Actual   ~Future    Total
-   ──  ──────────────────────  ──────────────────────  ───────  ────────  ───────
-    1  Kimi Antonelli          Mercedes                     68       325      393
-    2  George Russell          Mercedes                     55       305      360
-    3  Charles Leclerc         Ferrari                      42       241      283
-    4  Lewis Hamilton          Ferrari                      35       197      232
-    5  Lando Norris            McLaren                      20       116      136
-    6  Max Verstappen          Red Bull Racing              12       100      112
-    7  Pierre Gasly            Alpine                       15        84       99
-    8  Oscar Piastri           McLaren                      18        77       95
-    9  Liam Lawson             Racing Bulls                  8        70       78
-   10  Oliver Bearman          Haas F1 Team                 16        61       77
-   11  Arvid Lindblad          Racing Bulls                  4        58       62
-   12  Esteban Ocon            Haas F1 Team                  1        58       59
-   13  Carlos Sainz            Williams                      2        57       59
-   14  Isack Hadjar            Red Bull Racing               4        54       58
-   15  Franco Colapinto        Alpine                        1        47       48
-   16  Gabriel Bortoleto       Audi                          2        43       45
-   17  Nico Hülkenberg         Audi                          0        44       44
-   18  Sergio Perez            Cadillac                      0        43       43
-   19  Valtteri Bottas         Cadillac                      0        40       40
-   20  Alexander Albon         Williams                      0        35       35
-   21  Fernando Alonso         Aston Martin                  0        35       35
-   22  Lance Stroll            Aston Martin                  0        31       31
+  Historical basis for experience penalties (v4):
+    • 0/75 first-year F1 drivers have EVER won the World Championship
+    • 2025 teammate gap: RUS avg P3.88 (300 pts, P4 in WDC) vs
+      ANT avg P7.38 (158 pts, P7 in WDC) — Russell was 3.5 positions
+      better on average.  ANT's 2026 avg of 1.25 is a 6.13-position leap
+      from his 2025 baseline — statistically extraordinary for a rookie.
+    • Car-development: Ferrari (-14%) and McLaren (-10%) closing on
+      Mercedes (+7% relative decline) by R24.  ANT's early advantage
+      partially car-driven; as field converges he becomes more exposed.
+    • ANT fluke weights: 35% prior (2025 form) / 15% current sample.
+      Standard drivers: 8% prior / 45% current. The 4-race sample is
+      treated as unreliable for a first-year driver.
+    • RUS forward DNF set to 11% (Mercedes diagnosing issue over 4 races).
+    • ANT strategy override: -0.05 (vs Mercedes team's -0.35) — limited
+      ability to execute complex pit-call timing as a rookie.
 
-──────────────────────────────────────────────────────────────────────
-  Driver strength scores used for simulation (lower = better car+driver):
-  Driver   2025 form   2026 actual   Pts pace   Blended
-  ANT           6.82          1.33       2.21      2.79   Kimi Antonelli
-  RUS           4.43          2.33       4.47      3.07   George Russell
-  LEC           5.15          3.33       6.72      4.13   Charles Leclerc
-  HAM           6.12          4.33       7.93      5.14   Lewis Hamilton
-  NOR           1.69         10.00      10.53      7.98   Lando Norris
-  VER           4.85         10.00      11.92      8.90   Max Verstappen
-  GAS          15.27          7.67      11.40      9.94   Pierre Gasly
-  PIA           1.78         14.00      10.88     10.63   Oscar Piastri
-  LAW          14.85          9.67      12.61     11.26   Liam Lawson
-  BEA          13.99         11.33      11.23     11.99   Oliver Bearman
-  LIN          14.85         11.33      13.31     12.41   Arvid Lindblad
-  OCO          14.24         11.67      13.83     12.53   Esteban Ocon
-  SAI          11.01         13.00      13.65     12.57   Carlos Sainz
-  HAD          12.26         13.33      13.31     13.06   Isack Hadjar
-  COL          16.41         13.33      13.83     14.15   Franco Colapinto
-  HUL          14.00         14.67      14.00     14.43   Nico Hülkenberg
-  PER          11.00         16.00      14.00     14.55   Sergio Perez
-  BOR          15.90         14.33      13.65     14.66   Gabriel Bortoleto
-  BOT          11.00         17.00      14.00     15.20   Valtteri Bottas
-  ALB          12.60         18.00      14.00     16.25   Alexander Albon
-  ALO          13.52         17.67      14.00     16.26   Fernando Alonso
-  STR          14.79         18.67      14.00     17.23   Lance Stroll
+────────────────────────────────────────────────────────────────────────
+  PROJECTED CHAMPION:
+    George Russell  (Mercedes)
+    67 actual  + ~234 projected  = 301 total pts
+────────────────────────────────────────────────────────────────────────
 
-======================================================================
+   Rk  Driver                  Team                     Actual   ~Future    Total   DNF%
+   ──  ──────────────────────  ──────────────────────  ───────  ────────  ───────  ─────
+    1  George Russell          Mercedes                     67       234      301     7%
+    2  Kimi Antonelli          Mercedes                     93       199      292     3%
+    3  Charles Leclerc         Ferrari                      46       242      288     3%
+    4  Lewis Hamilton          Ferrari                      43       201      244     3%
+    5  Lando Norris            McLaren                      38       121      159    12%
+    6  Max Verstappen          Red Bull Racing              22        96      118    25%
+    7  Arvid Lindblad          Racing Bulls                  4       111      115     3%
+    8  Oscar Piastri           McLaren                      33        79      112    25%
+    9  Gabriel Bortoleto       Audi                          2        94       96    12%
+   10  Carlos Sainz            Williams                      4        71       75     3%
+   11  Pierre Gasly            Alpine                       15        58       73    25%
+   12  Franco Colapinto        Alpine                        7        65       72     3%
+   13  Isack Hadjar            Red Bull Racing               4        64       68    40%
+   14  Oliver Bearman          Haas F1 Team                 16        51       67    25%
+   15  Esteban Ocon            Haas F1 Team                  1        62       63     3%
+   16  Liam Lawson             Racing Bulls                  8        49       57    25%
+   17  Sergio Perez            Cadillac                      0        51       51     3%
+   18  Alexander Albon         Williams                      1        48       49    12%
+   19  Valtteri Bottas         Cadillac                      0        36       36    25%
+   20  Nico Hülkenberg         Audi                          0        33       33    38%
+   21  Fernando Alonso         Aston Martin                  0        30       30    40%
+   22  Lance Stroll            Aston Martin                  0        24       24    40%
+
+────────────────────────────────────────────────────────────────────────
+  Driver signal breakdown (lower = stronger / faster):
+  Drv      Race    Grid    Rely   Strat    Pace   ELO→pos    Blend
+  RUS      2.75     2.5    3.71    2.40    5.29       5.9     3.62  George Russell
+  ANT      1.25     1.2    1.29    1.20    1.91      11.4     4.78  Kimi Antonelli
+  LEC      4.50     3.8    4.64    4.55    8.02       1.0     4.32  Charles Leclerc
+  HAM      4.75     5.5    4.90    4.80    8.41       5.2     5.48  Lewis Hamilton
+  NOR      8.00     5.2    9.14    7.80    9.06      13.5     8.17  Lando Norris
+  VER      8.75    10.2   11.67    8.50   11.14       3.0     8.36  Max Verstappen
+  LIN     12.00    12.5   12.37   12.00   13.48      20.9    13.80  Arvid Lindblad
+  PIA     11.25     5.0   15.00   11.05    9.71      15.3    10.26  Oscar Piastri
+  BOR     13.75    14.0   15.71   13.95   13.74      20.8    15.05  Gabriel Bortoleto
+  SAI     12.00    16.8   12.37   12.10   13.48      12.6    13.04  Carlos Sainz
+  GAS     11.00     9.2   14.67   11.10   12.05      19.2    12.54  Pierre Gasly
+  COL     11.75    12.8   12.11   11.85   13.09      21.9    13.91  Franco Colapinto
+  HAD     15.50    10.5   20.00   15.25   13.48      19.3    14.81  Isack Hadjar
+  BEA     11.25    13.0   15.00   11.40   11.92      19.6    13.27  Oliver Bearman
+  OCO     12.00    13.0   12.37   12.15   13.87      22.0    14.06  Esteban Ocon
+  LAW     12.25    11.8   16.33   12.25   12.96      20.0    13.81  Liam Lawson
+  PER     16.00    19.5   16.49   16.20   14.00      14.7    15.89  Sergio Perez
+  ALB     16.00    17.2   18.29   16.10   13.87      14.4    15.66  Alexander Albon
+  BOT     17.25    19.2   20.00   17.45   14.00      15.5    16.74  Valtteri Bottas
+  HUL     15.75    11.2   20.00   15.95   14.00      19.5    15.50  Nico Hülkenberg
+  ALO     17.00    18.2   20.00   17.05   14.00      11.5    16.01  Fernando Alonso
+  STR     18.25    20.5   20.00   18.30   14.00      18.0    17.99  Lance Stroll
+
+========================================================================

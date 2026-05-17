@@ -1,0 +1,113 @@
+======================================================================
+  2026 F1 CHAMPIONSHIP PREDICTION — COMBINED SUMMARY
+======================================================================
+
+  KEY REASONING
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  • No first-year F1 driver has ever won the World Championship (0/75 seasons)
+  • 2025 teammate data: RUS avg P3.88 (300 pts, WDC P4)
+                         ANT avg P7.38 (158 pts, WDC P7)
+  • Russell was 3.5 positions better than Antonelli per race in 2025
+  • ANT 2026 avg of P1.25 is a 6.1-position leap from his 2025 baseline
+    → treated as a 4-race fluke, not a new sustained performance level
+  • Ferrari and McLaren are closing on Mercedes rapidly:
+    Ferrari -17% improvement / McLaren -13% / Mercedes +12% relative decline by R24
+  • ANT strategy penalty: rookie cannot execute complex pit calls like Russell
+  • RUS mechanical issues partially resolved (forward DNF 7%, not 18%)
+
+  ANTTONELLI BLEND WEIGHTS (fluke-corrected vs standard)
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  Layer              ANT (fluke)    All others
+  2025 prior             42%             8%   ← anchors ANT to his true baseline
+  2026 race sample       10%            45%   ← 4-race outlier de-weighted
+  Grid/qualifying        18%            20%
+  Points pace            10%            15%
+  Reliability            10%             7%
+  Strategy (team)        10%   (-0.05)   5%   (-0.35 for RUS)
+
+  ELO RATINGS USED (from manually verified HTML)
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  LEC 2208 · VER 2136 · HAM 2058 · RUS 2033 · ANT 1836  (lowest front-runner)
+
+  PROJECTED STANDINGS — WITHOUT ELO
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+   Rk  Driver                  Team                     Actual   ~Future    Total
+   ──  ──────────────────────  ──────────────────────  ───────  ────────  ───────
+    1  Kimi Antonelli          Mercedes                     93       230      323
+    2  George Russell          Mercedes                     67       243      310
+    3  Charles Leclerc         Ferrari                      46       210      256
+    4  Lewis Hamilton          Ferrari                      43       191      234
+    5  Lando Norris            McLaren                      38       132      170
+    6  Oscar Piastri           McLaren                      33        85      118
+    7  Arvid Lindblad          Racing Bulls                  4       114      118
+    8  Max Verstappen          Red Bull Racing              22        81      103
+    9  Gabriel Bortoleto       Audi                          2        95       97
+   10  Pierre Gasly            Alpine                       15        62       77
+   11  Franco Colapinto        Alpine                        7        70       77
+   12  Carlos Sainz            Williams                      4        66       70
+   13  Oliver Bearman          Haas F1 Team                 16        54       70
+   14  Esteban Ocon            Haas F1 Team                  1        67       68
+   15  Isack Hadjar            Red Bull Racing               4        64       68
+   16  Liam Lawson             Racing Bulls                  8        51       59
+   17  Sergio Perez            Cadillac                      0        47       47
+   18  Alexander Albon         Williams                      1        44       45
+   19  Nico Hülkenberg         Audi                          0        33       33
+   20  Valtteri Bottas         Cadillac                      0        33       33
+   21  Fernando Alonso         Aston Martin                  0        26       26
+   22  Lance Stroll            Aston Martin                  0        22       22
+
+  PROJECTED STANDINGS — WITH ELO 
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+   Rk  Driver                  Team                     Actual   ~Future    Total
+   ──  ──────────────────────  ──────────────────────  ───────  ────────  ───────
+    1  George Russell          Mercedes                     67       234      301
+    2  Kimi Antonelli          Mercedes                     93       199      292
+    3  Charles Leclerc         Ferrari                      46       242      288
+    4  Lewis Hamilton          Ferrari                      43       201      244
+    5  Lando Norris            McLaren                      38       121      159
+    6  Max Verstappen          Red Bull Racing              22        96      118
+    7  Arvid Lindblad          Racing Bulls                  4       111      115
+    8  Oscar Piastri           McLaren                      33        79      112
+    9  Gabriel Bortoleto       Audi                          2        94       96
+   10  Carlos Sainz            Williams                      4        71       75
+   11  Pierre Gasly            Alpine                       15        58       73
+   12  Franco Colapinto        Alpine                        7        65       72
+   13  Isack Hadjar            Red Bull Racing               4        64       68
+   14  Oliver Bearman          Haas F1 Team                 16        51       67
+   15  Esteban Ocon            Haas F1 Team                  1        62       63
+   16  Liam Lawson             Racing Bulls                  8        49       57
+   17  Sergio Perez            Cadillac                      0        51       51
+   18  Alexander Albon         Williams                      1        48       49
+   19  Valtteri Bottas         Cadillac                      0        36       36
+   20  Nico Hülkenberg         Audi                          0        33       33
+   21  Fernando Alonso         Aston Martin                  0        30       30
+   22  Lance Stroll            Aston Martin                  0        24       24
+
+  SIDE-BY-SIDE COMPARISON (TOP 6)
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  Driver                   No-ELO   With-ELO    Delta
+  ──────────────────────  ───────  ─────────    ─────
+  Kimi Antonelli              323        292      -31
+  George Russell              310        301       -9
+  Charles Leclerc             256        288      +32
+  Lewis Hamilton              234        244      +10
+  Lando Norris                170        159      -11
+  Oscar Piastri               118        112       -6
+  Arvid Lindblad              118        115       -3
+  Max Verstappen              103        118      +15
+
+  INTERPRETATION
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  Without ELO: Antonelli narrowly wins (323 vs Russell 310, gap = 13 pts)
+               Primarily based on 2026 actual pace + experience penalties
+  With ELO:    Russell wins (301 pts), with Antonelli 2nd (292) and
+               Leclerc 3rd (288) — a 3-way fight decided in the final
+               races.  ELO anchors drivers to career-long performance,
+               strongly disadvantaging ANT (ELO 1836, lowest frontrunner)
+               and boosting LEC (ELO 2208, highest on grid).
+
+  Both versions reflect the core idea: Antonelli's early dominance
+  is a car-driven fluke that will erode as Ferrari/McLaren close the gap
+  and as Russell's mechanical reliability issues are resolved.
+
+======================================================================
