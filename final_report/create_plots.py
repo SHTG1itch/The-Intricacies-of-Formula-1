@@ -513,17 +513,22 @@ def plot_rq2a_points_heatmap():
     ax.axhline(2.5, color=BLUE,  linewidth=2, linestyle="--", alpha=0.8)
     ax.axhline(3.5, color=GREEN, linewidth=2, linestyle="--", alpha=0.8)
 
-    ax.text(10.25, 1.0,  "PRE COST CAP\n(2018–2020)",
+    from matplotlib.transforms import blended_transform_factory
+    _trans = blended_transform_factory(ax.transAxes, ax.transData)
+    ax.text(1.02, 1.0,  "PRE COST CAP\n(2018–2020)",
             fontsize=8, color=BLUE,    va="center", ha="left",
+            clip_on=False, transform=_trans,
             bbox=dict(boxstyle="round,pad=0.3", fc=BG, ec=BLUE, alpha=0.9))
-    ax.text(10.25, 3.0,  "TRANSITION\n(2021)",
+    ax.text(1.02, 3.0,  "TRANSITION\n(2021)",
             fontsize=8, color="#555555", va="center", ha="left",
+            clip_on=False, transform=_trans,
             bbox=dict(boxstyle="round,pad=0.3", fc=BG, ec="#999999", alpha=0.9))
-    ax.text(10.25, 5.75, "POST COST CAP\n(2022–2025)",
+    ax.text(1.02, 5.75, "POST COST CAP\n(2022–2025)",
             fontsize=8, color=GREEN,   va="center", ha="left",
+            clip_on=False, transform=_trans,
             bbox=dict(boxstyle="round,pad=0.3", fc=BG, ec=GREEN, alpha=0.9))
 
-    cbar = plt.colorbar(im, ax=ax, fraction=0.028, pad=0.15)
+    cbar = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.22)
     cbar.set_label("Total Points Scored (all teams combined)", fontsize=9)
 
     ax.set_title(
@@ -1293,7 +1298,7 @@ def plot_rq3b_confusion_matrix():
 
     ax.annotate(
         "Off-diagonal entries:\nDriver skill / strategy\noverride car advantage",
-        xy=(3, 0), xytext=(3.0, -1.8), fontsize=8, color=DARK,
+        xy=(1, 0), xytext=(5.5, 1.8), fontsize=8, color=DARK,
         arrowprops=dict(arrowstyle="->", color=DARK, lw=0.8),
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=GREY, alpha=0.85),
     )

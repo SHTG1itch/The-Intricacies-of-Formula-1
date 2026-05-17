@@ -1026,7 +1026,7 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
         for bar in bars:
             h = bar.get_height()
             if not np.isnan(h) and h > 0.02:
-                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.007,
+                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.016,
                         f"{h:.0%}", ha="center", va="bottom", fontsize=8, fontweight="bold")
 
     # arrows from LOSO to WF showing the PL gain
@@ -1041,20 +1041,6 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
 
     ax.axhline(0.65, color="#333", lw=1.2, ls="--", alpha=0.6,
                label="Academic benchmark (~65%)")
-
-    year_notes = {
-        2019: "HAM quali dominance\ncaptured by PL",
-        2023: "VER separates R4\nPL very effective",
-        2022: "Regulation change:\nbase model stale",
-        2024: "Mid-season shift\ndetected by PL",
-    }
-    for yr, note in year_notes.items():
-        if yr in years:
-            xi = x[years.index(yr)]
-            ax.text(xi, -0.10, note, ha="center", va="top", fontsize=6.5,
-                    color="#444", style="italic",
-                    bbox=dict(boxstyle="round,pad=0.2", facecolor="#f9f9f9",
-                              edgecolor="#ccc", alpha=0.8))
 
     valid_loso   = [v for v in loso_vals   if not np.isnan(v)]
     valid_oracle = [v for v in oracle_vals if not np.isnan(v)]
@@ -1081,7 +1067,7 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
     ax.legend(fontsize=8.5, loc="upper left", framealpha=0.9)
     ax.grid(True, axis="y", alpha=0.25)
-    ax.set_ylim(-0.25, 1.12)
+    ax.set_ylim(0, 1.12)
 
     # right panel: WF gain and Oracle gain over LOSO shown as grouped horizontal bars
     wf_gains     = [wv - (lv if not np.isnan(lv) else 0) for wv, lv in zip(wf_vals, loso_vals)]
@@ -1406,7 +1392,7 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
         for bar in bars:
             h = bar.get_height()
             if not np.isnan(h) and h > 0.02:
-                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.007,
+                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.016,
                         f"{h:.0%}", ha="center", va="bottom", fontsize=7.5, fontweight="bold")
 
     # mean lines
@@ -1419,12 +1405,6 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
     ax.axhline(mean_wf,     color=c_wf,     lw=1.2, ls=":",  alpha=0.6)
     ax.axhline(mean_oracle, color=c_oracle,  lw=1.2, ls=":",  alpha=0.6)
 
-    # mean summary box
-    ax.text(0.02, 0.97,
-            f"Means:  LOSO {mean_base:.1%}  |  WF {mean_wf:.1%}  |  Oracle {mean_oracle:.1%}  |  Ceiling {mean_ceil:.1%}",
-            transform=ax.transAxes, ha="left", va="top", fontsize=9,
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", edgecolor="#ccc", alpha=0.9))
-
     ax.set_xticks(x); ax.set_xticklabels([str(y) for y in years])
     ax.set_xlabel("Holdout Season", fontsize=12)
     ax.set_ylabel("Winner Prediction Accuracy", fontsize=12)
@@ -1433,7 +1413,13 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
     ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1, decimals=0))
     ax.legend(fontsize=9, loc="upper left")
     ax.grid(True, axis="y", alpha=0.25)
-    ax.set_ylim(0, 1.12)
+    ax.set_ylim(0, 1.22)
+
+    # mean summary box at bottom-right of the axes where bars are always short
+    ax.text(0.98, 0.02,
+            f"Means:  LOSO {mean_base:.1%}  |  WF {mean_wf:.1%}  |  Oracle {mean_oracle:.1%}  |  Ceiling {mean_ceil:.1%}",
+            transform=ax.transAxes, ha="right", va="bottom", fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", edgecolor="#ccc", alpha=0.9))
 
     # ── RIGHT PANEL: race-outcome composition stacked bars ────────────────
     ax2 = axes[1]
