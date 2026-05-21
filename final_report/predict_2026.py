@@ -36,6 +36,7 @@ logging.getLogger("fastf1").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rmt_denoising import rmt_denoise_psd   # Marchenko-Pastur denoising for driver-cluster regularization
 
 # pull in everything we need from mach_learning.py
 # keeping the training logic there means both predict scripts share the same
@@ -782,6 +783,103 @@ def plot_accuracy_timeline(metrics_df, out_dir):
     print(f"  ✓ Plot saved: {path}")
 
 
+# ── RMT driver-cluster score refinement ──────────────────────────────────────
+#
+# this function takes the raw ensemble scores (after the 4-model blend in ensemble_predict)
+# and does a gentle cleanup pass using Marchenko-Pastur Random Matrix Theory.
+#
+# the problem it's solving: the ensemble sometimes outputs predictions that don't respect
+# the team-tier structure very well. like it might say "Norris P1, Piastri P12" purely
+# because one McLaren had a slightly better FP2 result or whatever. but if you look at
+# the overall feature profiles of both McLaren drivers, they're very similar - same car,
+# similar recent form, similar circuit history. the model should probably not be predicting
+# a 11-position gap between teammates.
+#
+# the way we identify "real tiers" vs noise: build a 20x20 driver-driver similarity matrix
+# from the pre-race features, then apply the Marchenko-Pastur threshold to denoise it.
+# with q = n_drivers/n_features = 20/54 = 0.37, the MP threshold is around 2.6 sigma.
+# eigenvalues above that are genuine competitive separation (e.g., top teams vs midfield).
+# eigenvalues below are just random feature variation that doesn't actually predict anything.
+#
+# then we project the ensemble scores onto the signal eigenvectors (the ones representing
+# real tier structure) and blend a small percentage of that back in. this doesn't change
+# predictions dramatically - it's a 12% nudge toward what the tier structure implies.
+# but it smooths out some of the noisier individual-race predictions.
+#
+# for 2026 specifically this is more valuable than usual because we're dealing with a major
+# regulation change. the models trained on 2022-2025 data have learned car-level performance
+# signals from an era that's now completely over. we can't trust the car-specific features as
+# much as we normally would. the RMT tier clustering at least tells us "these two drivers are
+# in the same boat given today's features" even if we don't know exactly how good that boat is.
+#
+# we don't use the entropy gate here (unlike walk_forward_model.py) because we don't have
+# within-2026-season race results to compute entropy from. we use a flat 12% blend which
+# is conservative enough to not hurt dominant-driver scenarios too badly. if we had 2026
+# race results to work with, we'd adapt the blend exactly like the walk-forward model does.
+
+def rmt_refine_ensemble_scores(pred_df, X_features_df, rmt_blend=0.12):
+    pred_out = pred_df.copy()
+
+    for rnd, race_df in pred_df.groupby("Round"):
+        idx    = race_df.index
+        n_driv = len(idx)
+        if n_driv < 4:
+            continue   # can't really do meaningful tier clustering with fewer than 4 drivers
+
+        # grab the feature matrix for just this race
+        X_race = X_features_df.loc[idx]
+        if X_race.shape[0] != n_driv:
+            continue   # index mismatch, skip to be safe
+
+        X_np   = X_race.values.astype(float)
+        X_mean = X_np.mean(axis=0)             # average feature value across drivers this race
+        X_std2 = np.clip(X_np.std(axis=0), 1e-8, None)   # std of each feature across drivers
+        X_s    = (X_np - X_mean) / X_std2     # standardized: z-score each feature across drivers
+
+        # compute the driver-driver similarity matrix: how similar are these 20 drivers
+        # to each other in feature space? drivers on the same team tend to have high similarity.
+        # dividing by n_features normalizes the scale (each feature contributes equally)
+        C_drv = X_s @ X_s.T / X_np.shape[1]
+
+        # apply MP denoising with T_eff = n_features (54). the logic is that we're treating
+        # each feature as one "sample" of the n_driver-dimensional driver space.
+        try:
+            C_clean, n_sig, lam_thr = rmt_denoise_psd(
+                C_drv, T_eff=float(X_np.shape[1]), return_diagnostics=True
+            )
+        except Exception:
+            continue   # if denoising fails for some reason just skip this race
+
+        if n_sig == 0:
+            continue   # all eigenvalues below the noise threshold - no reliable tier signal found
+
+        # pull out the signal eigenvectors - these are the directions in driver space that
+        # represent genuine competitive differentiation (not random feature noise)
+        eig_vals, eig_vecs = np.linalg.eigh(C_clean)
+        sig_mask  = eig_vals > lam_thr
+        sig_vecs  = eig_vecs[:, sig_mask]   # shape: (n_drivers x n_signal_eigenvalues)
+
+        scores = race_df["ensemble_score"].values.astype(float)
+        if np.isnan(scores).any():
+            continue
+
+        # project scores onto signal subspace. this is the "what do the genuine tier
+        # eigenvectors say about the scores?" component - stripping out noise variation
+        scores_proj = sig_vecs @ (sig_vecs.T @ scores)
+        # blend: 88% from the original ensemble, 12% from the tier projection
+        scores_new  = (1.0 - rmt_blend) * scores + rmt_blend * scores_proj
+
+        pred_out.loc[idx, "ensemble_score"] = scores_new
+
+    # after modifying the scores, re-rank within each race so positions are still 1-N integers
+    pred_out["PredictedPosition"] = (
+        pred_out.groupby(["Year", "Round"])["ensemble_score"]
+                .rank(method="first", ascending=True)
+                .astype(int)
+    )
+    return pred_out
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -880,6 +978,13 @@ def main():
     pred_df["rf_win_proba"]  = rf_win_proba
     pred_df["rf_top10_pred"] = rf_top10_pred
     pred_df["xgb_raw_pred"]  = xgb_preds
+
+    # run the RMT cluster refinement pass on the predictions
+    # this takes the raw ensemble scores and nudges them slightly toward what the
+    # driver-feature tier structure implies - see rmt_refine_ensemble_scores() above
+    # for a full explanation of why we do this and what the 12% blend number means
+    pred_df = rmt_refine_ensemble_scores(pred_df, X_2026_s, rmt_blend=0.12)
+    print(f"  ✓ RMT driver-cluster refinement applied (12% blend)")
 
     n_races_predicted = pred_df["Round"].nunique()
     print(f"  ✓ Predictions generated: {n_races_predicted} races, {pred_df['Driver'].nunique()} drivers")
