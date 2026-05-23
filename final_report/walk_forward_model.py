@@ -1425,12 +1425,27 @@ def plot_model_comparison_bars(df_pred, loso_by_year, outdir=PLOT_DIR):
                          label="Oracle - theoretical best (WF or LOSO correct)",
                          color=c_oracle, alpha=0.85, edgecolor="white")
 
-    for bars in [bars_loso, bars_wf, bars_oracle]:
-        for bar in bars:
+    # Bar value labels: stagger vertically within each year-group when two or more
+    # bars share the same rounded height (e.g. "86%86%86%" fusing into one string).
+    STAGGER_STEP_MC = 0.030
+    bar_groups = list(zip(bars_loso, bars_wf, bars_oracle))
+    for trio in bar_groups:
+        heights = [b.get_height() for b in trio]
+        level = {}
+        for i, h in enumerate(heights):
+            if np.isnan(h) or h <= 0.02:
+                continue
+            rounded = round(h, 2)
+            level[i] = sum(1 for j in range(i)
+                           if not np.isnan(heights[j]) and heights[j] > 0.02
+                           and round(heights[j], 2) == rounded)
+        for i, bar in enumerate(trio):
             h = bar.get_height()
-            if not np.isnan(h) and h > 0.02:
-                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.016,
-                        f"{h:.0%}", ha="center", va="bottom", fontsize=8, fontweight="bold")
+            if np.isnan(h) or h <= 0.02:
+                continue
+            y_off = 0.016 + level.get(i, 0) * STAGGER_STEP_MC
+            ax.text(bar.get_x() + bar.get_width() / 2, h + y_off,
+                    f"{h:.0%}", ha="center", va="bottom", fontsize=8, fontweight="bold")
 
     # arrows from LOSO to WF showing the PL gain
     for xi, lv, wv in zip(x, loso_vals, wf_vals):
@@ -1790,13 +1805,28 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
             ax.plot(xi, cy, marker="D", markersize=7, color=c_ceil, zorder=5,
                     label="Theoretical ceiling" if xi == x[0] else "")
 
-    # bar value labels
-    for bars in [b1, b2, b3]:
-        for bar in bars:
+    # bar value labels - stagger vertically per year-group so equal values don't
+    # print on top of each other (e.g. "86%86%86%" merging into one string)
+    STAGGER_STEP = 0.028   # extra y per collision level
+    for year_idx in range(len(years)):
+        group = [(b1[year_idx], c_base), (b2[year_idx], c_wf), (b3[year_idx], c_oracle)]
+        heights = [bar.get_height() for bar, _ in group]
+        # assign stagger level: bars with the same rounded height get different levels
+        level = {}
+        for i, h in enumerate(heights):
+            if np.isnan(h) or h <= 0.02:
+                continue
+            rounded = round(h, 2)
+            level[i] = sum(1 for j in range(i) if round(heights[j], 2) == rounded
+                           and not np.isnan(heights[j]) and heights[j] > 0.02)
+        for i, (bar, col) in enumerate(group):
             h = bar.get_height()
-            if not np.isnan(h) and h > 0.02:
-                ax.text(bar.get_x() + bar.get_width() / 2, h + 0.016,
-                        f"{h:.0%}", ha="center", va="bottom", fontsize=7.5, fontweight="bold")
+            if np.isnan(h) or h <= 0.02:
+                continue
+            y_off = 0.016 + level.get(i, 0) * STAGGER_STEP
+            ax.text(bar.get_x() + bar.get_width() / 2, h + y_off,
+                    f"{h:.0%}", ha="center", va="bottom",
+                    fontsize=7.5, fontweight="bold")
 
     # mean lines
     mean_base   = np.nanmean(base_vals)
@@ -1818,10 +1848,12 @@ def plot_theoretical_oracle(df_pred, loso_by_year, outdir=PLOT_DIR):
     ax.grid(True, axis="y", alpha=0.25)
     ax.set_ylim(0, 1.22)
 
-    # mean summary box at bottom-right of the axes where bars are always short
-    ax.text(0.98, 0.02,
+    # mean summary box placed in the upper-right corner (above all bars, which top out ~86%)
+    # Previously this was at y=0.02 (axes coords) which landed on the base of the bars and
+    # caused visible overlap.  Moving to y=0.95 puts it in the empty space above the tallest bar.
+    ax.text(0.98, 0.95,
             f"Means:  LOSO {mean_base:.1%}  |  WF {mean_wf:.1%}  |  Oracle {mean_oracle:.1%}  |  Ceiling {mean_ceil:.1%}",
-            transform=ax.transAxes, ha="right", va="bottom", fontsize=9,
+            transform=ax.transAxes, ha="right", va="top", fontsize=9,
             bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", edgecolor="#ccc", alpha=0.9))
 
     # ── RIGHT PANEL: race-outcome composition stacked bars ────────────────

@@ -157,10 +157,14 @@ ax_early.annotate("Fixed!",
                   fontsize=8, color=C_FIX, fontweight="bold", ha="center")
 
 # draw the base-ensemble level as a reference
-ax_early.axhline(EARLY_BASE, xmin=0.0, xmax=0.5, color="black",
+# The reference line runs only across the early-season group (xmax=0.40 axes frac).
+# Label is placed in the GAP between the two groups (data x≈0.52, just right of the
+# early bars) so it does not collide with either the "PL hurts" arrow on the left or
+# the "Fixed!" label above the third early bar.
+ax_early.axhline(EARLY_BASE, xmin=0.0, xmax=0.40, color="black",
                  ls=":", lw=1.2, alpha=0.5)
-ax_early.text(-0.35, EARLY_BASE+0.005, "base\nlevel",
-              fontsize=7.5, color=DARK, ha="center", alpha=0.6)
+ax_early.text(0.52, EARLY_BASE + 0.003, "base level",
+              fontsize=7.5, color=DARK, ha="left", alpha=0.7)
 
 ax_early.set_xticks(x2)
 ax_early.set_xticklabels(cat_labels, fontsize=10)
@@ -266,24 +270,30 @@ for i in range(len(accs)-1):
             arrowprops=dict(arrowstyle="-", color=C_GRID, lw=0.8)
         )
     else:
-        ax_wf2.text(i+0.5, accs[i] + 0.012, "no WF\nchange\n(base↑)", ha="center",
-                    fontsize=7.5, color=C_RMT, style="italic")
+        # Place the "no WF change" note BELOW the bar value labels (near bar mid-height)
+        # so it does not collide with the "Total gain" headline that sits above the bars.
+        # A white-background box keeps it readable against the bar fill colour.
+        ax_wf2.text(i+0.5, accs[i] - 0.006, "no WF\nchange\n(base↑)", ha="center",
+                    fontsize=7.5, color=C_RMT, style="italic", va="top",
+                    bbox=dict(boxstyle="round,pad=0.15", facecolor="white",
+                              edgecolor="none", alpha=0.85))
 
 ax_wf2.set_xticks(range(len(steps)))
 ax_wf2.set_xticklabels(steps, fontsize=9)
 ax_wf2.set_ylabel("Walk-Forward Winner Accuracy", fontsize=10, color=DARK)
 ax_wf2.set_title("Walk-Forward Accuracy Progression\n(2018–2024 holdout average)",
                  fontsize=11, fontweight="bold", color=DARK)
-ax_wf2.set_ylim(0.565, 0.615)
+# Extend ylim upward so "Total gain" headline has clear space above the bars
+ax_wf2.set_ylim(0.565, 0.621)
 ax_wf2.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.1%}"))
 
-# bracket for total gain
+# bracket for total gain – text placed higher to stay clear of bar value labels
 total = OVR_S3_WF - OVR_S1_WF
 ax_wf2.annotate("",
                 xy=(2 + bar_w/2 + 0.08, OVR_S3_WF),
                 xytext=(0 - bar_w/2 - 0.08, OVR_S1_WF),
                 arrowprops=dict(arrowstyle="<->", color=C_FIX, lw=2.0))
-ax_wf2.text(1.0, OVR_S3_WF + 0.005,
+ax_wf2.text(1.0, OVR_S3_WF + 0.011,
             f"Total gain: +{total:.2%}", ha="center",
             fontsize=10, fontweight="bold", color=C_FIX)
 

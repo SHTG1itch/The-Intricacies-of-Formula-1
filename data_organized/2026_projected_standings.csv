@@ -1,23 +1,23 @@
 Driver,FullName,Team,actual_pts,projected_future,projected_total,rank
 RUS,George Russell,Mercedes,67,234,301,1
-ANT,Kimi Antonelli,Mercedes,93,199,292,2
-LEC,Charles Leclerc,Ferrari,46,242,288,3
-HAM,Lewis Hamilton,Ferrari,43,201,244,4
-NOR,Lando Norris,McLaren,38,121,159,5
-VER,Max Verstappen,Red Bull Racing,22,96,118,6
-LIN,Arvid Lindblad,Racing Bulls,4,111,115,7
-PIA,Oscar Piastri,McLaren,33,79,112,8
-BOR,Gabriel Bortoleto,Audi,2,94,96,9
+ANT,Kimi Antonelli,Mercedes,93,192,285,2
+LEC,Charles Leclerc,Ferrari,46,239,285,3
+HAM,Lewis Hamilton,Ferrari,43,199,242,4
+NOR,Lando Norris,McLaren,38,120,158,5
+VER,Max Verstappen,Red Bull Racing,22,97,119,6
+LIN,Arvid Lindblad,Racing Bulls,4,113,117,7
+PIA,Oscar Piastri,McLaren,33,78,111,8
+BOR,Gabriel Bortoleto,Audi,2,95,97,9
 SAI,Carlos Sainz,Williams,4,71,75,10
-GAS,Pierre Gasly,Alpine,15,58,73,11
-COL,Franco Colapinto,Alpine,7,65,72,12
-HAD,Isack Hadjar,Red Bull Racing,4,64,68,13
-BEA,Oliver Bearman,Haas F1 Team,16,51,67,14
-OCO,Esteban Ocon,Haas F1 Team,1,62,63,15
-LAW,Liam Lawson,Racing Bulls,8,49,57,16
-PER,Sergio Perez,Cadillac,0,51,51,17
-ALB,Alexander Albon,Williams,1,48,49,18
-BOT,Valtteri Bottas,Cadillac,0,36,36,19
-HUL,Nico Hülkenberg,Audi,0,33,33,20
-ALO,Fernando Alonso,Aston Martin,0,30,30,21
-STR,Lance Stroll,Aston Martin,0,24,24,22
+GAS,Pierre Gasly,Alpine,15,59,74,11
+COL,Franco Colapinto,Alpine,7,66,73,12
+BEA,Oliver Bearman,Haas F1 Team,16,52,68,13
+HAD,Isack Hadjar,Red Bull Racing,4,64,68,14
+OCO,Esteban Ocon,Haas F1 Team,1,63,64,15
+LAW,Liam Lawson,Racing Bulls,8,50,58,16
+PER,Sergio Perez,Cadillac,0,52,52,17
+ALB,Alexander Albon,Williams,1,49,50,18
+BOT,Valtteri Bottas,Cadillac,0,37,37,19
+HUL,Nico Hülkenberg,Audi,0,34,34,20
+ALO,Fernando Alonso,Aston Martin,0,31,31,21
+STR,Lance Stroll,Aston Martin,0,25,25,22

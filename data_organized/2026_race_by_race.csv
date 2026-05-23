@@ -87,26 +87,26 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 4,Miami Grand Prix,Miami,LAW,Liam Lawson,Racing Bulls,20,0,True,True
 4,Miami Grand Prix,Miami,GAS,Pierre Gasly,Alpine,21,0,True,True
 4,Miami Grand Prix,Miami,HAD,Isack Hadjar,Red Bull Racing,22,0,True,True
-5,Bahrain Grand Prix,Sakhir,LEC,Charles Leclerc,Ferrari,1,25,False,True
-5,Bahrain Grand Prix,Sakhir,ANT,Kimi Antonelli,Mercedes,2,18,False,True
-5,Bahrain Grand Prix,Sakhir,LAW,Liam Lawson,Racing Bulls,3,15,False,True
-5,Bahrain Grand Prix,Sakhir,STR,Lance Stroll,Aston Martin,4,12,False,True
-5,Bahrain Grand Prix,Sakhir,HAM,Lewis Hamilton,Ferrari,5,10,False,True
-5,Bahrain Grand Prix,Sakhir,OCO,Esteban Ocon,Haas F1 Team,6,8,False,True
-5,Bahrain Grand Prix,Sakhir,VER,Max Verstappen,Red Bull Racing,7,6,False,True
-5,Bahrain Grand Prix,Sakhir,RUS,George Russell,Mercedes,8,4,False,True
-5,Bahrain Grand Prix,Sakhir,BOT,Valtteri Bottas,Cadillac,9,2,False,True
-5,Bahrain Grand Prix,Sakhir,COL,Franco Colapinto,Alpine,10,1,False,True
-5,Bahrain Grand Prix,Sakhir,SAI,Carlos Sainz,Williams,11,0,False,True
+5,Bahrain Grand Prix,Sakhir,NOR,Lando Norris,McLaren,1,25,False,True
+5,Bahrain Grand Prix,Sakhir,LEC,Charles Leclerc,Ferrari,2,18,False,True
+5,Bahrain Grand Prix,Sakhir,ANT,Kimi Antonelli,Mercedes,3,15,False,True
+5,Bahrain Grand Prix,Sakhir,LAW,Liam Lawson,Racing Bulls,4,12,False,True
+5,Bahrain Grand Prix,Sakhir,STR,Lance Stroll,Aston Martin,5,10,False,True
+5,Bahrain Grand Prix,Sakhir,HAM,Lewis Hamilton,Ferrari,6,8,False,True
+5,Bahrain Grand Prix,Sakhir,OCO,Esteban Ocon,Haas F1 Team,7,6,False,True
+5,Bahrain Grand Prix,Sakhir,VER,Max Verstappen,Red Bull Racing,8,4,False,True
+5,Bahrain Grand Prix,Sakhir,RUS,George Russell,Mercedes,9,2,False,True
+5,Bahrain Grand Prix,Sakhir,BOT,Valtteri Bottas,Cadillac,10,1,False,True
+5,Bahrain Grand Prix,Sakhir,COL,Franco Colapinto,Alpine,11,0,False,True
 5,Bahrain Grand Prix,Sakhir,BOR,Gabriel Bortoleto,Audi,12,0,False,True
-5,Bahrain Grand Prix,Sakhir,PER,Sergio Perez,Cadillac,13,0,False,True
-5,Bahrain Grand Prix,Sakhir,ALB,Alexander Albon,Williams,14,0,False,True
-5,Bahrain Grand Prix,Sakhir,PIA,Oscar Piastri,McLaren,15,0,False,True
-5,Bahrain Grand Prix,Sakhir,HAD,Isack Hadjar,Red Bull Racing,16,0,False,True
-5,Bahrain Grand Prix,Sakhir,ALO,Fernando Alonso,Aston Martin,17,0,False,True
-5,Bahrain Grand Prix,Sakhir,GAS,Pierre Gasly,Alpine,18,0,False,True
-5,Bahrain Grand Prix,Sakhir,LIN,Arvid Lindblad,Racing Bulls,19,0,False,True
-5,Bahrain Grand Prix,Sakhir,NOR,Lando Norris,McLaren,20,0,False,False
+5,Bahrain Grand Prix,Sakhir,SAI,Carlos Sainz,Williams,13,0,False,True
+5,Bahrain Grand Prix,Sakhir,PER,Sergio Perez,Cadillac,14,0,False,True
+5,Bahrain Grand Prix,Sakhir,ALB,Alexander Albon,Williams,15,0,False,True
+5,Bahrain Grand Prix,Sakhir,PIA,Oscar Piastri,McLaren,16,0,False,True
+5,Bahrain Grand Prix,Sakhir,HAD,Isack Hadjar,Red Bull Racing,17,0,False,True
+5,Bahrain Grand Prix,Sakhir,ALO,Fernando Alonso,Aston Martin,18,0,False,True
+5,Bahrain Grand Prix,Sakhir,GAS,Pierre Gasly,Alpine,19,0,False,True
+5,Bahrain Grand Prix,Sakhir,LIN,Arvid Lindblad,Racing Bulls,20,0,False,True
 5,Bahrain Grand Prix,Sakhir,BEA,Oliver Bearman,Haas F1 Team,21,0,False,False
 5,Bahrain Grand Prix,Sakhir,HUL,Nico Hülkenberg,Audi,22,0,False,False
 6,Saudi Arabian Grand Prix,Jeddah,RUS,George Russell,Mercedes,1,25,False,True
@@ -170,8 +170,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 8,Monaco Grand Prix,Monaco,ALB,Alexander Albon,Williams,15,0,False,True
 8,Monaco Grand Prix,Monaco,ALO,Fernando Alonso,Aston Martin,16,0,False,True
 8,Monaco Grand Prix,Monaco,LIN,Arvid Lindblad,Racing Bulls,17,0,False,True
-8,Monaco Grand Prix,Monaco,PIA,Oscar Piastri,McLaren,18,0,False,False
-8,Monaco Grand Prix,Monaco,STR,Lance Stroll,Aston Martin,19,0,False,False
+8,Monaco Grand Prix,Monaco,STR,Lance Stroll,Aston Martin,18,0,False,False
+8,Monaco Grand Prix,Monaco,PIA,Oscar Piastri,McLaren,19,0,False,False
 8,Monaco Grand Prix,Monaco,HAD,Isack Hadjar,Red Bull Racing,20,0,False,False
 8,Monaco Grand Prix,Monaco,HUL,Nico Hülkenberg,Audi,21,0,False,False
 8,Monaco Grand Prix,Monaco,BOT,Valtteri Bottas,Cadillac,22,0,False,False
@@ -199,8 +199,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 9,Barcelona Grand Prix,Catalonia,HUL,Nico Hülkenberg,Audi,22,0,False,False
 10,Austrian Grand Prix,Spielberg,RUS,George Russell,Mercedes,1,25,False,True
 10,Austrian Grand Prix,Spielberg,SAI,Carlos Sainz,Williams,2,18,False,True
-10,Austrian Grand Prix,Spielberg,ANT,Kimi Antonelli,Mercedes,3,15,False,True
-10,Austrian Grand Prix,Spielberg,HAM,Lewis Hamilton,Ferrari,4,12,False,True
+10,Austrian Grand Prix,Spielberg,HAM,Lewis Hamilton,Ferrari,3,15,False,True
+10,Austrian Grand Prix,Spielberg,ANT,Kimi Antonelli,Mercedes,4,12,False,True
 10,Austrian Grand Prix,Spielberg,LEC,Charles Leclerc,Ferrari,5,10,False,True
 10,Austrian Grand Prix,Spielberg,ALB,Alexander Albon,Williams,6,8,False,True
 10,Austrian Grand Prix,Spielberg,ALO,Fernando Alonso,Aston Martin,7,6,False,True
@@ -225,8 +225,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 11,British Grand Prix,Silverstone,SAI,Carlos Sainz,Williams,4,12,False,True
 11,British Grand Prix,Silverstone,RUS,George Russell,Mercedes,5,10,False,True
 11,British Grand Prix,Silverstone,LEC,Charles Leclerc,Ferrari,6,8,False,True
-11,British Grand Prix,Silverstone,ANT,Kimi Antonelli,Mercedes,7,6,False,True
-11,British Grand Prix,Silverstone,NOR,Lando Norris,McLaren,8,4,False,True
+11,British Grand Prix,Silverstone,NOR,Lando Norris,McLaren,7,6,False,True
+11,British Grand Prix,Silverstone,ANT,Kimi Antonelli,Mercedes,8,4,False,True
 11,British Grand Prix,Silverstone,GAS,Pierre Gasly,Alpine,9,2,False,True
 11,British Grand Prix,Silverstone,PIA,Oscar Piastri,McLaren,10,1,False,True
 11,British Grand Prix,Silverstone,HUL,Nico Hülkenberg,Audi,11,0,False,True
@@ -253,8 +253,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 12,Belgian Grand Prix,Spa,BOT,Valtteri Bottas,Cadillac,10,1,False,True
 12,Belgian Grand Prix,Spa,OCO,Esteban Ocon,Haas F1 Team,11,0,False,True
 12,Belgian Grand Prix,Spa,COL,Franco Colapinto,Alpine,12,0,False,True
-12,Belgian Grand Prix,Spa,PER,Sergio Perez,Cadillac,13,0,False,True
-12,Belgian Grand Prix,Spa,BEA,Oliver Bearman,Haas F1 Team,14,0,False,True
+12,Belgian Grand Prix,Spa,BEA,Oliver Bearman,Haas F1 Team,13,0,False,True
+12,Belgian Grand Prix,Spa,PER,Sergio Perez,Cadillac,14,0,False,True
 12,Belgian Grand Prix,Spa,ALB,Alexander Albon,Williams,15,0,False,False
 12,Belgian Grand Prix,Spa,ALO,Fernando Alonso,Aston Martin,16,0,False,False
 12,Belgian Grand Prix,Spa,PIA,Oscar Piastri,McLaren,17,0,False,False
@@ -267,15 +267,15 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 13,Hungarian Grand Prix,Budapest,BEA,Oliver Bearman,Haas F1 Team,2,18,False,True
 13,Hungarian Grand Prix,Budapest,BOR,Gabriel Bortoleto,Audi,3,15,False,True
 13,Hungarian Grand Prix,Budapest,RUS,George Russell,Mercedes,4,12,False,True
-13,Hungarian Grand Prix,Budapest,LEC,Charles Leclerc,Ferrari,5,10,False,True
-13,Hungarian Grand Prix,Budapest,COL,Franco Colapinto,Alpine,6,8,False,True
+13,Hungarian Grand Prix,Budapest,COL,Franco Colapinto,Alpine,5,10,False,True
+13,Hungarian Grand Prix,Budapest,LEC,Charles Leclerc,Ferrari,6,8,False,True
 13,Hungarian Grand Prix,Budapest,GAS,Pierre Gasly,Alpine,7,6,False,True
 13,Hungarian Grand Prix,Budapest,SAI,Carlos Sainz,Williams,8,4,False,True
 13,Hungarian Grand Prix,Budapest,PER,Sergio Perez,Cadillac,9,2,False,True
 13,Hungarian Grand Prix,Budapest,ANT,Kimi Antonelli,Mercedes,10,1,False,True
 13,Hungarian Grand Prix,Budapest,OCO,Esteban Ocon,Haas F1 Team,11,0,False,True
-13,Hungarian Grand Prix,Budapest,NOR,Lando Norris,McLaren,12,0,False,True
-13,Hungarian Grand Prix,Budapest,ALB,Alexander Albon,Williams,13,0,False,True
+13,Hungarian Grand Prix,Budapest,ALB,Alexander Albon,Williams,12,0,False,True
+13,Hungarian Grand Prix,Budapest,NOR,Lando Norris,McLaren,13,0,False,True
 13,Hungarian Grand Prix,Budapest,BOT,Valtteri Bottas,Cadillac,14,0,False,True
 13,Hungarian Grand Prix,Budapest,HUL,Nico Hülkenberg,Audi,15,0,False,True
 13,Hungarian Grand Prix,Budapest,ALO,Fernando Alonso,Aston Martin,16,0,False,True
@@ -330,8 +330,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 15,Italian Grand Prix,Monza,HAD,Isack Hadjar,Red Bull Racing,21,0,False,False
 15,Italian Grand Prix,Monza,NOR,Lando Norris,McLaren,22,0,False,False
 16,Spanish Grand Prix,Valencia,NOR,Lando Norris,McLaren,1,25,False,True
-16,Spanish Grand Prix,Valencia,ANT,Kimi Antonelli,Mercedes,2,18,False,True
-16,Spanish Grand Prix,Valencia,RUS,George Russell,Mercedes,3,15,False,True
+16,Spanish Grand Prix,Valencia,RUS,George Russell,Mercedes,2,18,False,True
+16,Spanish Grand Prix,Valencia,ANT,Kimi Antonelli,Mercedes,3,15,False,True
 16,Spanish Grand Prix,Valencia,HUL,Nico Hülkenberg,Audi,4,12,False,True
 16,Spanish Grand Prix,Valencia,LIN,Arvid Lindblad,Racing Bulls,5,10,False,True
 16,Spanish Grand Prix,Valencia,LEC,Charles Leclerc,Ferrari,6,8,False,True
@@ -351,8 +351,8 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 16,Spanish Grand Prix,Valencia,LAW,Liam Lawson,Racing Bulls,20,0,False,True
 16,Spanish Grand Prix,Valencia,HAD,Isack Hadjar,Red Bull Racing,21,0,False,False
 16,Spanish Grand Prix,Valencia,ALO,Fernando Alonso,Aston Martin,22,0,False,False
-17,Azerbaijan Grand Prix,Baku,ANT,Kimi Antonelli,Mercedes,1,25,False,True
-17,Azerbaijan Grand Prix,Baku,LIN,Arvid Lindblad,Racing Bulls,2,18,False,True
+17,Azerbaijan Grand Prix,Baku,LIN,Arvid Lindblad,Racing Bulls,1,25,False,True
+17,Azerbaijan Grand Prix,Baku,ANT,Kimi Antonelli,Mercedes,2,18,False,True
 17,Azerbaijan Grand Prix,Baku,RUS,George Russell,Mercedes,3,15,False,True
 17,Azerbaijan Grand Prix,Baku,HAM,Lewis Hamilton,Ferrari,4,12,False,True
 17,Azerbaijan Grand Prix,Baku,COL,Franco Colapinto,Alpine,5,10,False,True
@@ -384,16 +384,16 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 18,Singapore Grand Prix,Singapore,BOR,Gabriel Bortoleto,Audi,9,2,False,True
 18,Singapore Grand Prix,Singapore,HAM,Lewis Hamilton,Ferrari,10,1,False,True
 18,Singapore Grand Prix,Singapore,ALB,Alexander Albon,Williams,11,0,False,True
-18,Singapore Grand Prix,Singapore,ANT,Kimi Antonelli,Mercedes,12,0,False,True
-18,Singapore Grand Prix,Singapore,COL,Franco Colapinto,Alpine,13,0,False,True
+18,Singapore Grand Prix,Singapore,COL,Franco Colapinto,Alpine,12,0,False,True
+18,Singapore Grand Prix,Singapore,ANT,Kimi Antonelli,Mercedes,13,0,False,True
 18,Singapore Grand Prix,Singapore,ALO,Fernando Alonso,Aston Martin,14,0,False,True
 18,Singapore Grand Prix,Singapore,BOT,Valtteri Bottas,Cadillac,15,0,False,True
 18,Singapore Grand Prix,Singapore,LAW,Liam Lawson,Racing Bulls,16,0,False,True
-18,Singapore Grand Prix,Singapore,NOR,Lando Norris,McLaren,17,0,False,True
-18,Singapore Grand Prix,Singapore,HAD,Isack Hadjar,Red Bull Racing,18,0,False,True
-18,Singapore Grand Prix,Singapore,OCO,Esteban Ocon,Haas F1 Team,19,0,False,True
-18,Singapore Grand Prix,Singapore,BEA,Oliver Bearman,Haas F1 Team,20,0,False,True
-18,Singapore Grand Prix,Singapore,STR,Lance Stroll,Aston Martin,21,0,False,False
+18,Singapore Grand Prix,Singapore,STR,Lance Stroll,Aston Martin,17,0,False,True
+18,Singapore Grand Prix,Singapore,NOR,Lando Norris,McLaren,18,0,False,True
+18,Singapore Grand Prix,Singapore,HAD,Isack Hadjar,Red Bull Racing,19,0,False,True
+18,Singapore Grand Prix,Singapore,OCO,Esteban Ocon,Haas F1 Team,20,0,False,True
+18,Singapore Grand Prix,Singapore,BEA,Oliver Bearman,Haas F1 Team,21,0,False,True
 18,Singapore Grand Prix,Singapore,HUL,Nico Hülkenberg,Audi,22,0,False,False
 19,United States Grand Prix,Austin,HAM,Lewis Hamilton,Ferrari,1,25,False,True
 19,United States Grand Prix,Austin,VER,Max Verstappen,Red Bull Racing,2,18,False,True
@@ -403,18 +403,18 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 19,United States Grand Prix,Austin,HAD,Isack Hadjar,Red Bull Racing,6,8,False,True
 19,United States Grand Prix,Austin,LIN,Arvid Lindblad,Racing Bulls,7,6,False,True
 19,United States Grand Prix,Austin,COL,Franco Colapinto,Alpine,8,4,False,True
-19,United States Grand Prix,Austin,ANT,Kimi Antonelli,Mercedes,9,2,False,True
-19,United States Grand Prix,Austin,OCO,Esteban Ocon,Haas F1 Team,10,1,False,True
-19,United States Grand Prix,Austin,ALB,Alexander Albon,Williams,11,0,False,True
-19,United States Grand Prix,Austin,PER,Sergio Perez,Cadillac,12,0,False,True
-19,United States Grand Prix,Austin,SAI,Carlos Sainz,Williams,13,0,False,True
-19,United States Grand Prix,Austin,NOR,Lando Norris,McLaren,14,0,False,True
-19,United States Grand Prix,Austin,RUS,George Russell,Mercedes,15,0,False,True
-19,United States Grand Prix,Austin,BOT,Valtteri Bottas,Cadillac,16,0,False,True
-19,United States Grand Prix,Austin,STR,Lance Stroll,Aston Martin,17,0,False,True
-19,United States Grand Prix,Austin,BOR,Gabriel Bortoleto,Audi,18,0,False,True
-19,United States Grand Prix,Austin,BEA,Oliver Bearman,Haas F1 Team,19,0,False,False
-19,United States Grand Prix,Austin,PIA,Oscar Piastri,McLaren,20,0,False,False
+19,United States Grand Prix,Austin,OCO,Esteban Ocon,Haas F1 Team,9,2,False,True
+19,United States Grand Prix,Austin,ALB,Alexander Albon,Williams,10,1,False,True
+19,United States Grand Prix,Austin,ANT,Kimi Antonelli,Mercedes,11,0,False,True
+19,United States Grand Prix,Austin,PIA,Oscar Piastri,McLaren,12,0,False,True
+19,United States Grand Prix,Austin,PER,Sergio Perez,Cadillac,13,0,False,True
+19,United States Grand Prix,Austin,SAI,Carlos Sainz,Williams,14,0,False,True
+19,United States Grand Prix,Austin,NOR,Lando Norris,McLaren,15,0,False,True
+19,United States Grand Prix,Austin,RUS,George Russell,Mercedes,16,0,False,True
+19,United States Grand Prix,Austin,BOT,Valtteri Bottas,Cadillac,17,0,False,True
+19,United States Grand Prix,Austin,STR,Lance Stroll,Aston Martin,18,0,False,True
+19,United States Grand Prix,Austin,BOR,Gabriel Bortoleto,Audi,19,0,False,True
+19,United States Grand Prix,Austin,BEA,Oliver Bearman,Haas F1 Team,20,0,False,False
 19,United States Grand Prix,Austin,ALO,Fernando Alonso,Aston Martin,21,0,False,False
 19,United States Grand Prix,Austin,GAS,Pierre Gasly,Alpine,22,0,False,False
 20,Mexico City Grand Prix,Mexico City,RUS,George Russell,Mercedes,1,25,False,True
@@ -434,32 +434,32 @@ Round,EventName,Circuit,Driver,FullName,Team,position,points,is_actual,classifie
 20,Mexico City Grand Prix,Mexico City,ALO,Fernando Alonso,Aston Martin,15,0,False,True
 20,Mexico City Grand Prix,Mexico City,PER,Sergio Perez,Cadillac,16,0,False,True
 20,Mexico City Grand Prix,Mexico City,ALB,Alexander Albon,Williams,17,0,False,True
-20,Mexico City Grand Prix,Mexico City,NOR,Lando Norris,McLaren,18,0,False,True
-20,Mexico City Grand Prix,Mexico City,LAW,Liam Lawson,Racing Bulls,19,0,False,True
-20,Mexico City Grand Prix,Mexico City,HUL,Nico Hülkenberg,Audi,20,0,False,False
-20,Mexico City Grand Prix,Mexico City,PIA,Oscar Piastri,McLaren,21,0,False,False
-20,Mexico City Grand Prix,Mexico City,STR,Lance Stroll,Aston Martin,22,0,False,False
+20,Mexico City Grand Prix,Mexico City,STR,Lance Stroll,Aston Martin,18,0,False,True
+20,Mexico City Grand Prix,Mexico City,NOR,Lando Norris,McLaren,19,0,False,True
+20,Mexico City Grand Prix,Mexico City,LAW,Liam Lawson,Racing Bulls,20,0,False,True
+20,Mexico City Grand Prix,Mexico City,HUL,Nico Hülkenberg,Audi,21,0,False,False
+20,Mexico City Grand Prix,Mexico City,PIA,Oscar Piastri,McLaren,22,0,False,False
 21,São Paulo Grand Prix,Interlagos,RUS,George Russell,Mercedes,1,25,False,True
 21,São Paulo Grand Prix,Interlagos,BOT,Valtteri Bottas,Cadillac,2,18,False,True
 21,São Paulo Grand Prix,Interlagos,ALB,Alexander Albon,Williams,3,15,False,True
-21,São Paulo Grand Prix,Interlagos,LEC,Charles Leclerc,Ferrari,4,12,False,True
-21,São Paulo Grand Prix,Interlagos,ALO,Fernando Alonso,Aston Martin,5,10,False,True
-21,São Paulo Grand Prix,Interlagos,LAW,Liam Lawson,Racing Bulls,6,8,False,True
-21,São Paulo Grand Prix,Interlagos,HAM,Lewis Hamilton,Ferrari,7,6,False,True
-21,São Paulo Grand Prix,Interlagos,PER,Sergio Perez,Cadillac,8,4,False,True
-21,São Paulo Grand Prix,Interlagos,NOR,Lando Norris,McLaren,9,2,False,True
-21,São Paulo Grand Prix,Interlagos,COL,Franco Colapinto,Alpine,10,1,False,True
-21,São Paulo Grand Prix,Interlagos,OCO,Esteban Ocon,Haas F1 Team,11,0,False,True
-21,São Paulo Grand Prix,Interlagos,BOR,Gabriel Bortoleto,Audi,12,0,False,True
-21,São Paulo Grand Prix,Interlagos,STR,Lance Stroll,Aston Martin,13,0,False,True
-21,São Paulo Grand Prix,Interlagos,LIN,Arvid Lindblad,Racing Bulls,14,0,False,True
-21,São Paulo Grand Prix,Interlagos,PIA,Oscar Piastri,McLaren,15,0,False,True
-21,São Paulo Grand Prix,Interlagos,GAS,Pierre Gasly,Alpine,16,0,False,True
-21,São Paulo Grand Prix,Interlagos,HUL,Nico Hülkenberg,Audi,17,0,False,True
-21,São Paulo Grand Prix,Interlagos,ANT,Kimi Antonelli,Mercedes,18,0,False,True
-21,São Paulo Grand Prix,Interlagos,SAI,Carlos Sainz,Williams,19,0,False,True
-21,São Paulo Grand Prix,Interlagos,HAD,Isack Hadjar,Red Bull Racing,20,0,False,False
-21,São Paulo Grand Prix,Interlagos,VER,Max Verstappen,Red Bull Racing,21,0,False,False
+21,São Paulo Grand Prix,Interlagos,LAW,Liam Lawson,Racing Bulls,4,12,False,True
+21,São Paulo Grand Prix,Interlagos,LEC,Charles Leclerc,Ferrari,5,10,False,True
+21,São Paulo Grand Prix,Interlagos,HAM,Lewis Hamilton,Ferrari,6,8,False,True
+21,São Paulo Grand Prix,Interlagos,PER,Sergio Perez,Cadillac,7,6,False,True
+21,São Paulo Grand Prix,Interlagos,NOR,Lando Norris,McLaren,8,4,False,True
+21,São Paulo Grand Prix,Interlagos,COL,Franco Colapinto,Alpine,9,2,False,True
+21,São Paulo Grand Prix,Interlagos,OCO,Esteban Ocon,Haas F1 Team,10,1,False,True
+21,São Paulo Grand Prix,Interlagos,BOR,Gabriel Bortoleto,Audi,11,0,False,True
+21,São Paulo Grand Prix,Interlagos,STR,Lance Stroll,Aston Martin,12,0,False,True
+21,São Paulo Grand Prix,Interlagos,LIN,Arvid Lindblad,Racing Bulls,13,0,False,True
+21,São Paulo Grand Prix,Interlagos,PIA,Oscar Piastri,McLaren,14,0,False,True
+21,São Paulo Grand Prix,Interlagos,GAS,Pierre Gasly,Alpine,15,0,False,True
+21,São Paulo Grand Prix,Interlagos,HUL,Nico Hülkenberg,Audi,16,0,False,True
+21,São Paulo Grand Prix,Interlagos,ANT,Kimi Antonelli,Mercedes,17,0,False,True
+21,São Paulo Grand Prix,Interlagos,SAI,Carlos Sainz,Williams,18,0,False,True
+21,São Paulo Grand Prix,Interlagos,HAD,Isack Hadjar,Red Bull Racing,19,0,False,False
+21,São Paulo Grand Prix,Interlagos,VER,Max Verstappen,Red Bull Racing,20,0,False,False
+21,São Paulo Grand Prix,Interlagos,ALO,Fernando Alonso,Aston Martin,21,0,False,False
 21,São Paulo Grand Prix,Interlagos,BEA,Oliver Bearman,Haas F1 Team,22,0,False,False
 22,Las Vegas Grand Prix,Las Vegas,ANT,Kimi Antonelli,Mercedes,1,25,False,True
 22,Las Vegas Grand Prix,Las Vegas,LEC,Charles Leclerc,Ferrari,2,18,False,True

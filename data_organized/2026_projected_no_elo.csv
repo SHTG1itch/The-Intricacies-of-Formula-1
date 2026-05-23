@@ -1,23 +1,23 @@
 Driver,FullName,Team,actual_pts,projected_future,projected_total,rank
-ANT,Kimi Antonelli,Mercedes,93,230,323,1
-RUS,George Russell,Mercedes,67,243,310,2
-LEC,Charles Leclerc,Ferrari,46,210,256,3
-HAM,Lewis Hamilton,Ferrari,43,191,234,4
-NOR,Lando Norris,McLaren,38,132,170,5
-PIA,Oscar Piastri,McLaren,33,85,118,6
-LIN,Arvid Lindblad,Racing Bulls,4,114,118,7
-VER,Max Verstappen,Red Bull Racing,22,81,103,8
-BOR,Gabriel Bortoleto,Audi,2,95,97,9
-GAS,Pierre Gasly,Alpine,15,62,77,10
-COL,Franco Colapinto,Alpine,7,70,77,11
-SAI,Carlos Sainz,Williams,4,66,70,12
-BEA,Oliver Bearman,Haas F1 Team,16,54,70,13
-OCO,Esteban Ocon,Haas F1 Team,1,67,68,14
-HAD,Isack Hadjar,Red Bull Racing,4,64,68,15
-LAW,Liam Lawson,Racing Bulls,8,51,59,16
+RUS,George Russell,Mercedes,67,243,310,1
+ANT,Kimi Antonelli,Mercedes,93,216,309,2
+LEC,Charles Leclerc,Ferrari,46,208,254,3
+HAM,Lewis Hamilton,Ferrari,43,188,231,4
+NOR,Lando Norris,McLaren,38,129,167,5
+LIN,Arvid Lindblad,Racing Bulls,4,117,121,6
+PIA,Oscar Piastri,McLaren,33,84,117,7
+VER,Max Verstappen,Red Bull Racing,22,82,104,8
+BOR,Gabriel Bortoleto,Audi,2,97,99,9
+COL,Franco Colapinto,Alpine,7,72,79,10
+GAS,Pierre Gasly,Alpine,15,63,78,11
+BEA,Oliver Bearman,Haas F1 Team,16,56,72,12
+OCO,Esteban Ocon,Haas F1 Team,1,70,71,13
+SAI,Carlos Sainz,Williams,4,66,70,14
+HAD,Isack Hadjar,Red Bull Racing,4,65,69,15
+LAW,Liam Lawson,Racing Bulls,8,53,61,16
 PER,Sergio Perez,Cadillac,0,47,47,17
-ALB,Alexander Albon,Williams,1,44,45,18
-HUL,Nico Hülkenberg,Audi,0,33,33,19
-BOT,Valtteri Bottas,Cadillac,0,33,33,20
-ALO,Fernando Alonso,Aston Martin,0,26,26,21
-STR,Lance Stroll,Aston Martin,0,22,22,22
+ALB,Alexander Albon,Williams,1,45,46,18
+HUL,Nico Hülkenberg,Audi,0,34,34,19
+BOT,Valtteri Bottas,Cadillac,0,34,34,20
+ALO,Fernando Alonso,Aston Martin,0,27,27,21
+STR,Lance Stroll,Aston Martin,0,23,23,22
