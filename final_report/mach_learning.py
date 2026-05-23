@@ -501,7 +501,7 @@ def bayesian_model_averaging_weights(loso_correct_per_model, prior_strength=2.0,
     }
 
 
-def rmt_minimum_variance_weights(fold_cache, years):
+def rmt_minimum_variance_weights(fold_cache, years, verbose=True):
     # Markowitz minimum-variance portfolio weights for the model ensemble, using
     # a Marchenko-Pastur denoised inter-model OOF score covariance.
     #
@@ -572,11 +572,12 @@ def rmt_minimum_variance_weights(fold_cache, years):
     eig_vals  = np.linalg.eigvalsh(C_models)
     n_signal  = int((eig_vals > lam_mp).sum())
 
-    print(f"\n  RMT minimum-variance portfolio diagnostics:")
-    print(f"    OOF rows: {int(T_eff)}, q={q_ratio:.5f} (expect all 4 eigenvalues as signal at this q)")
-    print(f"    MP λ_max={lam_mp:.5f}, signal eigenvalues={n_signal}/4")
-    print(f"    Score variances: xgb={C_models[0,0]:.4f}  ranker={C_models[1,1]:.4f}  "
-          f"rf={C_models[2,2]:.4f}  et={C_models[3,3]:.4f}")
+    if verbose:
+        print(f"\n  RMT minimum-variance portfolio diagnostics:")
+        print(f"    OOF rows: {int(T_eff)}, q={q_ratio:.5f} (expect all 4 eigenvalues as signal at this q)")
+        print(f"    MP λ_max={lam_mp:.5f}, signal eigenvalues={n_signal}/4")
+        print(f"    Score variances: xgb={C_models[0,0]:.4f}  ranker={C_models[1,1]:.4f}  "
+              f"rf={C_models[2,2]:.4f}  et={C_models[3,3]:.4f}")
 
     # regularization strength: L2 penalty equal in scale to the portfolio variance
     # trace(C_clean)/4 is the "average eigenvalue" of C_clean, which approximates the
@@ -607,14 +608,17 @@ def rmt_minimum_variance_weights(fold_cache, years):
         else:
             # SLSQP failed to converge - use equal weights as a safe fallback
             # this shouldn't happen often but is possible with very correlated models
-            print(f"    [!] Portfolio optimizer did not converge ({result.message}), using equal weights")
+            if verbose:
+                print(f"    [!] Portfolio optimizer did not converge ({result.message}), using equal weights")
             w_opt = np.array([0.25, 0.25, 0.25, 0.25])
     except Exception as exc:
-        print(f"    [!] Portfolio optimization failed ({exc}), using equal weights")
+        if verbose:
+            print(f"    [!] Portfolio optimization failed ({exc}), using equal weights")
         w_opt = np.array([0.25, 0.25, 0.25, 0.25])
 
-    print(f"    Optimal portfolio: xgb={w_opt[0]:.3f}  ranker={w_opt[1]:.3f}  "
-          f"rf={w_opt[2]:.3f}  et={w_opt[3]:.3f}")
+    if verbose:
+        print(f"    Optimal portfolio: xgb={w_opt[0]:.3f}  ranker={w_opt[1]:.3f}  "
+              f"rf={w_opt[2]:.3f}  et={w_opt[3]:.3f}")
 
     return {
         "w_xgb":    float(w_opt[0]),
@@ -1220,12 +1224,19 @@ def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta,
         if meta_model is not None:
             # if we have a stacking meta-model (which we usually do) use that instead of the BMA weights
             # the meta-model is a tiny XGBoost (depth=2) trained to figure out how much to trust each model
-            # it gets 9 features: the 4 normalized model scores + 5 context features like grid position
-            # and whether it's a street circuit - so it can learn "at Monaco, trust XGBoost more"
+            # it gets 11 features: the 4 normalized model scores + 5 context features like grid position
+            # and whether it's a street circuit + 2 RMT features (blend score, disagreement).
             # we tried LogisticRegression here first but XGB depth=2 beats it by about 2% on LOSO
             # because it can learn interactions like "both XGB AND Ranker agree AND low overtaking"
             # that LR simply can't represent
             # reg_era and is_street were added later so the meta knows which era it's in
+            # rmt_ens: BMA-weighted blend of the 4 scores - the "consensus" prediction
+            # rmt_disagr: std across the 4 scores - how much the models disagree for this driver/race
+            #   high disagreement flags chaotic/unpredictable races - genuinely new info for depth-2 XGB
+            rmt_ens_inf  = (w_xgb * xgb_norm + w_ranker * ranker_norm
+                            + w_rf * rf_norm + w_et * et_norm)
+            rmt_dis_inf  = np.std(np.column_stack([xgb_norm, ranker_norm, rf_norm, et_norm]),
+                                  axis=1, ddof=0)
             if X_features is not None:
                 xf_reset = X_features.reset_index(drop=True)
                 meta_context = np.column_stack([
@@ -1235,6 +1246,7 @@ def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta,
                     xf_reset["championship_rank_pct"].fillna(0.5).values,
                     xf_reset["car_regulation_era"].values,
                     xf_reset["circuit_is_street"].values,
+                    rmt_ens_inf, rmt_dis_inf,
                 ])
             else:
                 # fallback if X_features not provided - fill unknowns with neutral values
@@ -1245,6 +1257,7 @@ def ensemble_predict(xgb_raw_pos, rf_win_proba, df_meta,
                     np.full(len(xgb_norm), 0.5),
                     np.ones(len(xgb_norm)),   # assume ground-effect era (2022+)
                     np.zeros(len(xgb_norm)),  # assume not street circuit
+                    rmt_ens_inf, rmt_dis_inf,
                 ])
             meta_win_prob = meta_model.predict_proba(meta_context)[:, 1]
             df["ensemble_score"] = 1.0 - meta_win_prob
@@ -1517,21 +1530,41 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         other_years = [y for y in years if y != holdout_year]
 
         # train the meta-model on all other years' OOF predictions
-        # 9 features: 4 base model scores (already rank-normalized to [0,1]) + 5 context features
+        # 11 features: 4 base model scores (already rank-normalized to [0,1]) + 5 context features
+        #              + 2 RMT features (rmt_ens_score, rmt_disagreement)
         # the context features help the meta figure out WHEN to trust each model:
         #   champ_rank_pct: Verstappen in 2023 is basically guaranteed to win - trust XGB
         #   overtaking_score: Monaco vs Monza - how much does qualifying position matter here?
         #   grid_pos_pct: the qualifying position itself as a direct signal
         #   car_regulation_era: ground-effect cars (2022+) vs turbo-hybrid - models behave differently
         #   circuit_is_street: Monaco/Baku pole = almost certain win, amplifies the qualifying signal
-        meta_X_tr = np.vstack([
-            np.column_stack([fold_cache[y]["xgb_norm"],    fold_cache[y]["ranker_norm"],
-                             fold_cache[y]["rf_norm"],     fold_cache[y]["et_norm"],
-                             fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
-                             fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
-                             fold_cache[y]["is_street"]])
-            for y in other_years
-        ])
+        # the RMT features add two new signals the meta-model couldn't reconstruct on its own:
+        #   rmt_ens_score: the Marchenko-Pastur portfolio-weighted blend (minimum-variance combination)
+        #     computed from other_years only so there's no data leakage into the holdout
+        #   rmt_disagreement: std across the 4 model scores per driver-race row
+        #     high disagreement = chaotic/unpredictable race where we should be less confident
+        #     this is genuinely new information - a depth-2 tree can't reconstruct std from raw scores
+        #     ref: ensemble disagreement as uncertainty proxy: Krogh & Vedelsby (1995) NeurIPS
+
+        # fold-specific RMT portfolio weights (computed from other_years only - no leakage into holdout)
+        rmt_fold = rmt_minimum_variance_weights(fold_cache, other_years, verbose=False)
+
+        rmt_tr_blocks = []
+        for y in other_years:
+            xn = np.asarray(fold_cache[y]["xgb_norm"])
+            rn = np.asarray(fold_cache[y]["ranker_norm"])
+            rfn = np.asarray(fold_cache[y]["rf_norm"])
+            en = np.asarray(fold_cache[y]["et_norm"])
+            rmt_ens_tr = (rmt_fold["w_xgb"] * xn + rmt_fold["w_ranker"] * rn
+                          + rmt_fold["w_rf"] * rfn + rmt_fold["w_et"] * en)
+            rmt_dis_tr = np.std(np.column_stack([xn, rn, rfn, en]), axis=1, ddof=0)
+            rmt_tr_blocks.append(
+                np.column_stack([xn, rn, rfn, en,
+                                 fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
+                                 fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
+                                 fold_cache[y]["is_street"], rmt_ens_tr, rmt_dis_tr])
+            )
+        meta_X_tr = np.vstack(rmt_tr_blocks)
         meta_y_tr = np.hstack([
             fold_cache[y]["y_win_te"].fillna(0).astype(int).values for y in other_years
         ])
@@ -1548,15 +1581,20 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
         )
         meta_xgb.fit(meta_X_tr, meta_y_tr)
 
-        meta_X_te = np.column_stack([fold_cache[holdout_year]["xgb_norm"],
-                                     fold_cache[holdout_year]["ranker_norm"],
-                                     fold_cache[holdout_year]["rf_norm"],
-                                     fold_cache[holdout_year]["et_norm"],
+        xn_te  = np.asarray(fold_cache[holdout_year]["xgb_norm"])
+        rn_te  = np.asarray(fold_cache[holdout_year]["ranker_norm"])
+        rfn_te = np.asarray(fold_cache[holdout_year]["rf_norm"])
+        en_te  = np.asarray(fold_cache[holdout_year]["et_norm"])
+        rmt_ens_te = (rmt_fold["w_xgb"] * xn_te + rmt_fold["w_ranker"] * rn_te
+                      + rmt_fold["w_rf"] * rfn_te + rmt_fold["w_et"] * en_te)
+        rmt_dis_te = np.std(np.column_stack([xn_te, rn_te, rfn_te, en_te]), axis=1, ddof=0)
+        meta_X_te = np.column_stack([xn_te, rn_te, rfn_te, en_te,
                                      fold_cache[holdout_year]["grid_pos_pct"],
                                      fold_cache[holdout_year]["overtaking_score"],
                                      fold_cache[holdout_year]["champ_rank_pct"],
                                      fold_cache[holdout_year]["reg_era"],
-                                     fold_cache[holdout_year]["is_street"]])
+                                     fold_cache[holdout_year]["is_street"],
+                                     rmt_ens_te, rmt_dis_te])
         meta_scores = 1.0 - meta_xgb.predict_proba(meta_X_te)[:, 1]
 
         meta_te_h  = fold_cache[holdout_year]["meta_te"]
@@ -1593,14 +1631,23 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
 
     # the nested evaluation is done - now train the FINAL meta-model on all years combined
     # this is the one we save to disk and use for actual 2025/2026 predictions
-    all_meta_X = np.vstack([
-        np.column_stack([fold_cache[y]["xgb_norm"],    fold_cache[y]["ranker_norm"],
-                         fold_cache[y]["rf_norm"],     fold_cache[y]["et_norm"],
-                         fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
-                         fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
-                         fold_cache[y]["is_street"]])
-        for y in years
-    ])
+    # use global rmt_bma weights (trained on all 7 years) for the RMT features
+    all_meta_blocks = []
+    for y in years:
+        xn = np.asarray(fold_cache[y]["xgb_norm"])
+        rn = np.asarray(fold_cache[y]["ranker_norm"])
+        rfn = np.asarray(fold_cache[y]["rf_norm"])
+        en = np.asarray(fold_cache[y]["et_norm"])
+        rmt_ens_all = (rmt_bma["w_xgb"] * xn + rmt_bma["w_ranker"] * rn
+                       + rmt_bma["w_rf"] * rfn + rmt_bma["w_et"] * en)
+        rmt_dis_all = np.std(np.column_stack([xn, rn, rfn, en]), axis=1, ddof=0)
+        all_meta_blocks.append(
+            np.column_stack([xn, rn, rfn, en,
+                             fold_cache[y]["grid_pos_pct"], fold_cache[y]["overtaking_score"],
+                             fold_cache[y]["champ_rank_pct"], fold_cache[y]["reg_era"],
+                             fold_cache[y]["is_street"], rmt_ens_all, rmt_dis_all])
+        )
+    all_meta_X = np.vstack(all_meta_blocks)
     all_meta_y = np.hstack([
         fold_cache[y]["y_win_te"].fillna(0).astype(int).values for y in years
     ])
@@ -1611,12 +1658,13 @@ def leave_one_season_out_validation(df_train, X_train_all, y_pos, y_win, y_top10
     )
     meta_model_final.fit(all_meta_X, all_meta_y)
     fi = meta_model_final.feature_importances_
-    feat_names = ["xgb", "ranker", "rf", "et", "grid_pct", "overtaking", "champ_rank", "reg_era", "is_street"]
+    feat_names = ["xgb", "ranker", "rf", "et", "grid_pct", "overtaking", "champ_rank", "reg_era", "is_street",
+                  "rmt_ens", "rmt_disagr"]
     fi_str = "  ".join(f"{n}={v:.3f}" for n, v in zip(feat_names, fi))
-    print(f"\n  Final meta-model feature importances (all OOF, 9 features):")
+    print(f"\n  Final meta-model feature importances (all OOF, 11 features):")
     print(f"    {fi_str}")
 
-    return val_df_meta, bma_weights, cal_temperature, meta_model_final
+    return val_df_meta, bma_weights, cal_temperature, meta_model_final, rmt_bma
 
 
 # ──────────────────────────────────
@@ -1694,9 +1742,8 @@ def main():
     # run the full leave-one-season-out validation - this is the honest accuracy number
     # it returns the nested stacking metrics (not the 40/40/20 baseline printed inside the loop),
     # the BMA weights, the calibration temperature, and the final stacking meta-model
-    val_results, bma_weights, cal_temperature, meta_model = leave_one_season_out_validation(
-        df_train, X_all, y_pos, y_win, y_top10
-    )
+    val_results, bma_weights, cal_temperature, meta_model, rmt_portfolio = \
+        leave_one_season_out_validation(df_train, X_all, y_pos, y_win, y_top10)
 
     # now that we have honest LOSO estimates, do the full hyperparameter tuning on ALL training data
     # the LOSO loop used quick fallback defaults (to keep it fast)
@@ -1773,6 +1820,7 @@ def main():
     joblib.dump(bma_weights,    os.path.join(MODEL_DIR, "bma_weights.joblib"))
     joblib.dump(cal_temperature, os.path.join(MODEL_DIR, "cal_temperature.joblib"))
     joblib.dump(meta_model,     os.path.join(MODEL_DIR, "meta_model.joblib"))
+    joblib.dump(rmt_portfolio,  os.path.join(MODEL_DIR, "rmt_portfolio.joblib"))
     print(f"\n  → Models saved to {MODEL_DIR}/")
 
     # print and save which features each model found most useful
@@ -1872,6 +1920,21 @@ def main():
         f.write(f"  Top-10 Jaccard  : {jaccard:.3f}\n")
         f.write(f"  Position MAE    : {mae:.2f} places\n")
     print(f"\n  → Evaluation saved to {eval_path}")
+
+    # auto-generate the meta-model stacking visualisation plots so every run
+    # produces up-to-date plots without needing a separate script call
+    try:
+        import subprocess, sys
+        plot_script = os.path.join("final_report", "plot_meta_stacking_rmt.py")
+        if os.path.exists(plot_script):
+            result = subprocess.run([sys.executable, plot_script],
+                                    capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                print(f"\n  → Meta-stacking plots regenerated")
+            else:
+                print(f"\n  [!] plot_meta_stacking_rmt.py failed: {result.stderr[:200]}")
+    except Exception as _e:
+        print(f"\n  [!] Could not auto-run plot_meta_stacking_rmt.py: {_e}")
 
     print("\n" + "=" * 55)
     print("  Done.")

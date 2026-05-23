@@ -186,11 +186,8 @@ def train_models_2026(X_train, y_pos, y_win, y_top10, df_meta):
     # note: leave_one_season_out_validation only needs Year/Round/EventName/Driver/Team
     # from df_meta - it does its own feature extraction internally from X_train
     print("\n  Running LOSO cross-validation on 2022-2025 (computing Bayesian weights)...")
-    val_results, bma_weights, cal_temperature, meta_model = leave_one_season_out_validation(
-        df_meta,
-        X_train,
-        y_pos, y_win, y_top10
-    )
+    val_results, bma_weights, cal_temperature, meta_model, _rmt_portfolio_2026 = \
+        leave_one_season_out_validation(df_meta, X_train, y_pos, y_win, y_top10)
 
     print("\n  Tuning XGBoost regressor (50 RandomizedSearch iterations)...")
     xgb_final, xgb_best = tune_xgboost(X_train, y_pos.fillna(20), n_iter=50)
