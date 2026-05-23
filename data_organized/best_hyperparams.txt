@@ -38,9 +38,9 @@ ExtraTrees Regressor:
   n_estimators: 488
 
 Bayesian Model Averaging Weights (from LOSO):
-  w_xgb: 0.2149
-  w_ranker: 0.2584
-  w_rf: 0.2584
-  w_et: 0.2683
+  w_xgb: 0.2230
+  w_ranker: 0.2516
+  w_rf: 0.2653
+  w_et: 0.2601
 
 Bayesian Temperature Scaling: T = 0.9968

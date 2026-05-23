@@ -80,8 +80,15 @@ WF_BEST_PARAMS = {
     },
 }
 
-# BMA weights from the LOSO run in mach_learning.py.
-BMA_WEIGHTS = {"w_xgb": 0.215, "w_ranker": 0.258, "w_rf": 0.258, "w_et": 0.268}
+# BMA weights from the LOSO run in mach_learning.py, with 25% RMT minimum-variance
+# portfolio blend applied. the RMT step computes Markowitz-optimal weights from the
+# MP-denoised inter-model OOF score covariance (Laloux 1999 technique). at q≈0.001
+# (4 models, ~2500 observations) the 4×4 covariance is dominated by one common
+# eigenmode (all models highly correlated), so the portfolio weights stay near equal
+# with slight adjustments for variance differences - RF gets marginally more weight
+# because its conservative probability outputs produce slightly lower score variance.
+# see rmt_minimum_variance_weights() in mach_learning.py for the full derivation.
+BMA_WEIGHTS = {"w_xgb": 0.2230, "w_ranker": 0.2516, "w_rf": 0.2653, "w_et": 0.2601}
 
 # RF temperature from the main LOSO calibration run.
 RF_TEMPERATURE = 0.9968
@@ -971,10 +978,23 @@ def walk_forward_evaluate(df_train, verbose=True, smoke_year=None):
                         # project scores onto the signal subspace. scores_proj is what the tier
                         # structure alone would predict - it removes the noise components
                         scores_proj = sig_vecs @ (sig_vecs.T @ base_scores)
-                        # blend: (1 - blend) * original + blend * tier-projected
-                        # at blend=0 you get the original scores unchanged
-                        # at blend=1 you'd only keep the tier-projected part (too aggressive)
-                        base_scores = (1.0 - adaptive_blend) * base_scores + adaptive_blend * scores_proj
+                        # scale blend by the RMT signal fraction: what fraction of driver-space
+                        # dimensions are genuine signal (above the MP threshold) vs noise?
+                        #   0 signal dims → this block is skipped (already handled by if n_rmt_sig>0)
+                        #   low fraction → feature structure is ambiguous → conservative blend
+                        #   high fraction → tiers are clear (e.g., dominant season) → stronger blend
+                        # the 0.5 floor means we always use at least half the entropy-scaled blend -
+                        # we never fully suppress the tier correction even in noisy field conditions.
+                        # formula: final_blend = adaptive_blend × (0.5 + 0.5 × signal_fraction)
+                        #   if n_rmt_sig = 4 of 20 → fraction=0.2 → final=0.6×adaptive_blend
+                        #   if n_rmt_sig = 10 of 20 → fraction=0.5 → final=0.75×adaptive_blend
+                        #   if n_rmt_sig = 20 of 20 → fraction=1.0 → final=adaptive_blend (no change)
+                        rmt_signal_fraction = float(n_rmt_sig) / max(float(n_driv), 1.0)
+                        final_blend = adaptive_blend * (0.5 + 0.5 * rmt_signal_fraction)
+                        # blend: (1 - final_blend) * original + final_blend * tier-projected
+                        # at final_blend=0 you get the original scores unchanged
+                        # at final_blend=adaptive_blend you get the full entropy-scaled tier correction
+                        base_scores = (1.0 - final_blend) * base_scores + final_blend * scores_proj
                 except Exception:
                     pass   # if anything fails just use the unmodified scores
 

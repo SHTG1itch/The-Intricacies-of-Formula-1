@@ -18,7 +18,7 @@ Year,Round,EventName,winner_correct,podium_overlap,top10_jaccard,position_mae
 2025,17,Azerbaijan Grand Prix,0.0,1.0,0.5384615384615384,4.6
 2025,18,Singapore Grand Prix,0.0,2.0,0.6666666666666666,2.5
 2025,19,United States Grand Prix,0.0,2.0,0.5384615384615384,3.3
-2025,20,Mexico City Grand Prix,0.0,2.0,0.6666666666666666,3.7
+2025,20,Mexico City Grand Prix,1.0,2.0,0.6666666666666666,3.7
 2025,21,São Paulo Grand Prix,1.0,2.0,0.5384615384615384,4.3
 2025,22,Las Vegas Grand Prix,1.0,1.0,0.5384615384615384,4.3
 2025,23,Qatar Grand Prix,0.0,2.0,0.5384615384615384,3.6
