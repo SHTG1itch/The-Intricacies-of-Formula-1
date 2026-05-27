@@ -394,12 +394,21 @@ def plot_rq1b_throttle_brake():
         xy=(18, 68), xytext=(5, 52), fontsize=8.5, color=RED,
         arrowprops=dict(arrowstyle="->", color=RED, lw=1.0),
         bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=RED, alpha=0.85),
+        zorder=10,
+    )
+    ax.annotate(
+        "More Erratic = On the Limit",
+        xy=(40, 35), xytext=(25, 45), fontsize=8.5, color="#5B2C6F",
+        arrowprops=dict(arrowstyle="->", color="#5B2C6F", lw=1.0),
+        bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="#5B2C6F", alpha=0.85),
+        zorder=10,
     )
     ax.annotate(
         "Early Throttle Zone\n(Car stability allows earlier\napplication regardless of input)",
         xy=(50, 30), xytext=(52, 15), fontsize=8.5, color="#1E6B8C",
         arrowprops=dict(arrowstyle="->", color="#1E6B8C", lw=1.0),
         bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="#1E6B8C", alpha=0.85),
+        zorder=10,
     )
 
     ax.set_xlim(xlim)
